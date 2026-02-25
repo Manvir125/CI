@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ci_hospital}
-    username: ${SPRING_DATASOURCE_USERNAME:ci_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:ci_pass}
+    url: jdbc:postgresql://postgres:5432/ci_hospital
+    username: ci_user
+    password: ci_pass
     driver-class-name: org.postgresql.Driver
 
   jpa:

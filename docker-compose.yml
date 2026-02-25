@@ -1,0 +1,44 @@
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: ci_postgres
+    environment:
+      POSTGRES_DB: ci_hospital
+      POSTGRES_USER: ci_user
+      POSTGRES_PASSWORD: ci_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ci_user -d ci_hospital" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: ci_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ci_hospital
+      SPRING_DATASOURCE_USERNAME: ci_user
+      SPRING_DATASOURCE_PASSWORD: ci_pass
+      JWT_SECRET: cambia_esto_por_un_secreto_seguro_de_al_menos_32_caracteres
+      JWT_EXPIRATION_MS: 28800000
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    container_name: ci_frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres_data:

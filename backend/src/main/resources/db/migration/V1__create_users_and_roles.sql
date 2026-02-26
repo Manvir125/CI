@@ -34,7 +34,7 @@ CREATE TABLE user_roles (
 -- El hash corresponde a bcrypt con coste 12
 INSERT INTO users (username, full_name, email, password_hash) VALUES
     ('admin', 'Administrador Sistema', 'admin@chpc.es',
-     '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.');
+     '$2a$12$1AGjH1Gvu4PUrElGzGHEUO.Q7g0bz2J9oU8TafhudW9uaM2ZvGLfq');
 
 INSERT INTO user_roles (user_id, role_id)
     SELECT u.id, r.id FROM users u, roles r

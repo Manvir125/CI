@@ -53,19 +53,3 @@ CREATE TABLE sign_tokens (
     is_valid            BOOLEAN      NOT NULL DEFAULT TRUE,
     created_by_ip       VARCHAR(45)
 );
-```
-
----
-
-## ☕ Paso 7: Estructura de paquetes del backend
-
-Dentro de `backend/src/main/java/es/chpc/cibackend/` crea estas carpetas (paquetes). En tu IDE puedes crearlas como carpetas normales:
-```
-es/chpc/cibackend/
-├── config/          ← Configuración de Spring Security y JWT
-├── controller/      ← Endpoints REST
-├── dto/             ← Objetos de transferencia (request/response)
-├── entity/          ← Entidades JPA (tablas de la BD)
-├── repository/      ← Interfaces de acceso a datos
-├── service/         ← Lógica de negocio
-└── security/        ← Filtros JWT y utilidades

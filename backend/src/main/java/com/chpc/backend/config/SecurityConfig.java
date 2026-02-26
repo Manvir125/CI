@@ -2,9 +2,12 @@ package com.chpc.backend.config;
 
 import com.chpc.backend.security.JwtAuthFilter;
 import com.chpc.backend.security.UserDetailsServiceImpl;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.*;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -13,6 +16,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
@@ -21,7 +25,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Permite usar @PreAuthorize en los controllers
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -31,25 +35,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Desactivamos CSRF porque usamos JWT (sin cookies de sesión)
                 .csrf(csrf -> csrf.disable())
 
-                // Configuramos CORS para permitir peticiones del frontend
+                // CORS debe configurarse ANTES que cualquier otra cosa
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // Sin sesión en servidor: cada petición se autentica con el JWT
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Reglas de acceso por ruta
                 .authorizeHttpRequests(auth -> auth
+                        // Permite explícitamente las peticiones OPTIONS (preflight CORS)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Rutas públicas
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/patient/sign/**").permitAll() // portal paciente
+                        .requestMatchers("/api/patient/sign/**").permitAll()
                         // Todo lo demás requiere autenticación
                         .anyRequest().authenticated())
 
-                // Añadimos nuestro filtro JWT antes del filtro estándar de Spring
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint()));
 
         return http.build();
     }
@@ -77,9 +80,22 @@ public class SecurityConfig {
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authException) -> {
+            System.out.println("=== 401 BLOQUEADO ===");
+            System.out.println("Método: " + request.getMethod());
+            System.out.println("URL: " + request.getRequestURI());
+            System.out.println("Origin: " + request.getHeader("Origin"));
+            System.out.println("Razón: " + authException.getMessage());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
+        };
     }
 }

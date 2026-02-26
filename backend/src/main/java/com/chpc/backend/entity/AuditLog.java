@@ -2,6 +2,8 @@ package com.chpc.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,6 +19,7 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Builder.Default
     @Column(name = "timestamp_utc", nullable = false)
     private LocalDateTime timestampUtc = LocalDateTime.now();
 
@@ -35,9 +38,11 @@ public class AuditLog {
     @Column(name = "ip_address")
     private String ipAddress;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean success = true;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "detail_json", columnDefinition = "jsonb")
     private String detailJson;
 }

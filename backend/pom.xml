@@ -30,6 +30,23 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+	<!-- LDAP embebido para desarrollo -->
+		<dependency>
+			<groupId>org.springframework.ldap</groupId>
+			<artifactId>spring-ldap-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-ldap</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.unboundid</groupId>
+			<artifactId>unboundid-ldapsdk</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-ldap</artifactId>
+		</dependency>
 	<!-- JWT -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>

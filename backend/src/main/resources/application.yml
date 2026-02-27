@@ -19,6 +19,14 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  ldap:
+    embedded:
+      base-dn: dc=chpc,dc=es
+      ldif: classpath:ldap/users.ldif
+      port: 8389
+      validation:
+        enabled: false
+
 server:
   port: 8080
 
@@ -28,5 +36,16 @@ jwt:
 
 logging:
   level:
-    es.chpc: DEBUG
+    com.chpc: DEBUG
     org.springframework.security: INFO
+    org.springframework.ldap: DEBUG
+
+# ── Custom LDAP Properties (for LdapAuthService) ──
+ldap:
+  enabled: true
+  url: ldap://localhost:8389
+  base: dc=chpc,dc=es
+  user-search-base: ou=users
+  user-search-filter: (uid={0})
+  group-search-base: ou=groups
+  group-search-filter: (member={0})

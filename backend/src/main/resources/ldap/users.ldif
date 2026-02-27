@@ -1,0 +1,84 @@
+# Raíz de la organización
+dn: dc=chpc,dc=es
+objectClass: top
+objectClass: domain
+dc: chpc
+
+dn: ou=users,dc=chpc,dc=es
+objectClass: top
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,dc=chpc,dc=es
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+dn: uid=admin,ou=users,dc=chpc,dc=es
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: admin
+cn: Administrador Sistema
+sn: Sistema
+mail: admin@chpc.es
+userPassword: {SHA}wtViWQn50GeYZGAPmYz9XyxeknI=
+
+dn: uid=dra.garcia,ou=users,dc=chpc,dc=es
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: dra.garcia
+cn: Dra. Ana García López
+sn: García López
+mail: ana.garcia@chpc.es
+userPassword: {SHA}Se/vX3DUetwtsus5f77197xWDik=
+
+dn: uid=p.martinez,ou=users,dc=chpc,dc=es
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: p.martinez
+cn: Pedro Martínez Ros
+sn: Martínez Ros
+mail: pedro.martinez@chpc.es
+userPassword: {SHA}Se/vX3DUetwtsus5f77197xWDik=
+
+dn: uid=supervisora,ou=users,dc=chpc,dc=es
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: supervisora
+cn: Laura Supervisora Pérez
+sn: Supervisora Pérez
+mail: laura.supervisora@chpc.es
+userPassword: {SHA}Se/vX3DUetwtsus5f77197xWDik=
+
+dn: cn=ADMIN,ou=groups,dc=chpc,dc=es
+objectClass: top
+objectClass: groupOfNames
+cn: ADMIN
+member: uid=admin,ou=users,dc=chpc,dc=es
+
+dn: cn=PROFESSIONAL,ou=groups,dc=chpc,dc=es
+objectClass: top
+objectClass: groupOfNames
+cn: PROFESSIONAL
+member: uid=dra.garcia,ou=users,dc=chpc,dc=es
+
+dn: cn=ADMINISTRATIVE,ou=groups,dc=chpc,dc=es
+objectClass: top
+objectClass: groupOfNames
+cn: ADMINISTRATIVE
+member: uid=p.martinez,ou=users,dc=chpc,dc=es
+
+dn: cn=SUPERVISOR,ou=groups,dc=chpc,dc=es
+objectClass: top
+objectClass: groupOfNames
+cn: SUPERVISOR
+member: uid=supervisora,ou=users,dc=chpc,dc=es
+member: uid=admin,ou=users,dc=chpc,dc=es

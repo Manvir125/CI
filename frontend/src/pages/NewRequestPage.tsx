@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import {
     getPatientByNhc, getPatientByDni,
     getActiveEpisodes, type PatientDto, type EpisodeDto
@@ -112,11 +111,19 @@ export default function NewRequestPage() {
 
     return (
         <div className="min-h-screen bg-gray-100">
-            <Navbar
-                title="Nueva Solicitud de Consentimiento"
-                backTo="/requests"
-                backLabel="Solicitudes"
-            />
+            {/* Navbar */}
+            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/requests')}
+                        className="text-emerald-300 hover:text-white text-sm transition-colors"
+                    >
+                        ← Solicitudes
+                    </button>
+                    <span className="text-emerald-500">|</span>
+                    <h1 className="font-bold">Nueva Solicitud de Consentimiento</h1>
+                </div>
+            </nav>
 
             <main className="p-6 max-w-3xl mx-auto">
 
@@ -130,7 +137,7 @@ export default function NewRequestPage() {
                         return (
                             <div key={s} className="flex items-center">
                                 <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm
-                  ${isActive ? 'bg-blue-900 text-white font-medium' :
+                  ${isActive ? 'bg-emerald-700 text-white font-medium' :
                                         isCompleted ? 'bg-green-100 text-green-700' :
                                             'bg-gray-200 text-gray-500'}`}>
                                     <span>{i + 1}</span>
@@ -167,7 +174,7 @@ export default function NewRequestPage() {
                                     className={`flex-1 py-2 rounded-lg text-sm font-medium border
                     transition-colors
                     ${searchType === 'nhc'
-                                            ? 'bg-blue-900 text-white border-blue-900'
+                                            ? 'bg-emerald-700 text-white border-emerald-700'
                                             : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
                                 >
                                     Buscar por NHC
@@ -178,7 +185,7 @@ export default function NewRequestPage() {
                                     className={`flex-1 py-2 rounded-lg text-sm font-medium border
                     transition-colors
                     ${searchType === 'dni'
-                                            ? 'bg-blue-900 text-white border-blue-900'
+                                            ? 'bg-emerald-700 text-white border-emerald-700'
                                             : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
                                 >
                                     Buscar por DNI
@@ -196,7 +203,7 @@ export default function NewRequestPage() {
                                         onChange={e => setSearchValue(e.target.value)}
                                         placeholder={searchType === 'nhc' ? '10045623' : '12345678A'}
                                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2
-                               focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                         required
                                     />
                                     <button
@@ -219,7 +226,7 @@ export default function NewRequestPage() {
 
                         {/* Ficha del paciente */}
                         <div className="bg-white rounded-xl p-5 shadow-sm border-l-4
-                            border-blue-900">
+                            border-emerald-700">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="font-bold text-gray-800 text-lg">
@@ -268,7 +275,7 @@ export default function NewRequestPage() {
                                             key={ep.episodeId}
                                             onClick={() => handleSelectEpisode(ep)}
                                             className="border border-gray-200 rounded-lg p-4 cursor-pointer
-                                 hover:border-blue-400 hover:bg-blue-50 transition-all"
+                                 hover:border-emerald-400 hover:bg-emerald-50 transition-all"
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -285,7 +292,7 @@ export default function NewRequestPage() {
                                                         ID: {ep.episodeId} · {ep.attendingPhysician}
                                                     </p>
                                                 </div>
-                                                <span className="bg-blue-100 text-blue-700 text-xs
+                                                <span className="bg-emerald-100 text-emerald-700 text-xs
                                          px-2 py-1 rounded-full">
                                                     {ep.priority}
                                                 </span>
@@ -340,7 +347,7 @@ export default function NewRequestPage() {
                                     className={`flex items-start gap-3 p-3 border rounded-lg
                                cursor-pointer transition-all
                     ${selectedTemplate === t.id
-                                            ? 'border-blue-500 bg-blue-50'
+                                            ? 'border-emerald-500 bg-emerald-50'
                                             : 'border-gray-200 hover:bg-gray-50'}`}
                                 >
                                     <input
@@ -373,7 +380,7 @@ export default function NewRequestPage() {
                                     className={`flex items-center gap-3 p-4 border rounded-lg
                                cursor-pointer transition-all
                     ${channel === 'REMOTE'
-                                            ? 'border-blue-500 bg-blue-50'
+                                            ? 'border-emerald-500 bg-emerald-50'
                                             : 'border-gray-200 hover:bg-gray-50'}`}
                                 >
                                     <input
@@ -394,7 +401,7 @@ export default function NewRequestPage() {
                                     className={`flex items-center gap-3 p-4 border rounded-lg
                                cursor-pointer transition-all
                     ${channel === 'ONSITE'
-                                            ? 'border-blue-500 bg-blue-50'
+                                            ? 'border-emerald-500 bg-emerald-50'
                                             : 'border-gray-200 hover:bg-gray-50'}`}
                                 >
                                     <input
@@ -424,7 +431,7 @@ export default function NewRequestPage() {
                                             value={patientEmail}
                                             onChange={e => setPatientEmail(e.target.value)}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2
-                                 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             required={channel === 'REMOTE'}
                                         />
                                     </div>
@@ -437,20 +444,20 @@ export default function NewRequestPage() {
                                             value={patientPhone}
                                             onChange={e => setPatientPhone(e.target.value)}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2
-                                 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             placeholder="666123456"
                                         />
                                     </div>
 
                                     <label className="flex items-center gap-3 cursor-pointer
-                                    p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                    p-3 bg-emerald-50 rounded-lg border border-emerald-200">
                                         <input
                                             type="checkbox"
                                             checked={sendNow}
                                             onChange={e => setSendNow(e.target.checked)}
                                             className="w-4 h-4"
                                         />
-                                        <span className="text-sm text-blue-800">
+                                        <span className="text-sm text-emerald-800">
                                             Enviar el enlace al paciente ahora por email
                                         </span>
                                     </label>
@@ -470,8 +477,8 @@ export default function NewRequestPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-6 py-2 bg-blue-900 text-white rounded-lg font-medium
-                           hover:bg-blue-800 disabled:opacity-50 transition-colors"
+                                className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
+                           hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                             >
                                 {loading ? 'Creando...' :
                                     channel === 'REMOTE' && sendNow

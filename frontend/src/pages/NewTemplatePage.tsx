@@ -49,14 +49,14 @@ export default function NewTemplatePage() {
 
     return (
         <div className="min-h-screen bg-gray-100">
-            <nav className="bg-blue-900 text-white px-6 py-4 flex items-center gap-3">
+            <nav className="bg-emerald-700 text-white px-6 py-4 flex items-center gap-3">
                 <button
                     onClick={() => navigate('/templates')}
-                    className="text-blue-300 hover:text-white text-sm transition-colors"
+                    className="text-emerald-300 hover:text-white text-sm transition-colors"
                 >
                     ← Plantillas
                 </button>
-                <span className="text-blue-500">|</span>
+                <span className="text-emerald-500">|</span>
                 <h1 className="font-bold">Nueva Plantilla</h1>
             </nav>
 
@@ -76,7 +76,7 @@ export default function NewTemplatePage() {
                                 value={form.name}
                                 onChange={e => setForm({ ...form, name: e.target.value })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 required
                             />
                         </div>
@@ -91,7 +91,7 @@ export default function NewTemplatePage() {
                                     value={form.serviceCode}
                                     onChange={e => setForm({ ...form, serviceCode: e.target.value })}
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2
-                             focus:outline-none focus:ring-2 focus:ring-blue-500"
+                             focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                     placeholder="CIR, MED, ONC..."
                                 />
                             </div>
@@ -104,7 +104,7 @@ export default function NewTemplatePage() {
                                     value={form.procedureCode}
                                     onChange={e => setForm({ ...form, procedureCode: e.target.value })}
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2
-                             focus:outline-none focus:ring-2 focus:ring-blue-500"
+                             focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                     placeholder="PROC-001..."
                                 />
                             </div>
@@ -119,7 +119,7 @@ export default function NewTemplatePage() {
                                 onChange={e => setForm({ ...form, contentHtml: e.target.value })}
                                 rows={8}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-blue-500
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500
                            font-mono text-sm"
                                 placeholder="<h2>Consentimiento Informado</h2>&#10;<p>Yo, {{nombre_paciente}}...</p>"
                                 required
@@ -139,7 +139,7 @@ export default function NewTemplatePage() {
                             <button
                                 type="button"
                                 onClick={addField}
-                                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5
+                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5
                            rounded-lg text-sm transition-colors"
                             >
                                 + Añadir campo
@@ -164,7 +164,7 @@ export default function NewTemplatePage() {
                                     value={field.fieldKey}
                                     onChange={e => updateField(index, 'fieldKey', e.target.value)}
                                     className="border border-gray-300 rounded px-3 py-1.5 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-blue-500"
+                             focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                                 <input
                                     type="text"
@@ -172,13 +172,13 @@ export default function NewTemplatePage() {
                                     value={field.fieldLabel}
                                     onChange={e => updateField(index, 'fieldLabel', e.target.value)}
                                     className="border border-gray-300 rounded px-3 py-1.5 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-blue-500"
+                             focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                                 <select
                                     value={field.fieldType}
                                     onChange={e => updateField(index, 'fieldType', e.target.value)}
                                     className="border border-gray-300 rounded px-3 py-1.5 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-blue-500"
+                             focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="TEXT">Texto libre</option>
                                     <option value="PATIENT_NAME">Nombre paciente</option>
@@ -227,8 +227,8 @@ export default function NewTemplatePage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-2 bg-blue-900 text-white rounded-lg font-medium
-                         hover:bg-blue-800 disabled:opacity-50 transition-colors"
+                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
+                         hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                         >
                             {loading ? 'Guardando...' : 'Crear plantilla'}
                         </button>

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import StatusBadge from '../components/StatusBadge';
 import {
     getMyRequests, cancelRequest,
@@ -75,21 +74,28 @@ export default function RequestsPage() {
 
     return (
         <div className="min-h-screen bg-gray-100">
-            <Navbar
-                title="CI Digital — CHPC"
-                actions={
+            {/* Navbar */}
+            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
                     <button
-                        onClick={() => navigate('/requests/new')}
-                        className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg
-                       text-sm font-medium transition-colors"
+                        onClick={() => navigate('/dashboard')}
+                        className="text-emerald-300 hover:text-white text-sm transition-colors"
                     >
-                        + Nueva solicitud
+                        ← Dashboard
                     </button>
-                }
-            />
+                    <span className="text-blue-500">|</span>
+                    <h1 className="font-bold">Gestión de Solicitudes</h1>
+                </div>
+                <button
+                    onClick={() => navigate('/requests/new')}
+                    className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg
+                       text-sm font-medium transition-colors"
+                >
+                    + Nueva solicitud
+                </button>
+            </nav>
 
             <main className="p-6 max-w-6xl mx-auto">
-
                 {/* Filtros por estado */}
                 <div className="flex gap-2 mb-6 flex-wrap">
                     {STATUSES.map(s => (
@@ -99,7 +105,7 @@ export default function RequestsPage() {
                             className={`px-4 py-1.5 rounded-full text-sm font-medium
                           transition-colors border
                 ${statusFilter === s.value
-                                    ? 'bg-blue-900 text-white border-blue-900'
+                                    ? 'bg-emerald-700 text-white border-emerald-700'
                                     : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
                         >
                             {s.label}
@@ -127,8 +133,8 @@ export default function RequestsPage() {
                         </p>
                         <button
                             onClick={() => navigate('/requests/new')}
-                            className="bg-blue-900 text-white px-6 py-2 rounded-lg
-                         hover:bg-blue-800 transition-colors"
+                            className="bg-emerald-700 text-white px-6 py-2 rounded-lg
+                         hover:bg-emerald-600 transition-colors"
                         >
                             Crear primera solicitud
                         </button>
@@ -181,7 +187,7 @@ export default function RequestsPage() {
                                             {req.status === 'PENDING' && req.channel === 'REMOTE' && (
                                                 <button
                                                     onClick={() => handleSend(req.id)}
-                                                    className="bg-blue-50 hover:bg-blue-100 text-blue-700
+                                                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700
                                      px-3 py-1.5 rounded-lg text-xs transition-colors"
                                                 >
                                                     Enviar enlace

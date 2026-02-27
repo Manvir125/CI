@@ -49,7 +49,7 @@ export default function LoginPage() {
         <div className="min-h-screen bg-gray-100 flex items-center justify-center">
             <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-blue-900 rounded-full flex items-center
+                    <div className="w-16 h-16 bg-emerald-700 rounded-full flex items-center
                           justify-center mx-auto mb-4">
                         <span className="text-white text-2xl font-bold">CI</span>
                     </div>
@@ -71,7 +71,7 @@ export default function LoginPage() {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2
-                         focus:outline-none focus:ring-2 focus:ring-blue-500"
+                         focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             placeholder="usuario.corporativo"
                             required
                         />
@@ -86,7 +86,7 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2
-                         focus:outline-none focus:ring-2 focus:ring-blue-500"
+                         focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             placeholder="••••••••"
                             required
                         />
@@ -102,8 +102,8 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-blue-900 text-white py-2 rounded-lg font-medium
-                       hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed
+                        className="w-full bg-emerald-700 text-white py-2 rounded-lg font-medium
+                       hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed
                        transition-colors"
                     >
                         {loading ? 'Accediendo...' : 'Iniciar sesión'}

@@ -97,20 +97,20 @@ export default function UsersPage() {
         <div className="min-h-screen bg-gray-100">
 
             {/* Navbar */}
-            <nav className="bg-blue-900 text-white px-6 py-4 flex justify-between items-center">
+            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="text-blue-300 hover:text-white text-sm transition-colors"
+                        className="text-emerald-300 hover:text-white text-sm transition-colors"
                     >
                         ← Dashboard
                     </button>
-                    <span className="text-blue-500">|</span>
+                    <span className="text-emerald-500">|</span>
                     <h1 className="font-bold">Gestión de Usuarios</h1>
                 </div>
                 <button
                     onClick={() => navigate('/users/new')}
-                    className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg
+                    className="bg-emerald-700 hover:bg-emerald-600 px-4 py-2 rounded-lg
                      text-sm font-medium transition-colors"
                 >
                     + Nuevo usuario
@@ -229,7 +229,7 @@ export default function UsersPage() {
                                                     <button
                                                         onClick={() => saveRoles(user.id)}
                                                         disabled={savingId === user.id}
-                                                        className="bg-blue-900 hover:bg-blue-800 text-white
+                                                        className="bg-emerald-700 hover:bg-emerald-600 text-white
                                        px-3 py-1.5 rounded-lg text-xs font-medium
                                        disabled:opacity-50 transition-colors"
                                                     >
@@ -247,7 +247,7 @@ export default function UsersPage() {
                                                 <>
                                                     <button
                                                         onClick={() => startEditRoles(user)}
-                                                        className="bg-blue-50 hover:bg-blue-100 text-blue-700
+                                                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700
                                        px-3 py-1.5 rounded-lg text-xs transition-colors"
                                                     >
                                                         Roles

@@ -14,23 +14,23 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-gray-100">
 
             {/* Barra superior */}
-            <nav className="bg-blue-900 text-white px-6 py-4 flex justify-between items-center">
+            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
                 <div>
                     <h1 className="font-bold text-lg">CI Digital — CHPC</h1>
-                    <p className="text-blue-300 text-xs">
+                    <p className="text-emerald-300 text-xs">
                         Gestión de Consentimientos Informados
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-sm">
                         {user?.fullName}
-                        <span className="ml-2 bg-blue-700 text-xs px-2 py-0.5 rounded-full">
+                        <span className="ml-2 bg-emerald-600 text-xs px-2 py-0.5 rounded-full">
                             {user?.roles[0]}
                         </span>
                     </span>
                     <button
                         onClick={handleLogout}
-                        className="bg-blue-700 hover:bg-blue-600 px-3 py-1 rounded text-sm
+                        className="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-sm
                        transition-colors"
                     >
                         Cerrar sesión
@@ -49,7 +49,7 @@ export default function DashboardPage() {
                     <div
                         onClick={() => navigate('/templates')}
                         className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                       cursor-pointer hover:shadow-md hover:border-blue-300
+                       cursor-pointer hover:shadow-md hover:border-emerald-300
                        transition-all"
                     >
                         <div className="text-3xl mb-3">📋</div>
@@ -62,7 +62,7 @@ export default function DashboardPage() {
                     <div
                         onClick={() => navigate('/requests')}
                         className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                       cursor-pointer hover:shadow-md hover:border-blue-300
+                       cursor-pointer hover:shadow-md hover:border-emerald-300
                        transition-all"
                     >
                         <div className="text-3xl mb-3">📤</div>
@@ -83,7 +83,7 @@ export default function DashboardPage() {
                     <div
                         onClick={() => navigate('/users')}
                         className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                        cursor-pointer hover:shadow-md hover:border-blue-300
+                        cursor-pointer hover:shadow-md hover:border-emerald-300
                         transition-all"
                     >
                         <div className="text-3xl mb-3">👥</div>

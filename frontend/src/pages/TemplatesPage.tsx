@@ -59,15 +59,15 @@ export default function TemplatesPage() {
         <div className="min-h-screen bg-gray-100">
 
             {/* Barra superior */}
-            <nav className="bg-blue-900 text-white px-6 py-4 flex justify-between items-center">
+            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="text-blue-300 hover:text-white text-sm transition-colors"
+                        className="text-emerald-300 hover:text-white text-sm transition-colors"
                     >
                         ← Dashboard
                     </button>
-                    <span className="text-blue-500">|</span>
+                    <span className="text-emerald-500">|</span>
                     <h1 className="font-bold">Plantillas de Consentimiento</h1>
                 </div>
                 {canManage && (
@@ -96,8 +96,8 @@ export default function TemplatesPage() {
                         {canManage && (
                             <button
                                 onClick={() => navigate('/templates/new')}
-                                className="mt-4 bg-blue-900 text-white px-6 py-2 rounded-lg
-                           hover:bg-blue-800 transition-colors"
+                                className="mt-4 bg-emerald-700 text-white px-6 py-2 rounded-lg
+                           hover:bg-emerald-600 transition-colors"
                             >
                                 Crear primera plantilla
                             </button>
@@ -117,7 +117,7 @@ export default function TemplatesPage() {
                                             <h3 className="font-semibold text-gray-800 text-lg">
                                                 {template.name}
                                             </h3>
-                                            <span className="bg-blue-100 text-blue-700 text-xs 
+                                            <span className="bg-emerald-100 text-emerald-700 text-xs 
                                        px-2 py-0.5 rounded-full">
                                                 v{template.version}
                                             </span>
@@ -141,7 +141,7 @@ export default function TemplatesPage() {
                                         <div className="flex gap-2 ml-4">
                                             <button
                                                 onClick={() => navigate(`/templates/${template.id}/edit`)}
-                                                className="bg-blue-50 hover:bg-blue-100 text-blue-700
+                                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700
                                                 px-3 py-1.5 rounded-lg text-sm transition-colors"
                                             >
                                                 Editar

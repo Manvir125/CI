@@ -52,14 +52,14 @@ export default function NewUserPage() {
     return (
         <div className="min-h-screen bg-gray-100">
 
-            <nav className="bg-blue-900 text-white px-6 py-4 flex items-center gap-3">
+            <nav className="bg-emerald-700 text-white px-6 py-4 flex items-center gap-3">
                 <button
                     onClick={() => navigate('/users')}
-                    className="text-blue-300 hover:text-white text-sm transition-colors"
+                    className="text-emerald-300 hover:text-white text-sm transition-colors"
                 >
                     ← Usuarios
                 </button>
-                <span className="text-blue-500">|</span>
+                <span className="text-emerald-500">|</span>
                 <h1 className="font-bold">Nuevo Usuario</h1>
             </nav>
 
@@ -79,7 +79,7 @@ export default function NewUserPage() {
                                 value={form.fullName}
                                 onChange={e => setForm({ ...form, fullName: e.target.value })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 placeholder="Dra. Ana García López"
                                 required
                             />
@@ -94,7 +94,7 @@ export default function NewUserPage() {
                                 value={form.username}
                                 onChange={e => setForm({ ...form, username: e.target.value })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 placeholder="ana.garcia"
                                 required
                             />
@@ -109,7 +109,7 @@ export default function NewUserPage() {
                                 value={form.email}
                                 onChange={e => setForm({ ...form, email: e.target.value })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 placeholder="ana.garcia@chpc.es"
                                 required
                             />
@@ -124,7 +124,7 @@ export default function NewUserPage() {
                                 value={form.password}
                                 onChange={e => setForm({ ...form, password: e.target.value })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 placeholder="Mínimo 8 caracteres"
                                 required
                                 minLength={8}
@@ -181,8 +181,8 @@ export default function NewUserPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-2 bg-blue-900 text-white rounded-lg font-medium
-                         hover:bg-blue-800 disabled:opacity-50 transition-colors"
+                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
+                         hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                         >
                             {loading ? 'Creando...' : 'Crear usuario'}
                         </button>

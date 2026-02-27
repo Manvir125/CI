@@ -1,0 +1,18 @@
+{
+    "episodeId": "EP-2026-001234",
+    "nhc": "10045623",
+    "serviceCode": "CIR",
+    "serviceName": "Cirugía General",
+    "procedureCode": "PROC-CIR-001",
+    "procedureName": "Colecistectomía laparoscópica",
+    "episodeDate": "2026-02-20",
+    "admissionDate": "2026-02-20",
+    "expectedDischargeDate": "2026-02-27",
+    "ward": "Planta 3B",
+    "bed": "312A",
+    "attendingPhysician": "Dr. Roberto Sánchez",
+    "status": "ACTIVE",
+    "priority": "PROGRAMADA",
+    "diagnosis": "Colelitiasis sintomática",
+    "icd10Code": "K80.2"
+}

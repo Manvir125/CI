@@ -1,0 +1,35 @@
+[
+    {
+        "nhc": "10045623",
+        "dni": "12345678A",
+        "firstName": "María",
+        "lastName": "González Pérez",
+        "birthDate": "1978-03-15",
+        "gender": "F",
+        "email": "maria.gonzalez@email.com",
+        "phone": "666123456",
+        "active": true
+    },
+    {
+        "nhc": "10045624",
+        "dni": "87654321B",
+        "firstName": "Juan",
+        "lastName": "González Martínez",
+        "birthDate": "1965-07-22",
+        "gender": "M",
+        "email": "juan.gonzalez@email.com",
+        "phone": "666654321",
+        "active": true
+    },
+    {
+        "nhc": "10045625",
+        "dni": "11223344C",
+        "firstName": "Carmen",
+        "lastName": "López González",
+        "birthDate": "1990-11-08",
+        "gender": "F",
+        "email": "carmen.lopez@email.com",
+        "phone": "666789012",
+        "active": true
+    }
+]

@@ -13,6 +13,17 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 2525
+    username: ${MAIL_USERNAME:0a93ae95fbf2bd}
+    password: ${MAIL_PASSWORD:16b4b69720ce3f}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
   flyway:
     enabled: true
@@ -26,6 +37,10 @@ spring:
       port: 8389
       validation:
         enabled: false
+app:
+  base-url: ${APP_BASE_URL:http://localhost:5173}
+  token-expiry-hours: ${TOKEN_EXPIRY_HOURS:72}
+  mail-from: noreply@chpc.es
 
 server:
   port: 8080
@@ -33,6 +48,10 @@ server:
 jwt:
   secret: ${JWT_SECRET:dev_secret_cambia_en_produccion_minimo_32_chars}
   expiration-ms: ${JWT_EXPIRATION_MS:28800000}
+
+his:
+  base-url: ${HIS_BASE_URL:http://localhost:9090}
+  timeout-ms: 5000
 
 logging:
   level:

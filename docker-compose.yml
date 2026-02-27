@@ -17,6 +17,15 @@ services:
       timeout: 5s
       retries: 5
 
+  his-mock:
+    image: wiremock/wiremock:3.3.1
+    container_name: ci_his_mock
+    ports:
+      - "9090:8080"
+    volumes:
+      - ./his-mock:/home/wiremock
+    command: --global-response-templating --verbose
+
   backend:
     build: ./backend
     container_name: ci_backend

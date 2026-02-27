@@ -1,0 +1,60 @@
+{
+    "mappings": [
+        {
+            "name": "Buscar paciente por NHC",
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/patients/nhc/([0-9]+)"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patient-by-nhc.json"
+            }
+        },
+        {
+            "name": "Buscar paciente por DNI",
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/patients/dni/([0-9A-Za-z]+)"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patient-by-dni.json"
+            }
+        },
+        {
+            "name": "Buscar paciente por nombre",
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/patients/search\\?.*"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients-search.json"
+            }
+        },
+        {
+            "name": "Paciente no encontrado",
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/nhc/99999"
+            },
+            "response": {
+                "status": 404,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": "{\"error\": \"Paciente no encontrado\"}"
+            }
+        }
+    ]
+}

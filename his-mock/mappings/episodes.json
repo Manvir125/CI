@@ -1,0 +1,32 @@
+{
+    "mappings": [
+        {
+            "name": "Episodios activos por NHC",
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/patients/([0-9]+)/episodes/active"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "episodes-active.json"
+            }
+        },
+        {
+            "name": "Episodio por ID",
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/episodes/([A-Z0-9\\-]+)"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "episode-detail.json"
+            }
+        }
+    ]
+}

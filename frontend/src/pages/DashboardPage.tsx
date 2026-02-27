@@ -59,12 +59,16 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                          opacity-50 cursor-not-allowed">
+                    <div
+                        onClick={() => navigate('/requests')}
+                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                       cursor-pointer hover:shadow-md hover:border-blue-300
+                       transition-all"
+                    >
                         <div className="text-3xl mb-3">📤</div>
                         <h3 className="font-semibold text-gray-800">Solicitudes</h3>
                         <p className="text-gray-500 text-sm mt-1">
-                            Disponible en Sprint 2
+                            Gestionar consentimientos y envíos
                         </p>
                     </div>
 

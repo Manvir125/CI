@@ -30,6 +30,7 @@ public class TemplateField {
     private String fieldType;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean required = true;
 
     @Column(name = "default_value")

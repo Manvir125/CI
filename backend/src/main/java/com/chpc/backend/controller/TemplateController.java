@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.chpc.backend.dto.TemplateUpdateRequest;
 
 import java.util.List;
 
@@ -62,4 +63,25 @@ public class TemplateController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(templateService.duplicate(id, httpRequest.getRemoteAddr()));
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATIVE')")
+    public ResponseEntity<TemplateResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody TemplateUpdateRequest request,
+            HttpServletRequest httpRequest) {
+
+        TemplateResponse response = templateService.update(id, request, httpRequest.getRemoteAddr());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/history")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    public ResponseEntity<List<TemplateResponse>> getHistory(
+            @RequestParam String name,
+            @RequestParam String procedureCode) {
+
+        return ResponseEntity.ok(templateService.getVersionHistory(name, procedureCode));
+    }
+
 }

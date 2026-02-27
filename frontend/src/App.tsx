@@ -5,6 +5,9 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import TemplatesPage from './pages/TemplatesPage';
 import NewTemplatePage from './pages/NewTemplatePage';
+import EditTemplatePage from './pages/EditTemplatePage';
+import NewUserPage from './pages/NewUserPage';
+import UsersPage from './pages/UserPage';
 
 export default function App() {
   return (
@@ -39,6 +42,21 @@ export default function App() {
             <div className="min-h-screen flex items-center justify-center">
               <p className="text-gray-500">No tienes permiso para ver esta página.</p>
             </div>
+          } />
+          <Route path="/templates/:id/edit" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <EditTemplatePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/users" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <UsersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/users/new" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <NewUserPage />
+            </ProtectedRoute>
           } />
         </Routes>
       </BrowserRouter>

@@ -76,6 +76,18 @@ export default function DashboardPage() {
                             Disponible en Sprint 5
                         </p>
                     </div>
+                    <div
+                        onClick={() => navigate('/users')}
+                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                        cursor-pointer hover:shadow-md hover:border-blue-300
+                        transition-all"
+                    >
+                        <div className="text-3xl mb-3">👥</div>
+                        <h3 className="font-semibold text-gray-800">Usuarios</h3>
+                        <p className="text-gray-500 text-sm mt-1">
+                            Gestionar usuarios y roles
+                        </p>
+                    </div>
                 </div>
             </main>
         </div>

@@ -140,6 +140,13 @@ export default function TemplatesPage() {
                                     {canManage && (
                                         <div className="flex gap-2 ml-4">
                                             <button
+                                                onClick={() => navigate(`/templates/${template.id}/edit`)}
+                                                className="bg-blue-50 hover:bg-blue-100 text-blue-700
+                                                px-3 py-1.5 rounded-lg text-sm transition-colors"
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
                                                 onClick={() => handleDuplicate(template.id)}
                                                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 
                                    px-3 py-1.5 rounded-lg text-sm transition-colors"

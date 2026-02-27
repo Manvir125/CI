@@ -26,3 +26,21 @@ export const duplicateTemplate = async (id: number): Promise<Template> => {
     const response = await client.post<Template>(`/api/templates/${id}/duplicate`);
     return response.data;
 };
+
+export const updateTemplate = async (
+    id: number,
+    data: TemplateRequest
+): Promise<Template> => {
+    const response = await client.put<Template>(`/api/templates/${id}`, data);
+    return response.data;
+};
+
+export const getTemplateHistory = async (
+    name: string,
+    procedureCode: string
+): Promise<Template[]> => {
+    const response = await client.get<Template[]>('/api/templates/history', {
+        params: { name, procedureCode }
+    });
+    return response.data;
+};

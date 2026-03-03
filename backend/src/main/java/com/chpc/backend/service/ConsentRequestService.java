@@ -1,21 +1,31 @@
 package com.chpc.backend.service;
 
-import com.chpc.backend.dto.*;
-import com.chpc.backend.entity.*;
-import com.chpc.backend.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.chpc.backend.dto.ConsentRequestDto;
+import com.chpc.backend.dto.ConsentRequestResponse;
+import com.chpc.backend.entity.ConsentRequest;
+import com.chpc.backend.entity.ConsentTemplate;
+import com.chpc.backend.entity.SignToken;
+import com.chpc.backend.entity.User;
+import com.chpc.backend.repository.ConsentRequestRepository;
+import com.chpc.backend.repository.ConsentTemplateRepository;
+import com.chpc.backend.repository.SignTokenRepository;
+import com.chpc.backend.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service

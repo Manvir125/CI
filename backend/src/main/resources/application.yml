@@ -41,6 +41,12 @@ app:
   base-url: ${APP_BASE_URL:http://localhost:5173}
   token-expiry-hours: ${TOKEN_EXPIRY_HOURS:72}
   mail-from: noreply@chpc.es
+  signatures-path: ${SIGNATURES_PATH:./signatures}
+
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:ACb7951f4cada5f3a765c7a5f84b652349}
+  auth-token:  ${TWILIO_AUTH_TOKEN:56c70065f292b0463bdbc54d6eb23822}
+  from-number: ${TWILIO_FROM_NUMBER:+15206857458}
 
 server:
   port: 8080

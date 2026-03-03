@@ -10,6 +10,7 @@ import NewUserPage from './pages/NewUserPage';
 import UsersPage from './pages/UserPage';
 import RequestsPage from './pages/RequestPage';
 import NewRequestPage from './pages/NewRequestPage';
+import PatientPortalPage from './pages/PatientPortalPage';
 
 export default function App() {
   return (
@@ -21,6 +22,8 @@ export default function App() {
 
           {/* Pública */}
           <Route path="/login" element={<LoginPage />} />
+
+          <Route path="/sign/:token" element={<PatientPortalPage />} />
 
           {/* Protegidas */}
           <Route path="/dashboard" element={

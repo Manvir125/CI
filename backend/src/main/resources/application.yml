@@ -42,6 +42,7 @@ app:
   token-expiry-hours: ${TOKEN_EXPIRY_HOURS:72}
   mail-from: noreply@chpc.es
   signatures-path: ${SIGNATURES_PATH:./signatures}
+  pdf-path: ${PDF_PATH:./pdfs}
 
 twilio:
   account-sid: ${TWILIO_ACCOUNT_SID:ACb7951f4cada5f3a765c7a5f84b652349}

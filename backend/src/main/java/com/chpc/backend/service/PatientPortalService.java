@@ -31,6 +31,7 @@ public class PatientPortalService {
     private final HisIntegrationService hisService;
     private final AuditService auditService;
     private final SmsService smsService;
+    private final PdfService pdfService;
 
     private static final int CODE_LENGTH = 6;
     private static final int CODE_EXPIRY_MIN = 10;
@@ -39,6 +40,9 @@ public class PatientPortalService {
 
     @Value("${app.signatures-path:./signatures}")
     private String signaturesPath;
+
+    @Value("${app.pdf-path:./pdfs}")
+    private String pdfPath;
 
     // ── Carga el consentimiento por token ────────────────────────────────
     @Transactional
@@ -168,7 +172,8 @@ public class PatientPortalService {
 
         String imagePath = null;
         if (isSigning && req.getSignatureImageBase64() != null) {
-            imagePath = saveSignatureImage(req.getSignatureImageBase64(), request.getId());
+            imagePath = saveSignatureImage(
+                    req.getSignatureImageBase64(), request.getId());
         }
 
         SignatureCapture capture = SignatureCapture.builder()
@@ -181,6 +186,29 @@ public class PatientPortalService {
                 .patientConfirmation(req.getConfirmation())
                 .build();
         signatureRepository.save(capture);
+
+        // Genera el PDF sellado si el paciente ha firmado
+        if (isSigning) {
+            try {
+                log.info("=== PDF: Iniciando generación para solicitud {}", request.getId());
+                log.info("=== PDF: Ruta de firmas: {}", signaturesPath);
+                log.info("=== PDF: Ruta de PDFs: {}", pdfPath);
+                log.info("=== PDF: Imagen de firma path: {}", capture.getSignatureImagePath());
+
+                String pdfFilePath = pdfService.generateSignedPdf(request, capture);
+                log.info("=== PDF: Fichero generado en: {}", pdfFilePath);
+
+                String hash = pdfService.calculateHash(pdfFilePath);
+                log.info("=== PDF: Hash calculado: {}", hash);
+
+                request.setPdfPath(pdfFilePath);
+                request.setPdfHash(hash);
+                request.setPdfGeneratedAt(LocalDateTime.now());
+
+            } catch (Exception e) {
+                log.error("=== PDF: Error completo: ", e); // stack trace completo
+            }
+        }
 
         request.setStatus(isSigning ? "SIGNED" : "REJECTED");
         requestRepository.save(request);

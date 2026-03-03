@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
 import {
     getMyRequests, cancelRequest,
-    type ConsentRequestResponse, sendRequest
+    type ConsentRequestResponse, sendRequest, downloadPdf
 } from '../api/consentRequests';
 
 const STATUSES = [
@@ -69,6 +69,13 @@ export default function RequestsPage() {
             setError('Error al cancelar la solicitud');
         } finally {
             setCancelling(false);
+        }
+    };
+    const handleDownloadPdf = async (id: number) => {
+        try {
+            await downloadPdf(id);
+        } catch {
+            setError('Error al descargar el PDF');
         }
     };
 
@@ -184,11 +191,20 @@ export default function RequestsPage() {
 
                                         {/* Acciones */}
                                         <div className="flex gap-2 ml-4">
+                                            {req.status === 'SIGNED' && (
+                                                <button
+                                                    onClick={() => handleDownloadPdf(req.id)}
+                                                    className="bg-teal-50 hover:bg-teal-100 text-teal-700
+                                                    px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                >
+                                                    📄 PDF
+                                                </button>
+                                            )}
                                             {req.status === 'PENDING' && req.channel === 'REMOTE' && (
                                                 <button
                                                     onClick={() => handleSend(req.id)}
                                                     className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700
-                                     px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                    px-3 py-1.5 rounded-lg text-xs transition-colors"
                                                 >
                                                     Enviar enlace
                                                 </button>
@@ -197,7 +213,7 @@ export default function RequestsPage() {
                                                 <button
                                                     onClick={() => handleSend(req.id)}
                                                     className="bg-gray-100 hover:bg-gray-200 text-gray-700
-                                     px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                    px-3 py-1.5 rounded-lg text-xs transition-colors"
                                                 >
                                                     Reenviar
                                                 </button>
@@ -206,7 +222,7 @@ export default function RequestsPage() {
                                                 <button
                                                     onClick={() => setCancelId(req.id)}
                                                     className="bg-red-50 hover:bg-red-100 text-red-600
-                                     px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                    px-3 py-1.5 rounded-lg text-xs transition-colors"
                                                 >
                                                     Cancelar
                                                 </button>

@@ -2,7 +2,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function DashboardPage() {
-    const { user, logoutUser } = useAuth();
+    const { user, logoutUser, hasRole } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -44,25 +44,14 @@ export default function DashboardPage() {
                     Panel principal
                 </h2>
 
-                {/* Tarjetas de acceso rápido */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div
-                        onClick={() => navigate('/templates')}
-                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                       cursor-pointer hover:shadow-md hover:border-emerald-300
-                       transition-all"
-                    >
-                        <div className="text-3xl mb-3">📋</div>
-                        <h3 className="font-semibold text-gray-800">Plantillas</h3>
-                        <p className="text-gray-500 text-sm mt-1">
-                            Gestionar plantillas de consentimiento
-                        </p>
-                    </div>
+                {/* Tarjetas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
+                    {/* Solicitudes — todos los roles */}
                     <div
                         onClick={() => navigate('/requests')}
                         className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                       cursor-pointer hover:shadow-md hover:border-emerald-300
+                       cursor-pointer hover:shadow-md hover:border-blue-300
                        transition-all"
                     >
                         <div className="text-3xl mb-3">📤</div>
@@ -72,28 +61,72 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                          opacity-50 cursor-not-allowed">
-                        <div className="text-3xl mb-3">📊</div>
-                        <h3 className="font-semibold text-gray-800">Auditoría</h3>
-                        <p className="text-gray-500 text-sm mt-1">
-                            Disponible en Sprint 5
-                        </p>
-                    </div>
-                    <div
-                        onClick={() => navigate('/users')}
-                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                        cursor-pointer hover:shadow-md hover:border-emerald-300
-                        transition-all"
-                    >
-                        <div className="text-3xl mb-3">👥</div>
-                        <h3 className="font-semibold text-gray-800">Usuarios</h3>
-                        <p className="text-gray-500 text-sm mt-1">
-                            Gestionar usuarios y roles
-                        </p>
-                    </div>
+                    {/* Plantillas — ADMIN, ADMINISTRATIVE, SUPERVISOR */}
+                    {(hasRole('ADMIN') || hasRole('ADMINISTRATIVE') || hasRole('SUPERVISOR')) && (
+                        <div
+                            onClick={() => navigate('/templates')}
+                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                         cursor-pointer hover:shadow-md hover:border-blue-300
+                         transition-all"
+                        >
+                            <div className="text-3xl mb-3">📋</div>
+                            <h3 className="font-semibold text-gray-800">Plantillas</h3>
+                            <p className="text-gray-500 text-sm mt-1">
+                                Gestionar plantillas de consentimiento
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Usuarios — solo ADMIN */}
+                    {hasRole('ADMIN') && (
+                        <div
+                            onClick={() => navigate('/users')}
+                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                         cursor-pointer hover:shadow-md hover:border-blue-300
+                         transition-all"
+                        >
+                            <div className="text-3xl mb-3">👥</div>
+                            <h3 className="font-semibold text-gray-800">Usuarios</h3>
+                            <p className="text-gray-500 text-sm mt-1">
+                                Gestionar usuarios y roles
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Firma presencial — ADMIN, PROFESSIONAL, ADMINISTRATIVE */}
+                    {(hasRole('ADMIN') || hasRole('PROFESSIONAL') || hasRole('ADMINISTRATIVE')) && (
+                        <div
+                            onClick={() => navigate('/kiosk')}
+                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                         cursor-pointer hover:shadow-md hover:border-blue-300
+                         transition-all"
+                        >
+                            <div className="text-3xl mb-3">🖊️</div>
+                            <h3 className="font-semibold text-gray-800">Firma presencial</h3>
+                            <p className="text-gray-500 text-sm mt-1">
+                                Modo kiosco para firma en el centro
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Auditoría — ADMIN, SUPERVISOR */}
+                    {(hasRole('ADMIN') || hasRole('SUPERVISOR')) && (
+                        <div
+                            onClick={() => navigate('/audit')}
+                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                         cursor-pointer hover:shadow-md hover:border-blue-300
+                         transition-all"
+                        >
+                            <div className="text-3xl mb-3">🔍</div>
+                            <h3 className="font-semibold text-gray-800">Auditoría</h3>
+                            <p className="text-gray-500 text-sm mt-1">
+                                Registro de actividad del sistema
+                            </p>
+                        </div>
+                    )}
+
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }

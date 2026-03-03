@@ -57,6 +57,15 @@ public class ConsentRequest {
         REMOTE, ONSITE
     }
 
+    @Column(name = "pdf_path")
+    private String pdfPath;
+
+    @Column(name = "pdf_hash")
+    private String pdfHash;
+
+    @Column(name = "pdf_generated_at")
+    private LocalDateTime pdfGeneratedAt;
+
     @PrePersist
     protected void prePersist() {
         if (createdAt == null)

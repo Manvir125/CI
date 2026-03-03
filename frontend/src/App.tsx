@@ -11,6 +11,9 @@ import UsersPage from './pages/UserPage';
 import RequestsPage from './pages/RequestPage';
 import NewRequestPage from './pages/NewRequestPage';
 import PatientPortalPage from './pages/PatientPortalPage';
+import AuditPage from './pages/AuditPage';
+import KioskPage from './pages/KioskPage';
+import KioskSignPage from './pages/KioskSingPage';
 
 export default function App() {
   return (
@@ -31,6 +34,11 @@ export default function App() {
               <DashboardPage />
             </ProtectedRoute>
           } />
+          <Route path="/audit" element={
+            <ProtectedRoute requiredRole="SUPERVISOR">
+              <AuditPage />
+            </ProtectedRoute>
+          } />
           <Route path="/templates" element={
             <ProtectedRoute>
               <TemplatesPage />
@@ -39,6 +47,16 @@ export default function App() {
           <Route path="/templates/new" element={
             <ProtectedRoute requiredRole="ADMIN">
               <NewTemplatePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/kiosk" element={
+            <ProtectedRoute>
+              <KioskPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/kiosk/:requestId" element={
+            <ProtectedRoute>
+              <KioskSignPage />
             </ProtectedRoute>
           } />
 

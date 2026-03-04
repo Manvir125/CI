@@ -38,14 +38,10 @@ export default function KioskSignPage() {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Map tablet coordinates → CSS coordinates
-        // Note: resizeCanvas() already applies ctx.scale(ratio, ratio),
-        // so we draw in CSS space and the transform handles pixel mapping.
         const rect = canvas.getBoundingClientRect();
         const cssX = (evt.x / evt.maxX) * rect.width;
         const cssY = (evt.y / evt.maxY) * rect.height;
 
-        // Pressure-based pen width (1–4px in CSS space)
         const pressure = evt.maxPressure > 0 ? evt.pressure / evt.maxPressure : 0.5;
         const penWidth = 1 + pressure * 3;
 
@@ -220,24 +216,24 @@ export default function KioskSignPage() {
 
     // ── Pantallas de estado ────────────────────────────────────────────────
     if (step === 'loading') return (
-        <div className="min-h-screen bg-blue-950 flex items-center justify-center">
+        <div className="min-h-screen bg-emerald-950 flex items-center justify-center">
             <div className="text-center">
                 <div className="w-12 h-12 border-4 border-white border-t-transparent
                         rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-blue-300">Cargando documento...</p>
+                <p className="text-emerald-300">Cargando documento...</p>
             </div>
         </div>
     );
 
     if (step === 'error') return (
-        <div className="min-h-screen bg-blue-950 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-emerald-950 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
                 <div className="text-5xl mb-4">❌</div>
                 <h1 className="text-xl font-bold text-gray-800 mb-3">Error</h1>
                 <p className="text-gray-500 text-sm mb-6">{error}</p>
                 <button
                     onClick={() => navigate('/kiosk')}
-                    className="w-full bg-blue-900 text-white py-3 rounded-xl font-medium"
+                    className="w-full bg-emerald-900 text-white py-3 rounded-xl font-medium"
                 >
                     Volver al inicio
                 </button>
@@ -246,7 +242,7 @@ export default function KioskSignPage() {
     );
 
     if (step === 'confirmed') return (
-        <div className="min-h-screen bg-blue-950 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-emerald-950 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center
                         justify-center mx-auto mb-4">
@@ -270,8 +266,8 @@ export default function KioskSignPage() {
                 </div>
                 <button
                     onClick={() => navigate('/kiosk')}
-                    className="w-full bg-blue-900 text-white py-3 rounded-xl
-                     font-medium hover:bg-blue-800 transition-colors"
+                    className="w-full bg-emerald-900 text-white py-3 rounded-xl
+                     font-medium hover:bg-emerald-800 transition-colors"
                 >
                     Finalizar
                 </button>
@@ -280,7 +276,7 @@ export default function KioskSignPage() {
     );
 
     if (step === 'rejected') return (
-        <div className="min-h-screen bg-blue-950 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-emerald-950 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
                 <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center
                         justify-center mx-auto mb-4">
@@ -294,8 +290,8 @@ export default function KioskSignPage() {
                 </p>
                 <button
                     onClick={() => navigate('/kiosk')}
-                    className="w-full bg-blue-900 text-white py-3 rounded-xl
-                     font-medium hover:bg-blue-800 transition-colors"
+                    className="w-full bg-emerald-900 text-white py-3 rounded-xl
+                     font-medium hover:bg-emerald-800 transition-colors"
                 >
                     Finalizar
                 </button>
@@ -304,13 +300,13 @@ export default function KioskSignPage() {
     );
 
     return (
-        <div className="min-h-screen bg-blue-950">
+        <div className="min-h-screen bg-emerald-950">
 
             {/* Cabecera */}
-            <header className="bg-blue-900 text-white px-4 py-4 sticky top-0 z-10
+            <header className="bg-emerald-900 text-white px-4 py-4 sticky top-0 z-10
                          flex items-center justify-between">
                 <div>
-                    <p className="text-blue-300 text-xs">
+                    <p className="text-emerald-300 text-xs">
                         Consorci Hospitalari Provincial de Castelló
                     </p>
                     <h1 className="font-bold text-sm">
@@ -319,7 +315,7 @@ export default function KioskSignPage() {
                 </div>
                 <button
                     onClick={() => navigate('/kiosk')}
-                    className="text-blue-300 hover:text-white text-sm transition-colors"
+                    className="text-emerald-300 hover:text-white text-sm transition-colors"
                 >
                     ✕ Cancelar
                 </button>
@@ -346,8 +342,8 @@ export default function KioskSignPage() {
 
                         {/* Documento */}
                         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                            <div className="bg-blue-50 px-5 py-3 border-b border-blue-100">
-                                <p className="text-blue-800 text-sm font-medium">
+                            <div className="bg-emerald-50 px-5 py-3 border-b border-emerald-100">
+                                <p className="text-emerald-800 text-sm font-medium">
                                     📄 Lea el documento completo antes de continuar
                                 </p>
                             </div>
@@ -391,8 +387,8 @@ export default function KioskSignPage() {
                             <button
                                 onClick={() => setStep('sign')}
                                 disabled={!readConfirmed}
-                                className="w-full bg-blue-900 text-white py-4 rounded-xl
-                           font-semibold text-base hover:bg-blue-800
+                                className="w-full bg-emerald-900 text-white py-4 rounded-xl
+                           font-semibold text-base hover:bg-emerald-800
                            disabled:opacity-40 disabled:cursor-not-allowed
                            transition-colors"
                             >
@@ -400,9 +396,9 @@ export default function KioskSignPage() {
                             </button>
                             <button
                                 onClick={() => setShowRejectModal(true)}
-                                className="w-full bg-white border border-red-300 text-red-600
-                           py-4 rounded-xl font-medium text-base
-                           hover:bg-red-50 transition-colors"
+                                className="w-full bg-red-500 border border-red-500 text-white
+                           py-4 rounded-xl font-medium text-base hover:bg-red-600
+                           transition-colors"
                             >
                                 No deseo firmar este consentimiento
                             </button>
@@ -446,7 +442,6 @@ export default function KioskSignPage() {
                                 <button
                                     onClick={() => {
                                         sigPadRef.current?.clear();
-                                        // Also clear any XP Pen strokes
                                         const canvas = canvasRef.current;
                                         if (canvas) {
                                             const ctx = canvas.getContext('2d');
@@ -457,7 +452,7 @@ export default function KioskSignPage() {
                                         }
                                         setIsSigned(false);
                                     }}
-                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                    className="text-sm text-emerald-600 hover:text-emerald-800"
                                 >
                                     Borrar
                                 </button>
@@ -530,7 +525,7 @@ export default function KioskSignPage() {
                             placeholder="Motivo del rechazo..."
                             className="w-full border border-gray-300 rounded-xl px-4 py-3
                          text-sm focus:outline-none focus:ring-2
-                         focus:ring-blue-500 mb-4"
+                         focus:ring-emerald-500 mb-4"
                         />
                         <div className="space-y-2">
                             <button

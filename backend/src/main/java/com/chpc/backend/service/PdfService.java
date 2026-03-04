@@ -31,6 +31,8 @@ import java.util.HexFormat;
 @RequiredArgsConstructor
 public class PdfService {
 
+    private final TemplateEngineService templateEngineService;
+
     @Value("${app.pdf-path:./pdfs}")
     private String pdfPath;
 
@@ -41,7 +43,7 @@ public class PdfService {
 
     // Genera el PDF sellado con firma incrustada
     public String generateSignedPdf(ConsentRequest request,
-            SignatureCapture capture) throws Exception {
+            SignatureCapture capture, String patientName) throws Exception {
 
         Files.createDirectories(Paths.get(pdfPath));
         String filename = "consent_" + request.getId() + "_"
@@ -51,13 +53,19 @@ public class PdfService {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         // 1. Convierte el HTML del consentimiento a PDF
-        String fullHtml = buildHtml(request, capture);
+        String fullHtml = buildHtml(request, capture, patientName);
         HtmlConverter.convertToPdf(fullHtml, baos);
+        byte[] originalPdfBytes = baos.toByteArray();
 
-        // 2. Añade el sello de auditoría y la firma al PDF generado
-        byte[] pdfBytes = addAuditStamp(baos.toByteArray(), request, capture);
+        // 2. Calcula el hash del documento original (sin sello)
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(originalPdfBytes);
+        String documentHash = HexFormat.of().formatHex(hashBytes);
 
-        // 3. Guarda el PDF en disco
+        // 3. Añade el sello de auditoría con el hash
+        byte[] pdfBytes = addAuditStamp(originalPdfBytes, request, capture, documentHash);
+
+        // 4. Guarda el PDF en disco
         Files.write(Paths.get(filepath), pdfBytes);
 
         log.info("PDF generado: {}", filepath);
@@ -79,7 +87,7 @@ public class PdfService {
 
     // ── Helpers privados ─────────────────────────────────────────────────
 
-    private String buildHtml(ConsentRequest request, SignatureCapture capture) {
+    private String buildHtml(ConsentRequest request, SignatureCapture capture, String patientName) {
 
         String signatureImgTag = "";
         if (capture.getSignatureImagePath() != null) {
@@ -142,7 +150,7 @@ public class PdfService {
                 + "</table></div>"
 
                 + "<div class='content'>"
-                + request.getTemplate().getContentHtml()
+                + templateEngineService.renderHtml(request, patientName)
                 + "</div>"
 
                 + "<div class='signature-section'>"
@@ -157,7 +165,7 @@ public class PdfService {
 
     // Añade pie de auditoría en cada página del PDF
     private byte[] addAuditStamp(byte[] inputPdf, ConsentRequest request,
-            SignatureCapture capture) throws Exception {
+            SignatureCapture capture, String documentHash) throws Exception {
 
         ByteArrayInputStream bais = new ByteArrayInputStream(inputPdf);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -167,10 +175,13 @@ public class PdfService {
         PdfDocument pdf = new PdfDocument(reader, writer);
 
         PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+        // Usamos los primeros 16 caracteres del hash para que quepa bien en el pie
+        String shortHash = documentHash.substring(0, 16);
         String stampText = String.format(
-                "CHPC · Solicitud #%d · Firmado: %s · Hash pendiente de cálculo",
+                "CHPC · Solicitud #%d · Firmado: %s · Hash: %s",
                 request.getId(),
-                capture.getSignedAt().format(FMT));
+                capture.getSignedAt().format(FMT),
+                shortHash);
 
         // Añade el sello en el pie de cada página
         int pages = pdf.getNumberOfPages();

@@ -18,7 +18,7 @@ class Program
     static int _dataHandle;
     static int _notifyHandle;
 
-    // Keep delegates alive (prevent GC collection of the callback pointers)
+    // Keep delegates alive
     static DATAPACKETPROC? _dataCallback;
     static DEVNOTIFYPROC?  _notifyCallback;
 
@@ -37,10 +37,8 @@ class Program
         var initResult = SignAPI.signInitialize();
         Console.WriteLine($"[SDK] signInitialize → {initResult}");
 
-        // Try to open device
         TryOpenDevice();
 
-        // Register device-status callback to detect connect/disconnect
         _notifyCallback = OnDeviceNotify;
         _notifyHandle = SignAPI.signRegisterDevNotifyCallBack(_notifyCallback);
         Console.WriteLine($"[SDK] Notify callback registered (handle={_notifyHandle})");
@@ -68,7 +66,6 @@ class Program
             }
             else
             {
-                // Simple health-check / CORS preflight
                 ctx.Response.StatusCode = 200;
                 ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
                 var body = Encoding.UTF8.GetBytes("{\"status\":\"ok\"}");
@@ -103,19 +100,15 @@ class Program
         Console.WriteLine($"[SDK] Device opened: {_devInfo.vendor} {_devInfo.product}");
         Console.WriteLine($"      Axis X: 0–{_devInfo.axisX.max}  Y: 0–{_devInfo.axisY.max}  Pressure: {_devInfo.pressure}");
 
-        // Switch to PEN mode so we receive raw data, not mouse events
         SignAPI.signChangeDeviceMode((int)DeviceRunMode.Pen);
-        // Disable mouse control so the pen doesn't move the system cursor
         SignAPI.signMouseControl(false);
 
-        // Register pen-data callback
         _dataCallback = OnPenData;
         _dataHandle = SignAPI.signRegisterDataCallBack(_dataCallback);
         Console.WriteLine($"[SDK] Data callback registered (handle={_dataHandle})");
 
         _deviceOpen = true;
 
-        // Broadcast device-connected to all clients
         BroadcastAsync(new
         {
             type = "device",
@@ -175,7 +168,6 @@ class Program
         _clients[clientId] = ws;
         Console.WriteLine($"[WS]  Client {clientId} connected ({_clients.Count} total)");
 
-        // Send current device status immediately
         if (_deviceOpen)
         {
             var info = new
@@ -195,7 +187,6 @@ class Program
             await SendAsync(ws, new { type = "device", status = "disconnected" });
         }
 
-        // Read loop (for future commands from the browser)
         var buf = new byte[1024];
         try
         {
@@ -205,7 +196,6 @@ class Program
                 if (result.MessageType == WebSocketMessageType.Close)
                     break;
 
-                // Parse incoming command
                 var json = Encoding.UTF8.GetString(buf, 0, result.Count);
                 try
                 {
@@ -254,7 +244,6 @@ class Program
         {
             if (ws.State == WebSocketState.Open)
             {
-                // Fire-and-forget; errors handled per-client
                 _ = Task.Run(async () =>
                 {
                     try

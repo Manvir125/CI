@@ -68,19 +68,19 @@ export default function KioskPage() {
     };
 
     return (
-        <div className="min-h-screen bg-blue-950 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-emerald-950 flex items-center justify-center p-6">
             <div className="w-full max-w-lg">
 
                 {/* Logo y título */}
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-blue-800 rounded-2xl flex items-center
+                    <div className="w-16 h-16 bg-emerald-800 rounded-2xl flex items-center
                           justify-center mx-auto mb-4">
                         <span className="text-3xl">🏥</span>
                     </div>
                     <h1 className="text-white text-2xl font-bold">
                         Consentimiento Informado
                     </h1>
-                    <p className="text-blue-300 text-sm mt-1">
+                    <p className="text-emerald-300 text-sm mt-1">
                         Consorci Hospitalari Provincial de Castelló
                     </p>
                 </div>
@@ -100,7 +100,7 @@ export default function KioskPage() {
                                     className={`flex-1 py-3 rounded-xl text-sm font-medium
                     transition-colors
                     ${searchType === 'nhc'
-                                            ? 'bg-blue-900 text-white'
+                                            ? 'bg-emerald-900 text-white'
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                 >
                                     NHC
@@ -111,7 +111,7 @@ export default function KioskPage() {
                                     className={`flex-1 py-3 rounded-xl text-sm font-medium
                     transition-colors
                     ${searchType === 'dni'
-                                            ? 'bg-blue-900 text-white'
+                                            ? 'bg-emerald-900 text-white'
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                 >
                                     DNI
@@ -127,7 +127,7 @@ export default function KioskPage() {
                                     : 'Número de DNI'}
                                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-4
                            text-xl text-center focus:outline-none
-                           focus:border-blue-500 transition-colors"
+                           focus:border-emerald-500 transition-colors"
                                 autoFocus
                                 required
                             />
@@ -142,8 +142,8 @@ export default function KioskPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-blue-900 text-white py-4 rounded-xl
-                           font-bold text-lg hover:bg-blue-800
+                                className="w-full bg-emerald-900 text-white py-4 rounded-xl
+                           font-bold text-lg hover:bg-emerald-800
                            disabled:opacity-50 transition-colors"
                             >
                                 {loading ? 'Buscando...' : 'Buscar'}
@@ -173,8 +173,8 @@ export default function KioskPage() {
                                 <button
                                     key={req.id}
                                     onClick={() => handleSelect(req)}
-                                    className="w-full border-2 border-gray-200 hover:border-blue-500
-                             hover:bg-blue-50 rounded-xl p-4 text-left
+                                    className="w-full border-2 border-gray-200 hover:border-emerald-500
+                             hover:bg-emerald-50 rounded-xl p-4 text-left
                              transition-all"
                                 >
                                     <p className="font-semibold text-gray-800">
@@ -199,7 +199,7 @@ export default function KioskPage() {
                 )}
 
                 {/* Pie */}
-                <p className="text-blue-600 text-xs text-center mt-6">
+                <p className="text-emerald-600 text-xs text-center mt-6">
                     Si necesita ayuda, diríjase al mostrador de atención al paciente
                 </p>
             </div>

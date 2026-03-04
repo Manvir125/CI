@@ -110,7 +110,7 @@ export default function UsersPage() {
                 </div>
                 <button
                     onClick={() => navigate('/users/new')}
-                    className="bg-emerald-700 hover:bg-emerald-600 px-4 py-2 rounded-lg
+                    className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg
                      text-sm font-medium transition-colors"
                 >
                     + Nuevo usuario

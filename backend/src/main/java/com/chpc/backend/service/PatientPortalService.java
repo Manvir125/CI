@@ -32,6 +32,7 @@ public class PatientPortalService {
     private final AuditService auditService;
     private final SmsService smsService;
     private final PdfService pdfService;
+    private final TemplateEngineService templateEngineService;
 
     private static final int CODE_LENGTH = 6;
     private static final int CODE_EXPIRY_MIN = 10;
@@ -66,7 +67,7 @@ public class PatientPortalService {
                 .serviceName(request.getTemplate().getServiceCode())
                 .procedureName(request.getTemplate().getName())
                 .templateName(request.getTemplate().getName())
-                .contentHtml(request.getTemplate().getContentHtml())
+                .contentHtml(templateEngineService.renderHtml(request, patientName))
                 .episodeDate(request.getCreatedAt().format(FMT))
                 .expiresAt(token.getExpiresAt().format(FMT))
                 .status(request.getStatus())
@@ -195,7 +196,11 @@ public class PatientPortalService {
                 log.info("=== PDF: Ruta de PDFs: {}", pdfPath);
                 log.info("=== PDF: Imagen de firma path: {}", capture.getSignatureImagePath());
 
-                String pdfFilePath = pdfService.generateSignedPdf(request, capture);
+                String patientName = hisService.findPatientByNhc(request.getNhc())
+                        .map(p -> p.getFirstName() + " " + p.getLastName())
+                        .orElse("Paciente");
+
+                String pdfFilePath = pdfService.generateSignedPdf(request, capture, patientName);
                 log.info("=== PDF: Fichero generado en: {}", pdfFilePath);
 
                 String hash = pdfService.calculateHash(pdfFilePath);

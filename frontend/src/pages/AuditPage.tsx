@@ -87,10 +87,16 @@ export default function AuditPage() {
     return (
         <div className="min-h-screen bg-gray-100">
             <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+                <button
+                    onClick={() => navigate('/dashboard')}
+                    className="text-emerald-300 hover:text-white text-sm transition-colors"
+                >
+                    ← Dashboard
+                </button>
                 <div>
-                    <h1 className="font-bold text-lg">CI Digital — CHPC</h1>
+                    <h1 className="font-bold text-lg">Auditoría</h1>
                     <p className="text-emerald-300 text-xs">
-                        Gestión de Consentimientos Informados
+                        CI Digital — CHPC
                     </p>
                 </div>
                 <div className="flex items-center gap-4">

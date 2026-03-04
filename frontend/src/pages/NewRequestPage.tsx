@@ -209,8 +209,8 @@ export default function NewRequestPage() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="bg-blue-900 text-white px-6 py-2 rounded-lg
-                               hover:bg-blue-800 disabled:opacity-50 transition-colors"
+                                        className="bg-emerald-900 text-white px-6 py-2 rounded-lg
+                               hover:bg-emerald-800 disabled:opacity-50 transition-colors"
                                     >
                                         {loading ? '...' : 'Buscar'}
                                     </button>

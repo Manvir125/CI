@@ -51,7 +51,7 @@ export default function DashboardPage() {
                     <div
                         onClick={() => navigate('/requests')}
                         className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                       cursor-pointer hover:shadow-md hover:border-blue-300
+                       cursor-pointer hover:shadow-md hover:border-emerald-300
                        transition-all"
                     >
                         <div className="text-3xl mb-3">📤</div>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
                         <div
                             onClick={() => navigate('/templates')}
                             className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                         cursor-pointer hover:shadow-md hover:border-blue-300
+                         cursor-pointer hover:shadow-md hover:border-emerald-300
                          transition-all"
                         >
                             <div className="text-3xl mb-3">📋</div>
@@ -82,7 +82,7 @@ export default function DashboardPage() {
                         <div
                             onClick={() => navigate('/users')}
                             className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                         cursor-pointer hover:shadow-md hover:border-blue-300
+                         cursor-pointer hover:shadow-md hover:border-emerald-300
                          transition-all"
                         >
                             <div className="text-3xl mb-3">👥</div>
@@ -96,9 +96,9 @@ export default function DashboardPage() {
                     {/* Firma presencial — ADMIN, PROFESSIONAL, ADMINISTRATIVE */}
                     {(hasRole('ADMIN') || hasRole('PROFESSIONAL') || hasRole('ADMINISTRATIVE')) && (
                         <div
-                            onClick={() => navigate('/kiosk')}
+                            onClick={() => window.open('/kiosk', '_blank')}
                             className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                         cursor-pointer hover:shadow-md hover:border-blue-300
+                         cursor-pointer hover:shadow-md hover:border-emerald-300
                          transition-all"
                         >
                             <div className="text-3xl mb-3">🖊️</div>
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                         <div
                             onClick={() => navigate('/audit')}
                             className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
-                         cursor-pointer hover:shadow-md hover:border-blue-300
+                         cursor-pointer hover:shadow-md hover:border-emerald-300
                          transition-all"
                         >
                             <div className="text-3xl mb-3">🔍</div>

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import SignaturePad from 'signature_pad';
 import { getKioskToken } from '../api/consentRequests';
 import { loadConsent, submitSignature, type PortalConsentDto } from '../api/portal';
+import { useXPPenTablet, type PenEvent } from '../hooks/useXPPenTablet';
 
 type Step = 'loading' | 'read' | 'sign' | 'confirmed' | 'rejected' | 'error';
 
@@ -25,6 +26,62 @@ export default function KioskSignPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sigPadRef = useRef<SignaturePad | null>(null);
     const [isSigned, setIsSigned] = useState(false);
+
+    // XP Pen tablet — last point for line drawing
+    const lastPtRef = useRef<{ x: number; y: number } | null>(null);
+    const penDownRef = useRef(false);
+
+    // Handler for pen events from the XP Pen bridge
+    const handlePenEvent = useCallback((evt: PenEvent) => {
+        const canvas = canvasRef.current;
+        if (!canvas || step !== 'sign') return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Map tablet coordinates → CSS coordinates
+        // Note: resizeCanvas() already applies ctx.scale(ratio, ratio),
+        // so we draw in CSS space and the transform handles pixel mapping.
+        const rect = canvas.getBoundingClientRect();
+        const cssX = (evt.x / evt.maxX) * rect.width;
+        const cssY = (evt.y / evt.maxY) * rect.height;
+
+        // Pressure-based pen width (1–4px in CSS space)
+        const pressure = evt.maxPressure > 0 ? evt.pressure / evt.maxPressure : 0.5;
+        const penWidth = 1 + pressure * 3;
+
+        switch (evt.status) {
+            case 'Down':
+                penDownRef.current = true;
+                lastPtRef.current = { x: cssX, y: cssY };
+                break;
+            case 'Move':
+                if (penDownRef.current && lastPtRef.current) {
+                    ctx.save();
+                    ctx.strokeStyle = 'rgb(0,0,0)';
+                    ctx.lineWidth = penWidth;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(lastPtRef.current.x, lastPtRef.current.y);
+                    ctx.lineTo(cssX, cssY);
+                    ctx.stroke();
+                    ctx.restore();
+                    lastPtRef.current = { x: cssX, y: cssY };
+                    setIsSigned(true);
+                }
+                break;
+            case 'Up':
+            case 'Leave':
+                penDownRef.current = false;
+                lastPtRef.current = null;
+                break;
+        }
+    }, [step]);
+
+    const { device: xppenDevice, wsState: xppenState } = useXPPenTablet({
+        onPenEvent: handlePenEvent,
+        enabled: true,
+    });
 
     // Rechazo
     const [showRejectModal, setShowRejectModal] = useState(false);
@@ -71,8 +128,39 @@ export default function KioskSignPage() {
             sigPadRef.current.addEventListener('endStroke', () => {
                 setIsSigned(!sigPadRef.current?.isEmpty());
             });
+
+            if (xppenDevice.connected) {
+                sigPadRef.current.off();
+            }
         }
     }, [step]);
+
+    // ── Toggle signature_pad on/off and block global gestures ──────────
+    useEffect(() => {
+        const preventGlobal = (e: TouchEvent) => {
+            if (e.touches.length > 1 || (e.type === 'touchmove' && step === 'sign')) {
+                e.preventDefault();
+            }
+        };
+
+        document.body.style.touchAction = 'none';
+        document.addEventListener('touchstart', preventGlobal as any, { passive: false });
+        document.addEventListener('touchmove', preventGlobal as any, { passive: false });
+
+        if (sigPadRef.current && step === 'sign') {
+            if (xppenDevice.connected) {
+                sigPadRef.current.off();
+            } else {
+                sigPadRef.current.on();
+            }
+        }
+
+        return () => {
+            document.body.style.touchAction = '';
+            document.removeEventListener('touchstart', preventGlobal as any);
+            document.removeEventListener('touchmove', preventGlobal as any);
+        };
+    }, [xppenDevice.connected, step]);
 
     // ── Detecta scroll al cambiar al paso read ─────────────────────────────
     useEffect(() => {
@@ -103,10 +191,10 @@ export default function KioskSignPage() {
     };
 
     const handleSign = async () => {
-        if (!sigPadRef.current || sigPadRef.current.isEmpty()) return;
+        if (!isSigned || !canvasRef.current) return;
         setSubmitting(true);
         try {
-            const imageBase64 = sigPadRef.current.toDataURL('image/png');
+            const imageBase64 = canvasRef.current.toDataURL('image/png');
             await submitSignature(token, imageBase64, readConfirmed, 'SIGNED');
             setStep('confirmed');
         } catch {
@@ -335,6 +423,21 @@ export default function KioskSignPage() {
                             </p>
                         </div>
 
+                        {/* Tablet status indicator */}
+                        {xppenState === 'open' && (
+                            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm ${xppenDevice.connected
+                                ? 'bg-green-50 text-green-700 border border-green-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}>
+                                <span className={`w-2 h-2 rounded-full ${xppenDevice.connected ? 'bg-green-500' : 'bg-amber-500'
+                                    }`} />
+                                {xppenDevice.connected
+                                    ? `✏️ Tableta ${xppenDevice.product ?? 'XP Pen'} conectada — firma con el lápiz`
+                                    : '⚠️ Tableta desconectada — puedes firmar con el dedo o ratón'
+                                }
+                            </div>
+                        )}
+
                         {/* Canvas */}
                         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200
@@ -343,6 +446,15 @@ export default function KioskSignPage() {
                                 <button
                                     onClick={() => {
                                         sigPadRef.current?.clear();
+                                        // Also clear any XP Pen strokes
+                                        const canvas = canvasRef.current;
+                                        if (canvas) {
+                                            const ctx = canvas.getContext('2d');
+                                            if (ctx) {
+                                                ctx.fillStyle = 'rgb(255,255,255)';
+                                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                            }
+                                        }
                                         setIsSigned(false);
                                     }}
                                     className="text-sm text-blue-600 hover:text-blue-800"
@@ -359,7 +471,10 @@ export default function KioskSignPage() {
                                 <div className="bg-gray-50 px-4 py-2 border-t border-gray-200
                                 text-center">
                                     <p className="text-gray-400 text-xs">
-                                        Firma aquí con el dedo, ratón o lápiz táctil
+                                        {xppenDevice.connected
+                                            ? 'Firma en la tableta con el lápiz'
+                                            : 'Firma aquí con el dedo, ratón o lápiz táctil'
+                                        }
                                     </p>
                                 </div>
                             )}

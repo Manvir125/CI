@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>XPPenBridge</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- Copy libSign.dll (x64) to output directory -->
+  <ItemGroup>
+    <None Include="..\SDK_V1.1.1.25\Libs\x64\libSign.dll" CopyToOutputDirectory="PreserveNewest" Link="libSign.dll" />
+  </ItemGroup>
+
+</Project>

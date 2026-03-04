@@ -1,0 +1,16 @@
+C:\Users\Manvir\Documents\CI\xppen-bridge\bin\Debug\net10.0\libSign.dll
+C:\Users\Manvir\Documents\CI\xppen-bridge\bin\Debug\net10.0\xppen-bridge.exe
+C:\Users\Manvir\Documents\CI\xppen-bridge\bin\Debug\net10.0\xppen-bridge.deps.json
+C:\Users\Manvir\Documents\CI\xppen-bridge\bin\Debug\net10.0\xppen-bridge.runtimeconfig.json
+C:\Users\Manvir\Documents\CI\xppen-bridge\bin\Debug\net10.0\xppen-bridge.dll
+C:\Users\Manvir\Documents\CI\xppen-bridge\bin\Debug\net10.0\xppen-bridge.pdb
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\xppen-bridge.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\xppen-bridge.AssemblyInfoInputs.cache
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\xppen-bridge.AssemblyInfo.cs
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\xppen-bridge.csproj.CoreCompileInputs.cache
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\xppen-bridge.sourcelink.json
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\xppen-bridge.dll
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\refint\xppen-bridge.dll
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\xppen-bridge.pdb
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\xppen-bridge.genruntimeconfig.cache
+C:\Users\Manvir\Documents\CI\xppen-bridge\obj\Debug\net10.0\ref\xppen-bridge.dll

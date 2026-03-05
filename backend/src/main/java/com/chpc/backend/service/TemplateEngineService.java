@@ -33,7 +33,6 @@ public class TemplateEngineService {
             String replacement = getReplacementValue(field, request, patientName);
 
             if (replacement != null) {
-                // Usamos replace en lugar de replaceAll para evitar escapes de regex
                 html = html.replace(placeholder, replacement);
             }
         }
@@ -55,6 +54,9 @@ public class TemplateEngineService {
             case "PROCEDURE" -> request.getTemplate().getName() != null ? request.getTemplate().getName() : "";
             case "DATE" -> LocalDateTime.now().format(DATE_FMT);
             case "TEXT" -> field.getDefaultValue() != null ? field.getDefaultValue() : "";
+            case "NHS_NUMBER" -> request.getNhc() != null ? request.getNhc() : "";
+            case "PATIENT_PHONE" -> request.getPatientPhone() != null ? request.getPatientPhone() : "";
+            case "PATIENT_EMAIL" -> request.getPatientEmail() != null ? request.getPatientEmail() : "";
             default -> field.getDefaultValue() != null ? field.getDefaultValue() : "";
         };
     }

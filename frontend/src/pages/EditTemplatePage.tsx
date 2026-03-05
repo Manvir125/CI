@@ -187,8 +187,7 @@ export default function EditTemplatePage() {
                                 required
                             />
                             <p className="text-xs text-gray-400 mt-1">
-                                Usa {'{{nombre_paciente}}'}, {'{{servicio}}'},
-                                {'{{profesional}}'} como campos dinámicos
+                                Usa {'{{PATIENT_NAME}}'}, {'{{SERVICE}}'}, {'{{PROFESSIONAL_NAME}}'}, {'{{NHS_NUMBER}}'}, {'{{PATIENT_PHONE}}'}, {'{{PATIENT_EMAIL}}'} como campos dinámicos
                             </p>
                         </div>
                     </div>
@@ -223,7 +222,7 @@ export default function EditTemplatePage() {
                             >
                                 <input
                                     type="text"
-                                    placeholder="Clave (ej: nombre_paciente)"
+                                    placeholder="Clave (ej: PATIENT_NAME)"
                                     value={field.fieldKey}
                                     onChange={e => updateField(index, 'fieldKey', e.target.value)}
                                     className="border border-gray-300 rounded px-3 py-1.5 text-sm
@@ -244,11 +243,15 @@ export default function EditTemplatePage() {
                              focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="TEXT">Texto libre</option>
+                                    <option value="NHS_NUMBER">Número de la Seguridad Social</option>
+                                    <option value="PATIENT_PHONE">Teléfono del paciente</option>
+                                    <option value="PATIENT_EMAIL">Correo electrónico del paciente</option>
                                     <option value="PATIENT_NAME">Nombre paciente</option>
                                     <option value="PROFESSIONAL_NAME">Nombre profesional</option>
                                     <option value="SERVICE">Servicio</option>
                                     <option value="PROCEDURE">Procedimiento</option>
                                     <option value="DATE">Fecha</option>
+
                                 </select>
                                 <div className="flex items-center justify-between">
                                     <label className="flex items-center gap-2 text-sm text-gray-600">

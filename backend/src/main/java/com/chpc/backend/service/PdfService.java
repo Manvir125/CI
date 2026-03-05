@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.itextpdf.signatures.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import java.security.Security;
 
 import java.io.*;
 import java.nio.file.*;
@@ -32,6 +35,7 @@ import java.util.HexFormat;
 public class PdfService {
 
     private final TemplateEngineService templateEngineService;
+    private final CertificateService certificateService;
 
     @Value("${app.pdf-path:./pdfs}")
     private String pdfPath;
@@ -41,7 +45,6 @@ public class PdfService {
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
-    // Genera el PDF sellado con firma incrustada
     public String generateSignedPdf(ConsentRequest request,
             SignatureCapture capture, String patientName) throws Exception {
 
@@ -52,27 +55,26 @@ public class PdfService {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        // 1. Convierte el HTML del consentimiento a PDF
         String fullHtml = buildHtml(request, capture, patientName);
         HtmlConverter.convertToPdf(fullHtml, baos);
         byte[] originalPdfBytes = baos.toByteArray();
 
-        // 2. Calcula el hash del documento original (sin sello)
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hashBytes = digest.digest(originalPdfBytes);
         String documentHash = HexFormat.of().formatHex(hashBytes);
 
-        // 3. Añade el sello de auditoría con el hash
         byte[] pdfBytes = addAuditStamp(originalPdfBytes, request, capture, documentHash);
 
-        // 4. Guarda el PDF en disco
         Files.write(Paths.get(filepath), pdfBytes);
 
+        String signedPath = signPdf(filepath, request);
+
+        Files.deleteIfExists(Paths.get(filepath));
+
         log.info("PDF generado: {}", filepath);
-        return filepath;
+        return signedPath;
     }
 
-    // Calcula el hash SHA-256 del PDF para verificación de integridad
     public String calculateHash(String filepath) throws Exception {
         byte[] fileBytes = Files.readAllBytes(Paths.get(filepath));
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -80,7 +82,6 @@ public class PdfService {
         return HexFormat.of().formatHex(hashBytes);
     }
 
-    // Lee el PDF como bytes para descarga
     public byte[] readPdf(String filepath) throws Exception {
         return Files.readAllBytes(Paths.get(filepath));
     }
@@ -163,7 +164,6 @@ public class PdfService {
                 + "</body></html>";
     }
 
-    // Añade pie de auditoría en cada página del PDF
     private byte[] addAuditStamp(byte[] inputPdf, ConsentRequest request,
             SignatureCapture capture, String documentHash) throws Exception {
 
@@ -175,7 +175,6 @@ public class PdfService {
         PdfDocument pdf = new PdfDocument(reader, writer);
 
         PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-        // Usamos los primeros 16 caracteres del hash para que quepa bien en el pie
         String shortHash = documentHash.substring(0, 16);
         String stampText = String.format(
                 "CHPC · Solicitud #%d · Firmado: %s · Hash: %s",
@@ -183,7 +182,6 @@ public class PdfService {
                 capture.getSignedAt().format(FMT),
                 shortHash);
 
-        // Añade el sello en el pie de cada página
         int pages = pdf.getNumberOfPages();
         for (int i = 1; i <= pages; i++) {
             PdfPage page = pdf.getPage(i);
@@ -202,7 +200,6 @@ public class PdfService {
                     .endText();
         }
 
-        // Añade metadatos al PDF
         PdfDocumentInfo info = pdf.getDocumentInfo();
         info.setTitle("Consentimiento Informado — " + request.getTemplate().getName());
         info.setAuthor("CHPC Sistema CI Digital");
@@ -211,5 +208,48 @@ public class PdfService {
 
         pdf.close();
         return baos.toByteArray();
+    }
+
+    public String signPdf(String inputPath, ConsentRequest request)
+            throws Exception {
+
+        String signedPath = inputPath.replace(".pdf", "_signed.pdf");
+
+        PdfReader reader = new PdfReader(inputPath);
+        StampingProperties stampingProperties = new StampingProperties()
+                .useAppendMode();
+
+        PdfSigner signer = new PdfSigner(
+                reader,
+                new java.io.FileOutputStream(signedPath),
+                stampingProperties);
+
+        PdfSignatureAppearance appearance = signer.getSignatureAppearance();
+        appearance
+                .setReason("Consentimiento Informado Digital — CHPC")
+                .setLocation("Castelló de la Plana, España")
+                .setContact("usi@chpc.es");
+
+        signer.setFieldName("Sello_CHPC_" + request.getId());
+
+        IExternalSignature signature = new PrivateKeySignature(
+                certificateService.getPrivateKey(),
+                DigestAlgorithms.SHA256,
+                BouncyCastleProvider.PROVIDER_NAME);
+
+        IExternalDigest digest = new BouncyCastleDigest();
+
+        signer.signDetached(
+                digest,
+                signature,
+                certificateService.getCertificateChain(),
+                null,
+                null,
+                null,
+                0,
+                PdfSigner.CryptoStandard.CMS);
+
+        log.info("PDF firmado digitalmente: {}", signedPath);
+        return signedPath;
     }
 }

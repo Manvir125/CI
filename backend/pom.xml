@@ -47,6 +47,21 @@
 		<artifactId>html2pdf</artifactId>
 		<version>4.0.5</version>
 	</dependency>
+	<dependency>
+		<groupId>com.itextpdf</groupId>
+		<artifactId>sign</artifactId>
+		<version>7.2.5</version>
+	</dependency>
+	<dependency>
+		<groupId>org.bouncycastle</groupId>
+		<artifactId>bcpkix-jdk18on</artifactId>
+		<version>1.77</version>
+	</dependency>
+	<dependency>
+		<groupId>org.bouncycastle</groupId>
+		<artifactId>bcprov-jdk18on</artifactId>
+		<version>1.77</version>
+	</dependency>
 	<!-- Email -->
 	<dependency>
 		<groupId>org.springframework.boot</groupId>

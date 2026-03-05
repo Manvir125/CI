@@ -114,7 +114,6 @@ public class ConsentRequestController {
         ConsentRequest request = requestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
 
-        // Invalida tokens anteriores
         tokenRepository.findAll().stream()
                 .filter(t -> t.getConsentRequest().getId().equals(id) && t.getIsValid())
                 .forEach(t -> {
@@ -122,7 +121,6 @@ public class ConsentRequestController {
                     tokenRepository.save(t);
                 });
 
-        // Genera token de kiosco con expiración corta (2 horas)
         byte[] tokenBytes = new byte[32];
         new java.security.SecureRandom().nextBytes(tokenBytes);
         String rawToken = java.util.Base64.getUrlEncoder()
@@ -136,12 +134,6 @@ public class ConsentRequestController {
                 .createdByIp(httpRequest.getRemoteAddr())
                 .build();
         tokenRepository.save(token);
-
-        // Actualiza estado a SENT si estaba PENDING
-        if ("PENDING".equals(request.getStatus())) {
-            request.setStatus("SENT");
-            requestRepository.save(request);
-        }
 
         return ResponseEntity.ok(Map.of("token", rawToken));
     }

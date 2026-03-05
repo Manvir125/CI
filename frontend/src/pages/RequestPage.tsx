@@ -209,7 +209,7 @@ export default function RequestsPage() {
                                                     Enviar enlace
                                                 </button>
                                             )}
-                                            {req.status === 'SENT' && (
+                                            {req.status === 'SENT' && req.channel === 'REMOTE' && (
                                                 <button
                                                     onClick={() => handleSend(req.id)}
                                                     className="bg-gray-100 hover:bg-gray-200 text-gray-700

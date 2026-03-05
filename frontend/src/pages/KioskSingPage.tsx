@@ -43,7 +43,9 @@ export default function KioskSignPage() {
         const cssY = (evt.y / evt.maxY) * rect.height;
 
         const pressure = evt.maxPressure > 0 ? evt.pressure / evt.maxPressure : 0.5;
-        const penWidth = 1 + pressure * 3;
+        const minWidth = 1;
+        const maxWidth = 6;
+        const penWidth = minWidth + pressure * (maxWidth - minWidth);
 
         switch (evt.status) {
             case 'Down':

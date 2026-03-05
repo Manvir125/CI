@@ -1,4 +1,6 @@
 target/
+/pdfs
+/signatures
 .git/
 .gitignore
 *.md

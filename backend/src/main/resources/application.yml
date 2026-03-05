@@ -43,6 +43,9 @@ app:
   mail-from: noreply@chpc.es
   signatures-path: ${SIGNATURES_PATH:./signatures}
   pdf-path: ${PDF_PATH:./pdfs}
+  keystore-path: ${KEYSTORE_PATH:certs/chpc-keystore.p12}
+  keystore-password: ${KEYSTORE_PASSWORD:chpc2026}
+  keystore-alias: ${KEYSTORE_ALIAS:chpc-sign} 
 
 twilio:
   account-sid: ${TWILIO_ACCOUNT_SID:ACb7951f4cada5f3a765c7a5f84b652349}

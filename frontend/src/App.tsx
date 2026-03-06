@@ -14,6 +14,7 @@ import PatientPortalPage from './pages/PatientPortalPage';
 import AuditPage from './pages/AuditPage';
 import KioskPage from './pages/KioskPage';
 import KioskSignPage from './pages/KioskSingPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   return (
@@ -57,6 +58,11 @@ export default function App() {
           <Route path="/kiosk/:requestId" element={
             <ProtectedRoute>
               <KioskSignPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           } />
 

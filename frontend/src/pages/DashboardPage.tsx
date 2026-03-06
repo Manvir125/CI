@@ -46,14 +46,24 @@ export default function DashboardPage() {
 
                 {/* Tarjetas */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div
+                        onClick={() => navigate('/profile')}
+                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                        cursor-pointer hover:shadow-md hover:border-blue-300
+                        transition-all">
+                        <div className="text-3xl mb-3">✍️</div>
+                        <h3 className="font-semibold text-gray-800">Mi firma</h3>
+                        <p className="text-gray-500 text-sm mt-1">
+                            Gestionar mi firma para los consentimientos
+                        </p>
+                    </div>
 
                     {/* Solicitudes — todos los roles */}
                     <div
                         onClick={() => navigate('/requests')}
                         className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
                        cursor-pointer hover:shadow-md hover:border-emerald-300
-                       transition-all"
-                    >
+                       transition-all">
                         <div className="text-3xl mb-3">📤</div>
                         <h3 className="font-semibold text-gray-800">Solicitudes</h3>
                         <p className="text-gray-500 text-sm mt-1">
@@ -67,8 +77,7 @@ export default function DashboardPage() {
                             onClick={() => navigate('/templates')}
                             className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
                          cursor-pointer hover:shadow-md hover:border-emerald-300
-                         transition-all"
-                        >
+                         transition-all">
                             <div className="text-3xl mb-3">📋</div>
                             <h3 className="font-semibold text-gray-800">Plantillas</h3>
                             <p className="text-gray-500 text-sm mt-1">
@@ -83,8 +92,7 @@ export default function DashboardPage() {
                             onClick={() => navigate('/users')}
                             className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
                          cursor-pointer hover:shadow-md hover:border-emerald-300
-                         transition-all"
-                        >
+                         transition-all">
                             <div className="text-3xl mb-3">👥</div>
                             <h3 className="font-semibold text-gray-800">Usuarios</h3>
                             <p className="text-gray-500 text-sm mt-1">
@@ -99,8 +107,7 @@ export default function DashboardPage() {
                             onClick={() => window.open('/kiosk', '_blank')}
                             className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
                          cursor-pointer hover:shadow-md hover:border-emerald-300
-                         transition-all"
-                        >
+                         transition-all">
                             <div className="text-3xl mb-3">🖊️</div>
                             <h3 className="font-semibold text-gray-800">Firma presencial</h3>
                             <p className="text-gray-500 text-sm mt-1">
@@ -115,8 +122,7 @@ export default function DashboardPage() {
                             onClick={() => navigate('/audit')}
                             className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
                          cursor-pointer hover:shadow-md hover:border-emerald-300
-                         transition-all"
-                        >
+                         transition-all">
                             <div className="text-3xl mb-3">🔍</div>
                             <h3 className="font-semibold text-gray-800">Auditoría</h3>
                             <p className="text-gray-500 text-sm mt-1">

@@ -2,6 +2,7 @@ package com.chpc.backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class SignatureSubmitRequest {
@@ -10,4 +11,5 @@ public class SignatureSubmitRequest {
     private boolean readCheckConfirmed;
     private String confirmation; // SIGNED o REJECTED
     private String rejectionReason;
+    private List<PenEventDto> events;
 }

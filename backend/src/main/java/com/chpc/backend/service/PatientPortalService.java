@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.List;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -27,6 +29,7 @@ public class PatientPortalService {
     private final SignTokenRepository tokenRepository;
     private final ConsentRequestRepository requestRepository;
     private final SignatureCaptureRepository signatureRepository;
+    private final SignatureEventRepository eventRepository;
     private final VerificationCodeRepository verificationCodeRepository;
     private final HisIntegrationService hisService;
     private final AuditService auditService;
@@ -187,6 +190,26 @@ public class PatientPortalService {
                 .patientConfirmation(req.getConfirmation())
                 .build();
         signatureRepository.save(capture);
+
+        if (isSigning && req.getEvents() != null && !req.getEvents().isEmpty()) {
+            List<SignatureEvent> signatureEvents = IntStream.range(0, req.getEvents().size())
+                    .mapToObj(i -> {
+                        PenEventDto dto = req.getEvents().get(i);
+                        return SignatureEvent.builder()
+                                .signatureCapture(capture)
+                                .sequenceOrder(i)
+                                .x(dto.getX())
+                                .y(dto.getY())
+                                .pressure(dto.getPressure())
+                                .status(dto.getStatus())
+                                .maxX(dto.getMaxX())
+                                .maxY(dto.getMaxY())
+                                .maxPressure(dto.getMaxPressure())
+                                .build();
+                    })
+                    .toList();
+            eventRepository.saveAll(signatureEvents);
+        }
 
         // Genera el PDF sellado si el paciente ha firmado
         if (isSigning) {

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { PenEvent } from '../hooks/useXPPenTablet';
 
 const portalClient = axios.create({
     baseURL: 'http://localhost:8080',
@@ -48,11 +49,12 @@ export const submitSignature = async (
     signatureImageBase64: string,
     readCheckConfirmed: boolean,
     confirmation: 'SIGNED' | 'REJECTED',
-    rejectionReason?: string
+    rejectionReason?: string,
+    events?: PenEvent[]
 ): Promise<{ status: string; message: string }> => {
     const { data } = await portalClient.post(
         `/api/patient/sign/${token}/submit`,
-        { signatureImageBase64, readCheckConfirmed, confirmation, rejectionReason }
+        { signatureImageBase64, readCheckConfirmed, confirmation, rejectionReason, events }
     );
     return data;
 };

@@ -1,6 +1,7 @@
 package com.chpc.backend.controller;
 
 import com.chpc.backend.dto.ProfessionalSignatureResponse;
+import com.chpc.backend.dto.ProfessionalSignatureRequest;
 import com.chpc.backend.service.ProfessionalSignatureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +28,11 @@ public class ProfessionalSignatureController {
     // Guarda o actualiza la firma
     @PostMapping
     public ResponseEntity<Map<String, String>> saveSignature(
-            @RequestBody Map<String, String> body,
+            @RequestBody ProfessionalSignatureRequest body,
             Authentication auth) {
         try {
             signatureService.saveSignature(
-                    auth.getName(), body.get("signatureImageBase64"));
+                    auth.getName(), body.getSignatureImageBase64(), body.getEvents());
             return ResponseEntity.ok(
                     Map.of("message", "Firma guardada correctamente"));
         } catch (Exception e) {

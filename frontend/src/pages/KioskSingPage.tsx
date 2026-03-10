@@ -26,6 +26,7 @@ export default function KioskSignPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sigPadRef = useRef<SignaturePad | null>(null);
     const [isSigned, setIsSigned] = useState(false);
+    const [penEvents, setPenEvents] = useState<PenEvent[]>([]);
 
     // XP Pen tablet — last point for line drawing
     const lastPtRef = useRef<{ x: number; y: number } | null>(null);
@@ -33,6 +34,7 @@ export default function KioskSignPage() {
 
     // Handler for pen events from the XP Pen bridge
     const handlePenEvent = useCallback((evt: PenEvent) => {
+        setPenEvents(prev => [...prev, evt]);
         const canvas = canvasRef.current;
         if (!canvas || step !== 'sign') return;
         const ctx = canvas.getContext('2d');
@@ -179,6 +181,7 @@ export default function KioskSignPage() {
         canvas.getContext('2d')?.scale(ratio, ratio);
         sigPadRef.current.clear();
         setIsSigned(false);
+        setPenEvents([]);
     };
 
     const handleContentScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -193,7 +196,7 @@ export default function KioskSignPage() {
         setSubmitting(true);
         try {
             const imageBase64 = canvasRef.current.toDataURL('image/png');
-            await submitSignature(token, imageBase64, readConfirmed, 'SIGNED');
+            await submitSignature(token, imageBase64, readConfirmed, 'SIGNED', undefined, penEvents);
             setStep('confirmed');
         } catch {
             setError('Error al enviar la firma');
@@ -453,6 +456,7 @@ export default function KioskSignPage() {
                                             }
                                         }
                                         setIsSigned(false);
+                                        setPenEvents([]);
                                     }}
                                     className="text-sm text-emerald-600 hover:text-emerald-800"
                                 >

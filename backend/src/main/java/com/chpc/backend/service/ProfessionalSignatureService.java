@@ -1,8 +1,11 @@
 package com.chpc.backend.service;
 
 import com.chpc.backend.dto.ProfessionalSignatureResponse;
+import com.chpc.backend.dto.PenEventDto;
+import com.chpc.backend.entity.SignatureEvent;
 import com.chpc.backend.entity.User;
 import com.chpc.backend.repository.UserRepository;
+import com.chpc.backend.repository.SignatureEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +19,8 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.List;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -23,13 +28,14 @@ import java.util.UUID;
 public class ProfessionalSignatureService {
 
     private final UserRepository userRepository;
+    private final SignatureEventRepository eventRepository;
 
     @Value("${app.signatures-path:./signatures}")
     private String signaturesPath;
 
     // Guarda o actualiza la firma del profesional
     @Transactional
-    public void saveSignature(String username, String base64Image) throws Exception {
+    public void saveSignature(String username, String base64Image, List<PenEventDto> events) throws Exception {
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -37,6 +43,7 @@ public class ProfessionalSignatureService {
         // Elimina la firma anterior si existe
         if (user.getSignatureImagePath() != null) {
             Files.deleteIfExists(Paths.get(user.getSignatureImagePath()));
+            eventRepository.deleteByUserId(user.getId());
         }
 
         // Guarda la nueva imagen
@@ -58,6 +65,27 @@ public class ProfessionalSignatureService {
         user.setSignatureUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
+        // Guardar eventos si los hay
+        if (events != null && !events.isEmpty()) {
+            List<SignatureEvent> signatureEvents = IntStream.range(0, events.size())
+                    .mapToObj(i -> {
+                        PenEventDto dto = events.get(i);
+                        return SignatureEvent.builder()
+                                .user(user)
+                                .sequenceOrder(i)
+                                .x(dto.getX())
+                                .y(dto.getY())
+                                .pressure(dto.getPressure())
+                                .status(dto.getStatus())
+                                .maxX(dto.getMaxX())
+                                .maxY(dto.getMaxY())
+                                .maxPressure(dto.getMaxPressure())
+                                .build();
+                    })
+                    .toList();
+            eventRepository.saveAll(signatureEvents);
+        }
+
         log.info("Firma del profesional {} guardada en {}", username, filepath);
     }
 
@@ -69,6 +97,7 @@ public class ProfessionalSignatureService {
 
         if (user.getSignatureImagePath() != null) {
             Files.deleteIfExists(Paths.get(user.getSignatureImagePath()));
+            eventRepository.deleteByUserId(user.getId());
             user.setSignatureImagePath(null);
             user.setSignatureUpdatedAt(null);
             userRepository.save(user);

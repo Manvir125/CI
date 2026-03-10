@@ -1,4 +1,5 @@
 import client from './client';
+import type { PenEvent } from '../hooks/useXPPenTablet';
 
 export interface SignatureStatus {
     hasSignature: boolean;
@@ -11,9 +12,10 @@ export const getSignatureStatus = async (): Promise<SignatureStatus> => {
 };
 
 export const saveSignature = async (
-    signatureImageBase64: string
+    signatureImageBase64: string,
+    events?: PenEvent[]
 ): Promise<void> => {
-    await client.post('/api/profile/signature', { signatureImageBase64 });
+    await client.post('/api/profile/signature', { signatureImageBase64, events });
 };
 
 export const deleteSignature = async (): Promise<void> => {

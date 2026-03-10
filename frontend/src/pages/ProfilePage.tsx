@@ -17,6 +17,7 @@ export default function ProfilePage() {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+    const [penEvents, setPenEvents] = useState<PenEvent[]>([]);
 
     const navigate = useNavigate();
 
@@ -39,7 +40,7 @@ export default function ProfilePage() {
         setError('');
         try {
             const imageBase64 = canvasRef.current.toDataURL('image/png');
-            await saveSignature(imageBase64);
+            await saveSignature(imageBase64, penEvents);
             setMessage('Firma guardada correctamente');
             setMode('view');
             await loadStatus();
@@ -69,6 +70,7 @@ export default function ProfilePage() {
 
     // Handler for pen events from the XP Pen bridge
     const handlePenEvent = useCallback((evt: PenEvent) => {
+        setPenEvents(prev => [...prev, evt]);
         const canvas = canvasRef.current;
         if (!canvas || mode !== 'draw') return;
         const ctx = canvas.getContext('2d');
@@ -172,6 +174,7 @@ export default function ProfilePage() {
         canvas.getContext('2d')?.scale(ratio, ratio);
         sigPadRef.current.clear();
         setIsSigned(false);
+        setPenEvents([]);
     };
 
     return (
@@ -293,6 +296,7 @@ export default function ProfilePage() {
                                         onClick={() => {
                                             sigPadRef.current?.clear();
                                             setIsSigned(false);
+                                            setPenEvents([]);
                                         }}
                                         className="text-sm text-blue-600 hover:text-blue-800"
                                     >

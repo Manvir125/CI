@@ -7,11 +7,12 @@ import com.chpc.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.ldap.query.LdapQueryBuilder;
+import org.springframework.ldap.filter.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,19 +27,56 @@ public class LdapAuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private static final String REQUIRED_GROUP_DN = "CN=DEP02_1536_ACCESO_CIDIGITAL,OU=Hospital,OU=Usuarios,OU=CAS_PROVINCIAL,DC=chpcs,DC=local";
+
     @Transactional
     public Optional<User> authenticateAndSync(String username, String password) {
         try {
+            AndFilter filter = new AndFilter();
+            filter.and(new EqualsFilter("objectclass", "person"));
+            filter.and(new EqualsFilter("sAMAccountName", username));
 
-            List<Map<String, String>> results = ldapTemplate.search(
-                    LdapQueryBuilder.query()
-                            .base("ou=users")
-                            .where("uid").is(username),
+            log.info("=== LDAP: Intentando autenticar usuario '{}'", username);
+
+            boolean authenticated = ldapTemplate.authenticate("", filter.encode(), password);
+
+            if (!authenticated) {
+                log.warn("=== LDAP: Fallo de autenticación para usuario '{}'", username);
+                return Optional.empty();
+            }
+
+            List<Map<String, Object>> results = ldapTemplate.search(
+                    "",
+                    filter.encode(),
                     (Attributes attrs) -> {
-                        Map<String, String> map = new HashMap<>();
+                        Map<String, Object> map = new HashMap<>();
                         map.put("cn", getAttr(attrs, "cn"));
                         map.put("mail", getAttr(attrs, "mail"));
-                        map.put("uid", getAttr(attrs, "uid"));
+
+                        // Debug: log all attribute IDs returned by AD
+                        log.debug("=== LDAP: Atributos devueltos para el usuario:");
+                        var attrIds = attrs.getIDs();
+                        while (attrIds.hasMore()) {
+                            String id = attrIds.next();
+                            log.debug("=== LDAP:   atributo: {}", id);
+                        }
+
+                        List<String> memberOf = new ArrayList<>();
+                        try {
+                            Attribute memberOfAttr = attrs.get("memberOf");
+                            log.info("=== LDAP: memberOf attr es null? {}", (memberOfAttr == null));
+                            if (memberOfAttr != null) {
+                                log.info("=== LDAP: memberOf tiene {} valores", memberOfAttr.size());
+                                for (int i = 0; i < memberOfAttr.size(); i++) {
+                                    String group = memberOfAttr.get(i).toString();
+                                    log.info("=== LDAP:   grupo[{}]: {}", i, group);
+                                    memberOf.add(group);
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("=== LDAP: Error leyendo grupos: ", e);
+                        }
+                        map.put("memberOf", memberOf);
                         return map;
                     });
 
@@ -46,17 +84,30 @@ public class LdapAuthService {
                 return Optional.empty();
             }
 
-            Map<String, String> attrs = results.get(0);
-            String userDn = "uid=" + username + ",ou=users,dc=chpc,dc=es";
+            Map<String, Object> attrs = results.get(0);
 
-            boolean authenticated = verifyPassword(username, password);
+            @SuppressWarnings("unchecked")
+            List<String> userGroups = (List<String>) attrs.getOrDefault("memberOf", new ArrayList<>());
 
-            if (!authenticated)
+            boolean hasRequiredGroup = userGroups.stream()
+                .anyMatch(g -> g.equalsIgnoreCase(REQUIRED_GROUP_DN));
+
+            if (!hasRequiredGroup) {
+                log.warn("=== LDAP: Usuario '{}' autenticado pero no pertenece al grupo requerido. Grupos del usuario: {}", username, userGroups);
                 return Optional.empty();
+            }
 
-            Set<String> groups = getGroups(userDn);
+            Set<String> safeGroups = userGroups.stream()
+                .map(this::extractCommonName)
+                .collect(Collectors.toSet());
 
-            User user = syncUser(username, attrs, groups, password);
+            log.info("=== LDAP: Autenticación exitosa y con grupo válido para '{}'", username);
+
+            Map<String, String> stringAttrs = new HashMap<>();
+            stringAttrs.put("cn", attrs.getOrDefault("cn", "").toString());
+            stringAttrs.put("mail", attrs.getOrDefault("mail", "").toString());
+
+            User user = syncUser(username, stringAttrs, safeGroups, password);
             return Optional.of(user);
 
         } catch (Exception e) {
@@ -65,96 +116,19 @@ public class LdapAuthService {
         }
     }
 
-    private boolean verifyPassword(String username, String rawPassword) {
+    private String extractCommonName(String dn) {
         try {
-            List<String> storedPasswords = ldapTemplate.search(
-                    LdapQueryBuilder.query()
-                            .base("ou=users")
-                            .where("uid").is(username),
-                    (Attributes attrs) -> {
-                        try {
-                            var pwAttr = attrs.get("userPassword");
-                            if (pwAttr == null)
-                                return null;
-                            Object val = pwAttr.get();
-                            if (val instanceof byte[]) {
-                                return new String((byte[]) val);
-                            }
-                            return val.toString();
-                        } catch (Exception e) {
-                            return null;
-                        }
-                    });
-
-            if (storedPasswords.isEmpty() || storedPasswords.get(0) == null) {
-                return false;
+            if (dn != null && dn.toUpperCase().startsWith("CN=")) {
+                int start = 3;
+                int end = dn.indexOf(',');
+                if (end > start) {
+                    return dn.substring(start, end);
+                }
+                return dn.substring(start);
             }
-
-            String stored = storedPasswords.get(0);
-
-            if (stored.startsWith("{SHA}")) {
-                return verifySha(rawPassword, stored);
-            } else if (stored.startsWith("{SSHA}")) {
-                return verifySsha(rawPassword, stored);
-            } else {
-                return stored.equals(rawPassword);
-            }
-
         } catch (Exception e) {
-            log.error("=== LDAP: Error verificando contraseña: {}", e.getMessage());
-            return false;
         }
-    }
-
-    private boolean verifySha(String rawPassword, String storedHash) {
-        try {
-            String b64Hash = storedHash.substring(5);
-            byte[] storedBytes = Base64.getDecoder().decode(b64Hash);
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
-            byte[] rawBytes = md.digest(
-                    rawPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-            boolean match = java.util.Arrays.equals(rawBytes, storedBytes);
-            return match;
-
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private boolean verifySsha(String rawPassword, String storedHash) {
-        try {
-            String b64Hash = storedHash.substring(6);
-            byte[] storedBytes = Base64.getDecoder().decode(b64Hash);
-
-            byte[] salt = java.util.Arrays.copyOfRange(
-                    storedBytes, storedBytes.length - 4, storedBytes.length);
-            byte[] hashPart = java.util.Arrays.copyOfRange(
-                    storedBytes, 0, storedBytes.length - 4);
-
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
-            md.update(rawPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            md.update(salt);
-            byte[] computed = md.digest();
-
-            boolean match = java.util.Arrays.equals(computed, hashPart);
-            return match;
-
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private Set<String> getGroups(String userDn) {
-        try {
-            return new HashSet<>(ldapTemplate.search(
-                    LdapQueryBuilder.query()
-                            .base("ou=groups")
-                            .where("member").is(userDn),
-                    (Attributes attrs) -> getAttr(attrs, "cn")));
-        } catch (Exception e) {
-            return Set.of();
-        }
+        return dn;
     }
 
     @Transactional

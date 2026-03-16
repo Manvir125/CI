@@ -21,6 +21,7 @@ export default function NewUserPage() {
         fullName: '',
         email: '',
         password: '',
+        serviceCode: '',
     });
 
     const [selectedRoles, setSelectedRoles] = useState<string[]>(['PROFESSIONAL']);
@@ -130,6 +131,35 @@ export default function NewUserPage() {
                                 minLength={8}
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Confirmar contraseña *
+                            </label>
+                            <input
+                                type="password"
+                                value={form.password}
+                                onChange={e => setForm({ ...form, password: e.target.value })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Mínimo 8 caracteres"
+                                required
+                                minLength={8}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Código de servicio
+                            </label>
+                            <input
+                                type="text"
+                                value={form.serviceCode}
+                                onChange={e => setForm({ ...form, serviceCode: e.target.value })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Ej: CIR"
+                            />
+                        </div>
+
                     </div>
 
                     {/* Roles */}

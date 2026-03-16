@@ -50,6 +50,7 @@ public class UserService {
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .isActive(true)
                                 .roles(roles)
+                                .serviceCode(request.getServiceCode())
                                 .build();
 
                 User saved = userRepository.save(user);
@@ -119,10 +120,14 @@ public class UserService {
                         throw new RuntimeException("No puedes eliminar tu propia cuenta");
                 }
 
-                userRepository.delete(user);
-
-                auditService.logWithData(actor, "USER_DELETED", "User", id, ipAddress, true,
-                                Map.of("username", user.getUsername()));
+                try {
+                        userRepository.delete(user);
+                        auditService.logWithData(actor, "USER_DELETED", "User", id, ipAddress, true,
+                                        Map.of("username", user.getUsername()));
+                } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        throw new RuntimeException(
+                                        "No se puede eliminar el usuario porque tiene historial en el sistema (consentimientos creados o firmados). Por seguridad, desactívalo en su lugar.");
+                }
         }
 
         private String rolesToString(Set<Role> roles) {
@@ -159,6 +164,7 @@ public class UserService {
                                                 .collect(Collectors.toSet()))
                                 .lastLogin(user.getLastLogin())
                                 .createdAt(user.getCreatedAt())
+                                .serviceCode(user.getServiceCode())
                                 .build();
         }
 }

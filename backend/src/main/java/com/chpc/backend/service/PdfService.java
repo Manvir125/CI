@@ -1,6 +1,7 @@
 package com.chpc.backend.service;
 
 import com.chpc.backend.entity.ConsentRequest;
+import com.chpc.backend.entity.User;
 import com.chpc.backend.entity.SignatureCapture;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.kernel.pdf.*;
@@ -98,14 +99,27 @@ public class PdfService {
                                 log.warn("No se pudo leer la imagen de firma: {}", e.getMessage());
                         }
                 }
-                // Firma del profesional
+                // Firma del profesional (solo si ya ha firmado)
                 String professionalSignatureTag = "";
-                byte[] profSigBytes = professionalSignatureService
-                                .readSignatureBytes(request.getProfessional());
-                if (profSigBytes != null) {
-                        String profB64 = Base64.getEncoder().encodeToString(profSigBytes);
-                        professionalSignatureTag = "<img src='data:image/png;base64," + profB64
-                                        + "' style='max-width:250px; border:1px solid #ccc;'/>";
+                log.info("PDF: Request {} professionalSigned status: {}", request.getId(),
+                                request.getProfessionalSigned());
+                if (Boolean.TRUE.equals(request.getProfessionalSigned())) {
+                        User signer = request.getProfessionalSigner() != null
+                                        ? request.getProfessionalSigner()
+                                        : request.getProfessional();
+
+                        log.info("PDF: Signer for request {} is {} (ID: {}), signature path: {}",
+                                        request.getId(), signer.getUsername(), signer.getId(),
+                                        signer.getSignatureImagePath());
+
+                        byte[] profSigBytes = professionalSignatureService.readSignatureBytes(signer);
+                        if (profSigBytes != null) {
+                                String profB64 = Base64.getEncoder().encodeToString(profSigBytes);
+                                professionalSignatureTag = "<img src='data:image/png;base64," + profB64
+                                                + "' style='max-width:250px; border:1px solid #ccc;'/>";
+                        } else {
+                                log.warn("PDF: Signature bytes are NULL for signer {}", signer.getUsername());
+                        }
                 }
 
                 String signedAt = capture.getSignedAt().format(FMT);
@@ -169,9 +183,15 @@ public class PdfService {
                                 + "<h3>Firma del profesional sanitario</h3>"
                                 + professionalSignatureTag
                                 + "<p style='font-size:11px; color:#666; margin-top:8px;'>"
-                                + request.getProfessional().getFullName()
-                                + " · " + request.getProfessional().getUsername()
-                                + " · Servicio: " + request.getTemplate().getServiceCode()
+                                + (request.getProfessionalSigner() != null
+                                                ? request.getProfessionalSigner().getFullName() + " · "
+                                                                + request.getProfessionalSigner().getUsername()
+                                                : request.getProfessional().getFullName() + " · "
+                                                                + request.getProfessional().getUsername())
+                                + " · Servicio: " + request.getResponsibleService()
+                                + (Boolean.TRUE.equals(request.getProfessionalSigned())
+                                                ? " · Firmado el " + request.getProfessionalSignedAt().format(FMT)
+                                                : " · PENDIENTE DE FIRMA")
                                 + "</p></div>"
 
                                 + "</body></html>";

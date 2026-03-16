@@ -69,12 +69,13 @@ logging:
     org.springframework.security: INFO
     org.springframework.ldap: DEBUG
 
-# ── Custom LDAP Properties (for LdapAuthService) ──
+# ── Active Directory Properties ──
 ldap:
   enabled: true
-  url: ldap://localhost:8389
-  base: dc=chpc,dc=es
-  user-search-base: ou=users
-  user-search-filter: (uid={0})
-  group-search-base: ou=groups
+  url: ldaps://dc01.chpcs.local:636
+  base: dc=chpcs,dc=local
+  domain: chpcs.local
+  required-group: DEP02_1536_ACCESO_CIDIGITAL
+  user-search-filter: (sAMAccountName={0})
+  group-search-base: ""
   group-search-filter: (member={0})

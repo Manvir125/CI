@@ -9,6 +9,7 @@ export interface UserResponse {
     roles: string[];
     lastLogin: string;
     createdAt: string;
+    serviceCode?: string;
 }
 
 export interface UserRequest {
@@ -17,6 +18,7 @@ export interface UserRequest {
     email: string;
     password: string;
     roles: string[];
+    serviceCode?: string;
 }
 
 export const getUsers = async (): Promise<UserResponse[]> => {

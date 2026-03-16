@@ -6,8 +6,8 @@ import com.chpc.backend.repository.RoleRepository;
 import com.chpc.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,172 +26,124 @@ public class LdapAuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${ldap.domain}")
+    private String ldapDomain;
+
+    @Value("${ldap.required-group}")
+    private String requiredGroup;
+
     @Transactional
     public Optional<User> authenticateAndSync(String username, String password) {
         try {
+            log.info("=== AD: Intentando autenticar {}", username);
 
-            List<Map<String, String>> results = ldapTemplate.search(
-                    LdapQueryBuilder.query()
-                            .base("ou=users")
-                            .where("uid").is(username),
+            // 1. Autenticar (Bind)
+            // AD suele permitir bind con sAMAccountName si el LdapContextSource está bien
+            // configurado
+            // o con userPrincipalName (user@domain)
+            boolean authenticated = ldapTemplate.authenticate(
+                    "",
+                    "(sAMAccountName=" + username + ")",
+                    password);
+
+            if (!authenticated) {
+                log.warn("=== AD: Autenticación fallida para {}", username);
+                return Optional.empty();
+            }
+
+            // 2. Buscar atributos y grupos
+            List<Map<String, Object>> results = ldapTemplate.search(
+                    "",
+                    "(sAMAccountName=" + username + ")",
                     (Attributes attrs) -> {
-                        Map<String, String> map = new HashMap<>();
+                        Map<String, Object> map = new HashMap<>();
                         map.put("cn", getAttr(attrs, "cn"));
                         map.put("mail", getAttr(attrs, "mail"));
-                        map.put("uid", getAttr(attrs, "uid"));
+                        map.put("uid", getAttr(attrs, "sAMAccountName"));
+                        map.put("description", getAttr(attrs, "description"));
+
+                        Set<String> memberOf = new HashSet<>();
+                        var attr = attrs.get("memberOf");
+                        if (attr != null) {
+                            for (int i = 0; i < attr.size(); i++) {
+                                memberOf.add(attr.get(i).toString());
+                            }
+                        }
+                        map.put("groups", memberOf);
                         return map;
                     });
 
             if (results.isEmpty()) {
+                log.warn("=== AD: Usuario {} autenticado pero no encontrado en búsqueda posterior", username);
                 return Optional.empty();
             }
 
-            Map<String, String> attrs = results.get(0);
-            String userDn = "uid=" + username + ",ou=users,dc=chpc,dc=es";
+            Map<String, Object> userData = results.get(0);
+            Set<String> groups = (Set<String>) userData.get("groups");
 
-            boolean authenticated = verifyPassword(username, password);
+            // 3. Verificar grupo obligatorio
+            boolean hasAccess = groups.stream().anyMatch(g -> g.contains(requiredGroup));
+            if (!hasAccess) {
+                log.warn("=== AD: Usuario {} no pertenece al grupo requerido {}", username, requiredGroup);
+                throw new RuntimeException("Acceso denegado: No pertenece al grupo " + requiredGroup);
+            }
 
-            if (!authenticated)
-                return Optional.empty();
-
-            Set<String> groups = getGroups(userDn);
-
-            User user = syncUser(username, attrs, groups, password);
+            // 4. Sincronizar
+            User user = syncUser(username, userData, groups, password);
             return Optional.of(user);
 
         } catch (Exception e) {
-            log.error("=== LDAP: Error: ", e);
+            log.error("=== AD: Error: {}", e.getMessage());
             return Optional.empty();
         }
     }
 
-    private boolean verifyPassword(String username, String rawPassword) {
-        try {
-            List<String> storedPasswords = ldapTemplate.search(
-                    LdapQueryBuilder.query()
-                            .base("ou=users")
-                            .where("uid").is(username),
-                    (Attributes attrs) -> {
-                        try {
-                            var pwAttr = attrs.get("userPassword");
-                            if (pwAttr == null)
-                                return null;
-                            Object val = pwAttr.get();
-                            if (val instanceof byte[]) {
-                                return new String((byte[]) val);
-                            }
-                            return val.toString();
-                        } catch (Exception e) {
-                            return null;
-                        }
-                    });
-
-            if (storedPasswords.isEmpty() || storedPasswords.get(0) == null) {
-                return false;
-            }
-
-            String stored = storedPasswords.get(0);
-
-            if (stored.startsWith("{SHA}")) {
-                return verifySha(rawPassword, stored);
-            } else if (stored.startsWith("{SSHA}")) {
-                return verifySsha(rawPassword, stored);
-            } else {
-                return stored.equals(rawPassword);
-            }
-
-        } catch (Exception e) {
-            log.error("=== LDAP: Error verificando contraseña: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    private boolean verifySha(String rawPassword, String storedHash) {
-        try {
-            String b64Hash = storedHash.substring(5);
-            byte[] storedBytes = Base64.getDecoder().decode(b64Hash);
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
-            byte[] rawBytes = md.digest(
-                    rawPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-            boolean match = java.util.Arrays.equals(rawBytes, storedBytes);
-            return match;
-
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private boolean verifySsha(String rawPassword, String storedHash) {
-        try {
-            String b64Hash = storedHash.substring(6);
-            byte[] storedBytes = Base64.getDecoder().decode(b64Hash);
-
-            byte[] salt = java.util.Arrays.copyOfRange(
-                    storedBytes, storedBytes.length - 4, storedBytes.length);
-            byte[] hashPart = java.util.Arrays.copyOfRange(
-                    storedBytes, 0, storedBytes.length - 4);
-
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
-            md.update(rawPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            md.update(salt);
-            byte[] computed = md.digest();
-
-            boolean match = java.util.Arrays.equals(computed, hashPart);
-            return match;
-
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private Set<String> getGroups(String userDn) {
-        try {
-            return new HashSet<>(ldapTemplate.search(
-                    LdapQueryBuilder.query()
-                            .base("ou=groups")
-                            .where("member").is(userDn),
-                    (Attributes attrs) -> getAttr(attrs, "cn")));
-        } catch (Exception e) {
-            return Set.of();
-        }
-    }
-
     @Transactional
-    protected User syncUser(String username, Map<String, String> attrs,
+    protected User syncUser(String username, Map<String, Object> attrs,
             Set<String> groups, String password) {
+
+        // Mapeo básico de roles. AD memberOf son DNs completos.
         Set<Role> roles = groups.stream()
-                .map(group -> {
+                .map(groupDn -> {
+                    // Extraer CN del DN del grupo
+                    String cn = groupDn.split(",")[0].replace("CN=", "").toUpperCase();
                     try {
-                        return roleRepository
-                                .findByType(Role.RoleType.valueOf(group.toUpperCase()))
+                        return roleRepository.findByType(Role.RoleType.valueOf(cn))
                                 .orElse(null);
-                    } catch (IllegalArgumentException e) {
+                    } catch (Exception e) {
                         return null;
                     }
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
+        // Si no tiene roles específicos, le asignamos PROFESSIONAL por defecto si está
+        // en el grupo de acceso
         if (roles.isEmpty()) {
             roleRepository.findByType(Role.RoleType.PROFESSIONAL)
                     .ifPresent(roles::add);
         }
 
+        String mail = (String) attrs.getOrDefault("mail", username + "@" + ldapDomain);
+        String cn = (String) attrs.getOrDefault("cn", username);
+        String serviceCode = (String) attrs.getOrDefault("description", "");
+
         return userRepository.findByUsername(username).map(existing -> {
-            existing.setFullName(attrs.getOrDefault("cn", existing.getFullName()));
-            existing.setEmail(attrs.getOrDefault("mail", existing.getEmail()));
+            existing.setFullName(cn);
+            existing.setEmail(mail);
             existing.setRoles(roles);
             existing.setIsActive(true);
+            existing.setServiceCode(serviceCode);
             return userRepository.save(existing);
         }).orElseGet(() -> {
             User newUser = User.builder()
                     .username(username)
-                    .fullName(attrs.getOrDefault("cn", username))
-                    .email(attrs.getOrDefault("mail", username + "@chpc.es"))
+                    .fullName(cn)
+                    .email(mail)
                     .passwordHash(passwordEncoder.encode(password))
                     .isActive(true)
                     .roles(roles)
+                    .serviceCode(serviceCode)
                     .build();
             return userRepository.save(newUser);
         });

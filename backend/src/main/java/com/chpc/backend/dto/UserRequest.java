@@ -24,4 +24,6 @@ public class UserRequest {
 
     @NotEmpty(message = "El usuario debe tener al menos un rol")
     private Set<String> roles;
+
+    private String serviceCode;
 }

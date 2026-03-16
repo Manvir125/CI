@@ -1,5 +1,7 @@
 package com.chpc.backend.dto;
 
+import java.util.List;
+
 import lombok.*;
 
 @Data
@@ -16,4 +18,7 @@ public class PortalConsentDto {
     private String expiresAt;
     private String status;
     private String maskedPhone;
+    private Boolean isGroup;
+    private List<String> groupDocuments; // HTML de cada consentimiento del grupo
+    private List<Long> groupRequestIds; // IDs para el submit
 }

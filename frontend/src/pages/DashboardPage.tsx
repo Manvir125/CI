@@ -131,6 +131,21 @@ export default function DashboardPage() {
                         </div>
                     )}
 
+                    {/* Firmas pendientes — PROFESSIONAL */}
+                    {hasRole('PROFESSIONAL') && (
+                        <div
+                            onClick={() => navigate('/pending-signatures')}
+                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                         cursor-pointer hover:shadow-md hover:border-emerald-300
+                         transition-all">
+                            <div className="text-3xl mb-3">⏳</div>
+                            <h3 className="font-semibold text-gray-800">Firmas pendientes</h3>
+                            <p className="text-gray-500 text-sm mt-1">
+                                Firmar consentimientos pendientes
+                            </p>
+                        </div>
+                    )}
+
                 </div>
             </main >
         </div >

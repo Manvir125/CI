@@ -26,4 +26,9 @@ public interface ConsentRequestRepository extends JpaRepository<ConsentRequest, 
                         Long professionalId, String status, Pageable pageable);
 
         List<ConsentRequest> findByStatusInAndCreatedAtBefore(List<String> statuses, LocalDateTime date);
+
+        List<ConsentRequest> findByResponsibleServiceAndProfessionalSignedFalse(
+                        String responsibleService);
+
+        List<ConsentRequest> findByGroupIdOrderById(Long groupId);
 }

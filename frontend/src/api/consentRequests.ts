@@ -14,6 +14,12 @@ export interface ConsentRequestResponse {
     cancellationReason: string;
     createdAt: string;
     updatedAt: string;
+    groupId: number;
+    responsibleService: string;
+    professionalSigned: boolean;
+    professionalSignerName: string;
+    professionalSignedAt: string;
+
 }
 
 export interface ConsentRequestDto {
@@ -87,4 +93,32 @@ export const downloadPdf = async (id: number): Promise<void> => {
 export const getKioskToken = async (id: number): Promise<string> => {
     const { data } = await client.post(`/api/consent-requests/${id}/kiosk-token`);
     return data.token;
+};
+
+export interface ConsentGroupDto {
+    nhc: string;
+    episodeId: string;
+    patientEmail: string;
+    patientPhone: string;
+    items: {
+        templateId: number;
+        responsibleService: string;
+        channel: string;
+    }[];
+}
+
+export const createGroup = async (
+    dto: ConsentGroupDto
+): Promise<any> => {
+    const { data } = await client.post('/api/consent-groups', dto);
+    return data;
+};
+
+export const getPendingMySignature = async (): Promise<ConsentRequestResponse[]> => {
+    const { data } = await client.get('/api/consent-groups/pending-my-signature');
+    return data;
+};
+
+export const professionalSign = async (requestId: number): Promise<void> => {
+    await client.post(`/api/consent-groups/requests/${requestId}/professional-sign`);
 };

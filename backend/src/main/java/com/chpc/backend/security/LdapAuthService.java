@@ -8,10 +8,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.filter.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,50 +28,56 @@ public class LdapAuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${ldap.domain}")
-    private String ldapDomain;
-
-    @Value("${ldap.required-group}")
-    private String requiredGroup;
+    private static final String REQUIRED_GROUP_DN = "CN=DEP02_1536_ACCESO_CIDIGITAL,OU=Hospital,OU=Usuarios,OU=CAS_PROVINCIAL,DC=chpcs,DC=local";
 
     @Transactional
     public Optional<User> authenticateAndSync(String username, String password) {
         try {
-            log.info("=== AD: Intentando autenticar {}", username);
+            AndFilter filter = new AndFilter();
+            filter.and(new EqualsFilter("objectclass", "person"));
+            filter.and(new EqualsFilter("sAMAccountName", username));
 
-            // 1. Autenticar (Bind)
-            // AD suele permitir bind con sAMAccountName si el LdapContextSource está bien
-            // configurado
-            // o con userPrincipalName (user@domain)
-            boolean authenticated = ldapTemplate.authenticate(
-                    "",
-                    "(sAMAccountName=" + username + ")",
-                    password);
+            log.info("=== LDAP: Intentando autenticar usuario '{}'", username);
+
+            boolean authenticated = ldapTemplate.authenticate("", filter.encode(), password);
 
             if (!authenticated) {
-                log.warn("=== AD: Autenticación fallida para {}", username);
+                log.warn("=== LDAP: Fallo de autenticación para usuario '{}'", username);
                 return Optional.empty();
             }
 
-            // 2. Buscar atributos y grupos
             List<Map<String, Object>> results = ldapTemplate.search(
                     "",
-                    "(sAMAccountName=" + username + ")",
+                    filter.encode(),
                     (Attributes attrs) -> {
                         Map<String, Object> map = new HashMap<>();
                         map.put("cn", getAttr(attrs, "cn"));
                         map.put("mail", getAttr(attrs, "mail"));
-                        map.put("uid", getAttr(attrs, "sAMAccountName"));
-                        map.put("description", getAttr(attrs, "description"));
 
-                        Set<String> memberOf = new HashSet<>();
-                        var attr = attrs.get("memberOf");
-                        if (attr != null) {
-                            for (int i = 0; i < attr.size(); i++) {
-                                memberOf.add(attr.get(i).toString());
-                            }
+                        // Debug: log all attribute IDs returned by AD
+                        log.debug("=== LDAP: Atributos devueltos para el usuario:");
+                        var attrIds = attrs.getIDs();
+                        while (attrIds.hasMore()) {
+                            String id = attrIds.next();
+                            log.debug("=== LDAP:   atributo: {}", id);
                         }
-                        map.put("groups", memberOf);
+
+                        List<String> memberOf = new ArrayList<>();
+                        try {
+                            Attribute memberOfAttr = attrs.get("memberOf");
+                            log.info("=== LDAP: memberOf attr es null? {}", (memberOfAttr == null));
+                            if (memberOfAttr != null) {
+                                log.info("=== LDAP: memberOf tiene {} valores", memberOfAttr.size());
+                                for (int i = 0; i < memberOfAttr.size(); i++) {
+                                    String group = memberOfAttr.get(i).toString();
+                                    log.info("=== LDAP:   grupo[{}]: {}", i, group);
+                                    memberOf.add(group);
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("=== LDAP: Error leyendo grupos: ", e);
+                        }
+                        map.put("memberOf", memberOf);
                         return map;
                     });
 
@@ -78,24 +86,53 @@ public class LdapAuthService {
                 return Optional.empty();
             }
 
-            Map<String, Object> userData = results.get(0);
-            Set<String> groups = (Set<String>) userData.get("groups");
+            Map<String, Object> attrs = results.get(0);
 
-            // 3. Verificar grupo obligatorio
-            boolean hasAccess = groups.stream().anyMatch(g -> g.contains(requiredGroup));
-            if (!hasAccess) {
-                log.warn("=== AD: Usuario {} no pertenece al grupo requerido {}", username, requiredGroup);
-                throw new RuntimeException("Acceso denegado: No pertenece al grupo " + requiredGroup);
+            @SuppressWarnings("unchecked")
+            List<String> userGroups = (List<String>) attrs.getOrDefault("memberOf", new ArrayList<>());
+
+            boolean hasRequiredGroup = userGroups.stream()
+                    .anyMatch(g -> g.equalsIgnoreCase(REQUIRED_GROUP_DN));
+
+            if (!hasRequiredGroup) {
+                log.warn(
+                        "=== LDAP: Usuario '{}' autenticado pero no pertenece al grupo requerido. Grupos del usuario: {}",
+                        username, userGroups);
+                return Optional.empty();
             }
 
-            // 4. Sincronizar
-            User user = syncUser(username, userData, groups, password);
+            Set<String> safeGroups = userGroups.stream()
+                    .map(this::extractCommonName)
+                    .collect(Collectors.toSet());
+
+            log.info("=== LDAP: Autenticación exitosa y con grupo válido para '{}'", username);
+
+            Map<String, String> stringAttrs = new HashMap<>();
+            stringAttrs.put("cn", attrs.getOrDefault("cn", "").toString());
+            stringAttrs.put("mail", attrs.getOrDefault("mail", "").toString());
+
+            User user = syncUser(username, stringAttrs, safeGroups, password);
             return Optional.of(user);
 
         } catch (Exception e) {
             log.error("=== AD: Error: {}", e.getMessage());
             return Optional.empty();
         }
+    }
+
+    private String extractCommonName(String dn) {
+        try {
+            if (dn != null && dn.toUpperCase().startsWith("CN=")) {
+                int start = 3;
+                int end = dn.indexOf(',');
+                if (end > start) {
+                    return dn.substring(start, end);
+                }
+                return dn.substring(start);
+            }
+        } catch (Exception e) {
+        }
+        return dn;
     }
 
     @Transactional

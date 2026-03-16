@@ -41,6 +41,17 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UserUpdateRequest request,
+            HttpServletRequest httpRequest) {
+
+        return ResponseEntity.ok(
+                userService.update(id, request, httpRequest.getRemoteAddr()));
+    }
+
     // Actualizar roles — efecto inmediato en la próxima petición del usuario
     @PutMapping("/{id}/roles")
     @PreAuthorize("hasRole('ADMIN')")

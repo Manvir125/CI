@@ -67,6 +67,39 @@ public class UserService {
         }
 
         @Transactional
+        public UserResponse update(Long id, UserUpdateRequest request, String ipAddress) {
+
+                User user = findUser(id);
+
+                if (userRepository.existsByEmailAndIdNot(request.getEmail(), id)) {
+                        throw new RuntimeException("Ya existe otro usuario con ese email");
+                }
+
+                user.setFullName(request.getFullName());
+                user.setEmail(request.getEmail());
+                user.setServiceCode(request.getServiceCode());
+                user.setRoles(resolveRoles(request.getRoles()));
+
+                if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+                }
+
+                User saved = userRepository.save(user);
+
+                String actor = SecurityContextHolder.getContext()
+                                .getAuthentication().getName();
+
+                auditService.logWithData(actor, "USER_UPDATED", "User", id, ipAddress, true,
+                                Map.of(
+                                                "username", saved.getUsername(),
+                                                "updatedFields", request.getPassword() != null
+                                                                ? "fullName,email,serviceCode,roles,password"
+                                                                : "fullName,email,serviceCode,roles"));
+
+                return toResponse(saved);
+        }
+
+        @Transactional
         public UserResponse updateRoles(Long id, UserRolesRequest request, String ipAddress) {
 
                 User user = findUser(id);

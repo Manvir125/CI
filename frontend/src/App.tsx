@@ -7,6 +7,7 @@ import TemplatesPage from './pages/TemplatesPage';
 import NewTemplatePage from './pages/NewTemplatePage';
 import EditTemplatePage from './pages/EditTemplatePage';
 import NewUserPage from './pages/NewUserPage';
+import EditUserPage from './pages/EditUserPage';
 import UsersPage from './pages/UserPage';
 import RequestsPage from './pages/RequestPage';
 import NewRequestPage from './pages/NewRequestPage';
@@ -90,6 +91,11 @@ export default function App() {
           <Route path="/users/new" element={
             <ProtectedRoute requiredRole="ADMIN">
               <NewUserPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/users/:id/edit" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <EditUserPage />
             </ProtectedRoute>
           } />
           <Route path="/requests" element={

@@ -11,7 +11,7 @@ import java.util.Map;
 @Configuration
 public class LdapConfig {
 
-    private static final String LDAP_URL = "ldap://172.17.35.111:389";
+    private static final String LDAP_URL = "ldap://dc01.chpcs.local:389";
     private static final String BASE_DN = "DC=chpcs,DC=local";
     private static final String SERVICE_ACCOUNT = "chpcs\\AppConsentimiento";
     private static final String SERVICE_PASSWORD = "AppPwd123#";
@@ -38,8 +38,8 @@ public class LdapConfig {
     @Bean
     public LdapTemplate ldapTemplate(LdapContextSource contextSource) {
         LdapTemplate template = new LdapTemplate(contextSource);
-        template.setIgnorePartialResultException(true); // Necessary for AD
-        template.setIgnoreNameNotFoundException(true); // Necessary for AD
+        template.setIgnorePartialResultException(true);
+        template.setIgnoreNameNotFoundException(true);
         return template;
     }
 }

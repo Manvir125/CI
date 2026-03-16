@@ -21,13 +21,31 @@ export interface UserRequest {
     serviceCode?: string;
 }
 
+export interface UserUpdateRequest {
+    fullName: string;
+    email: string;
+    password?: string;
+    roles: string[];
+    serviceCode?: string;
+}
+
 export const getUsers = async (): Promise<UserResponse[]> => {
     const { data } = await client.get('/api/users');
     return data;
 };
 
+export const getUser = async (id: number): Promise<UserResponse> => {
+    const { data } = await client.get(`/api/users/${id}`);
+    return data;
+};
+
 export const createUser = async (req: UserRequest): Promise<UserResponse> => {
     const { data } = await client.post('/api/users', req);
+    return data;
+};
+
+export const updateUser = async (id: number, req: UserUpdateRequest): Promise<UserResponse> => {
+    const { data } = await client.put(`/api/users/${id}`, req);
     return data;
 };
 

@@ -71,7 +71,7 @@ public class NotificationService {
             helper.setFrom(mailFrom);
             helper.setTo(request.getPatientEmail());
             helper.setSubject("Consentimiento informado pendiente de firma — CHPC");
-            helper.setText(htmlBody, true); // true = HTML
+            helper.setText(htmlBody, true); 
 
             mailSender.send(message);
 

@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LdapAuthService {
 
+    @Value("${ldap.domain}")
+    private String ldapDomain;
+
     private final LdapTemplate ldapTemplate;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -136,13 +139,11 @@ public class LdapAuthService {
     }
 
     @Transactional
-    protected User syncUser(String username, Map<String, Object> attrs,
+    protected User syncUser(String username, Map<String, String> attrs,
             Set<String> groups, String password) {
 
-        // Mapeo básico de roles. AD memberOf son DNs completos.
         Set<Role> roles = groups.stream()
                 .map(groupDn -> {
-                    // Extraer CN del DN del grupo
                     String cn = groupDn.split(",")[0].replace("CN=", "").toUpperCase();
                     try {
                         return roleRepository.findByType(Role.RoleType.valueOf(cn))
@@ -154,24 +155,18 @@ public class LdapAuthService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        // Si no tiene roles específicos, le asignamos PROFESSIONAL por defecto si está
-        // en el grupo de acceso
         if (roles.isEmpty()) {
             roleRepository.findByType(Role.RoleType.PROFESSIONAL)
                     .ifPresent(roles::add);
         }
 
-        String mail = (String) attrs.getOrDefault("mail", username + "@" + ldapDomain);
-        String cn = (String) attrs.getOrDefault("cn", username);
-        String serviceCode = (String) attrs.getOrDefault("description", "");
+        String mail = attrs.getOrDefault("mail", username + "@" + ldapDomain);
+        String cn = attrs.getOrDefault("cn", username);
+        String serviceCode = attrs.getOrDefault("description", "");
 
         return userRepository.findByUsername(username).map(existing -> {
-            existing.setFullName(cn);
-            existing.setEmail(mail);
-            existing.setRoles(roles);
-            existing.setIsActive(true);
-            existing.setServiceCode(serviceCode);
-            return userRepository.save(existing);
+            log.info("=== LDAP: Usuario '{}' ya existe en BD local, se omite sincronización", username);
+            return existing;
         }).orElseGet(() -> {
             User newUser = User.builder()
                     .username(username)

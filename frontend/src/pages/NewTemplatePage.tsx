@@ -60,7 +60,7 @@ export default function NewTemplatePage() {
                 <h1 className="font-bold">Nueva Plantilla</h1>
             </nav>
 
-            <main className="p-6 max-w-3xl mx-auto">
+            <main className="p-6 max-w-5xl mx-auto">
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                     {/* Datos básicos */}
@@ -114,19 +114,30 @@ export default function NewTemplatePage() {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Contenido HTML *
                             </label>
-                            <textarea
-                                value={form.contentHtml}
-                                onChange={e => setForm({ ...form, contentHtml: e.target.value })}
-                                rows={8}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <textarea
+                                        value={form.contentHtml}
+                                        onChange={e => setForm({ ...form, contentHtml: e.target.value })}
+                                        rows={14}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2
                            focus:outline-none focus:ring-2 focus:ring-emerald-500
-                           font-mono text-sm"
-                                placeholder="<h2>Consentimiento Informado</h2>&#10;<p>Yo, {{PATIENT_NAME}}...</p>"
-                                required
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                                Usa {'{{PATIENT_NAME}}'}, {'{{SERVICE}}'}, {'{{PROFESSIONAL_NAME}}'} como campos dinámicos
-                            </p>
+                           font-mono text-sm whitespace-pre"
+                                        placeholder="<h2>Consentimiento Informado</h2>&#10;<p>Yo, {{PATIENT_NAME}}...</p>"
+                                        required
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Usa {'{{PATIENT_NAME}}'}, {'{{SERVICE}}'}, {'{{PROFESSIONAL_NAME}}'} como campos dinámicos
+                                    </p>
+                                </div>
+                                <div className="border border-gray-300 rounded-lg p-4 bg-white overflow-y-auto min-h-[300px] max-h-[400px]">
+                                    <div className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wider border-b pb-2">Vista Previa</div>
+                                    <div 
+                                        className="prose prose-sm max-w-none text-gray-800"
+                                        dangerouslySetInnerHTML={{ __html: form.contentHtml || '<p class="text-gray-400 italic">La vista previa aparecerá aquí...</p>' }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 

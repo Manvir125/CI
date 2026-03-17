@@ -24,7 +24,7 @@ public class ConsentGroupDto {
         @NotNull
         private Long templateId;
         @NotBlank
-        private String responsibleService; // servicio que debe firmar este CI
+        private String responsibleService;
         private String channel;
     }
 }

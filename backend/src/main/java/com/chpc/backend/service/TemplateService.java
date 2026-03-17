@@ -10,6 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.web.multipart.MultipartFile;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
@@ -169,6 +174,43 @@ public class TemplateService {
                                 .stream()
                                 .map(this::toResponse)
                                 .collect(Collectors.toList());
+        }
+
+        // Extraer texto de un PDF a HTML
+        public String extractHtmlFromPdf(MultipartFile file) {
+                try {
+                        PdfReader reader = new PdfReader(file.getInputStream());
+                        PdfDocument pdfDoc = new PdfDocument(reader);
+                        StringBuilder textBuilder = new StringBuilder();
+
+                        for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+                                String textFromPage = PdfTextExtractor.getTextFromPage(pdfDoc.getPage(i));
+                                textBuilder.append(textFromPage).append("\n\n");
+                        }
+                        pdfDoc.close();
+
+                        String text = textBuilder.toString();
+                        if (text.trim().isEmpty()) {
+                                return "";
+                        }
+
+                        // Dividir por párrafos (doble salto de línea)
+                        String[] paragraphs = text.split("\\r?\\n\\r?\\n");
+                        StringBuilder htmlBuilder = new StringBuilder();
+
+                        for (String p : paragraphs) {
+                                String cleanP = p.trim();
+                                if (!cleanP.isEmpty()) {
+                                        // Reemplazar saltos de línea simples dentro del párrafo con <br/>
+                                        cleanP = cleanP.replace("\n", "<br/>\n").replace("\r", "");
+                                        htmlBuilder.append("<p>\n").append(cleanP).append("\n</p>\n\n");
+                                }
+                        }
+
+                        return htmlBuilder.toString();
+                } catch (IOException e) {
+                        throw new RuntimeException("Error al extraer texto del PDF", e);
+                }
         }
 
         // Convierte entidad → DTO de respuesta

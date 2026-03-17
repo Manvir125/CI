@@ -84,4 +84,13 @@ public class TemplateController {
         return ResponseEntity.ok(templateService.getVersionHistory(name, procedureCode));
     }
 
+    @PostMapping("/extract-pdf")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATIVE')")
+    public ResponseEntity<java.util.Map<String, String>> extractPdf(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+
+        String html = templateService.extractHtmlFromPdf(file);
+        return ResponseEntity.ok(java.util.Map.of("html", html));
+    }
+
 }

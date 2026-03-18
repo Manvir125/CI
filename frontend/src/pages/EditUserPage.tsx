@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createUser } from '../api/user';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getUser, updateUser } from '../api/user';
 
 const ALL_ROLES = ['ADMIN', 'PROFESSIONAL', 'ADMINISTRATIVE', 'SUPERVISOR'];
 
@@ -11,20 +11,43 @@ const ROLE_LABELS: Record<string, string> = {
     SUPERVISOR: 'Supervisor',
 };
 
-export default function NewUserPage() {
+export default function EditUserPage() {
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
     const [form, setForm] = useState({
-        username: '',
         fullName: '',
         email: '',
         password: '',
         serviceCode: '',
     });
 
-    const [selectedRoles, setSelectedRoles] = useState<string[]>(['PROFESSIONAL']);
+    const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+    const [username, setUsername] = useState('');
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const user = await getUser(Number(id));
+                setForm({
+                    fullName: user.fullName,
+                    email: user.email,
+                    password: '',
+                    serviceCode: user.serviceCode || '',
+                });
+                setSelectedRoles([...user.roles]);
+                setUsername(user.username);
+            } catch {
+                setError('Error al cargar el usuario');
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [id]);
 
     const toggleRole = (role: string) => {
         setSelectedRoles(prev =>
@@ -38,17 +61,29 @@ export default function NewUserPage() {
             setError('Selecciona al menos un rol');
             return;
         }
-        setLoading(true);
+        setSaving(true);
         setError('');
         try {
-            await createUser({ ...form, roles: selectedRoles });
+            await updateUser(Number(id), {
+                fullName: form.fullName,
+                email: form.email,
+                password: form.password || undefined,
+                roles: selectedRoles,
+                serviceCode: form.serviceCode || undefined,
+            });
             navigate('/users');
         } catch (err: any) {
-            setError(err?.response?.data?.message || 'Error al crear el usuario');
+            setError(err?.response?.data?.message || 'Error al actualizar el usuario');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <p className="text-gray-400">Cargando usuario...</p>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -61,7 +96,7 @@ export default function NewUserPage() {
                     ← Usuarios
                 </button>
                 <span className="text-emerald-500">|</span>
-                <h1 className="font-bold">Nuevo Usuario</h1>
+                <h1 className="font-bold">Editar Usuario — @{username}</h1>
             </nav>
 
             <main className="p-6 max-w-lg mx-auto">
@@ -81,22 +116,6 @@ export default function NewUserPage() {
                                 onChange={e => setForm({ ...form, fullName: e.target.value })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
                            focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Dra. Ana García López"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Usuario *
-                            </label>
-                            <input
-                                type="text"
-                                value={form.username}
-                                onChange={e => setForm({ ...form, username: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="ana.garcia"
                                 required
                             />
                         </div>
@@ -111,14 +130,13 @@ export default function NewUserPage() {
                                 onChange={e => setForm({ ...form, email: e.target.value })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
                            focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="ana.garcia@chpc.es"
                                 required
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Contraseña *
+                                Nueva contraseña
                             </label>
                             <input
                                 type="password"
@@ -126,26 +144,14 @@ export default function NewUserPage() {
                                 onChange={e => setForm({ ...form, password: e.target.value })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2
                            focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Mínimo 8 caracteres"
-                                required
+                                placeholder="Dejar vacío para no cambiar"
                                 minLength={8}
                             />
+                            <p className="text-xs text-gray-400 mt-1">
+                                Solo se actualizará si introduces una nueva contraseña (mín. 8 caracteres)
+                            </p>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Confirmar contraseña *
-                            </label>
-                            <input
-                                type="password"
-                                value={form.password}
-                                onChange={e => setForm({ ...form, password: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Mínimo 8 caracteres"
-                                required
-                                minLength={8}
-                            />
-                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Código de servicio
@@ -159,7 +165,6 @@ export default function NewUserPage() {
                                 placeholder="Ej: CIR"
                             />
                         </div>
-
                     </div>
 
                     {/* Roles */}
@@ -210,11 +215,11 @@ export default function NewUserPage() {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={saving}
                             className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
                          hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                         >
-                            {loading ? 'Creando...' : 'Crear usuario'}
+                            {saving ? 'Guardando...' : 'Guardar cambios'}
                         </button>
                     </div>
                 </form>

@@ -14,10 +14,10 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
   mail:
-    host: sandbox.smtp.mailtrap.io
-    port: 2525
-    username: ${MAIL_USERNAME:0a93ae95fbf2bd}
-    password: ${MAIL_PASSWORD:16b4b69720ce3f}
+    host: smtp.office365.com
+    port: 587
+    username: ${MAIL_USERNAME:no-reply@hospitalprovincial.es}
+    password: ${MAIL_PASSWORD:Zan50068}
     properties:
       mail:
         smtp:
@@ -29,10 +29,18 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+
+  ldap:
+    embedded:
+      base-dn: dc=chpc,dc=es
+      ldif: classpath:ldap/users.ldif
+      port: 8389
+      validation:
+        enabled: false
 app:
   base-url: ${APP_BASE_URL:http://localhost:5173}
   token-expiry-hours: ${TOKEN_EXPIRY_HOURS:72}
-  mail-from: noreply@chpc.es
+  mail-from: no-reply@hospitalprovincial.es
   signatures-path: ${SIGNATURES_PATH:./signatures}
   pdf-path: ${PDF_PATH:./pdfs}
   keystore-path: ${KEYSTORE_PATH:certs/chpc-keystore.p12}
@@ -60,4 +68,14 @@ logging:
     com.chpc: DEBUG
     org.springframework.security: INFO
     org.springframework.ldap: DEBUG
-
+
+# ── Active Directory Properties ──
+ldap:
+  enabled: true
+  url: ldap://dc01.chpcs.local:389
+  base: dc=chpcs,dc=local
+  domain: chpcs.local
+  required-group: DEP02_1536_ACCESO_CIDIGITAL
+  user-search-filter: (sAMAccountName={0})
+  group-search-base: ""
+  group-search-filter: (member={0})

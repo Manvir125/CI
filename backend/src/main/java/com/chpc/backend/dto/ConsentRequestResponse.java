@@ -19,4 +19,9 @@ public class ConsentRequestResponse {
     private String cancellationReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long groupId;
+    private String responsibleService;
+    private Boolean professionalSigned;
+    private String professionalSignerName;
+    private String professionalSignedAt;
 }

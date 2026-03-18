@@ -246,6 +246,13 @@ export default function UsersPage() {
                                             ) : (
                                                 <>
                                                     <button
+                                                        onClick={() => navigate(`/users/${user.id}/edit`)}
+                                                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700
+                                       px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                    >
+                                                        Editar
+                                                    </button>
+                                                    <button
                                                         onClick={() => startEditRoles(user)}
                                                         className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700
                                        px-3 py-1.5 rounded-lg text-xs transition-colors"

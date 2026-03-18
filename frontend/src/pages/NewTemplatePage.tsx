@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createTemplate } from '../api/templates';
+import { createTemplate, extractPdfToHtml } from '../api/templates';
 import type { TemplateField } from '../types';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 export default function NewTemplatePage() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [extracting, setExtracting] = useState(false);
     const [error, setError] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [form, setForm] = useState({
         name: '',
@@ -28,6 +32,28 @@ export default function NewTemplatePage() {
             setError('Error al crear la plantilla');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setExtracting(true);
+        setError('');
+        try {
+            const html = await extractPdfToHtml(file);
+            setForm(prev => ({ 
+                ...prev, 
+                contentHtml: prev.contentHtml + (prev.contentHtml ? '\n\n' : '') + html 
+            }));
+        } catch {
+            setError('Error al extraer texto del PDF');
+        } finally {
+            setExtracting(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
 
@@ -60,7 +86,7 @@ export default function NewTemplatePage() {
                 <h1 className="font-bold">Nueva Plantilla</h1>
             </nav>
 
-            <main className="p-6 max-w-3xl mx-auto">
+            <main className="p-6 max-w-5xl mx-auto">
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                     {/* Datos básicos */}
@@ -111,22 +137,40 @@ export default function NewTemplatePage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Contenido HTML *
-                            </label>
-                            <textarea
-                                value={form.contentHtml}
-                                onChange={e => setForm({ ...form, contentHtml: e.target.value })}
-                                rows={8}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500
-                           font-mono text-sm"
-                                placeholder="<h2>Consentimiento Informado</h2>&#10;<p>Yo, {{PATIENT_NAME}}...</p>"
-                                required
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                                Usa {'{{PATIENT_NAME}}'}, {'{{SERVICE}}'}, {'{{PROFESSIONAL_NAME}}'} como campos dinámicos
-                            </p>
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Contenido HTML *
+                                </label>
+                                <div>
+                                    <input 
+                                        type="file" 
+                                        accept="application/pdf" 
+                                        className="hidden" 
+                                        ref={fileInputRef}
+                                        onChange={handleFileUpload}
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={extracting}
+                                        className="text-xs bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-100 disabled:opacity-50 transition-colors flex items-center gap-1 font-medium"
+                                    >
+                                        {extracting ? 'Extrayendo...' : '📄 Importar texto desde PDF'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={form.contentHtml}
+                                    onChange={(val) => setForm({ ...form, contentHtml: val })}
+                                    className="bg-white"
+                                    style={{ minHeight: '300px' }}
+                                />
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Usa {'{{PATIENT_NAME}}'}, {'{{SERVICE}}'}, {'{{PROFESSIONAL_NAME}}'} como campos dinámicos
+                                </p>
+                            </div>
                         </div>
                     </div>
 

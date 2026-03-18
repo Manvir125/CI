@@ -35,6 +35,17 @@ export const updateTemplate = async (
     return response.data;
 };
 
+export const extractPdfToHtml = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await client.post<{ html: string }>('/api/templates/extract-pdf', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+    return response.data.html;
+};
+
 export const getTemplateHistory = async (
     name: string,
     procedureCode: string

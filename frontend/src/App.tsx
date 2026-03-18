@@ -7,6 +7,7 @@ import TemplatesPage from './pages/TemplatesPage';
 import NewTemplatePage from './pages/NewTemplatePage';
 import EditTemplatePage from './pages/EditTemplatePage';
 import NewUserPage from './pages/NewUserPage';
+import EditUserPage from './pages/EditUserPage';
 import UsersPage from './pages/UserPage';
 import RequestsPage from './pages/RequestPage';
 import NewRequestPage from './pages/NewRequestPage';
@@ -15,6 +16,7 @@ import AuditPage from './pages/AuditPage';
 import KioskPage from './pages/KioskPage';
 import KioskSignPage from './pages/KioskSingPage';
 import ProfilePage from './pages/ProfilePage';
+import PendingSignaturesPage from './pages/PendingSignaturesPage';
 
 export default function App() {
   return (
@@ -65,7 +67,11 @@ export default function App() {
               <ProfilePage />
             </ProtectedRoute>
           } />
-
+          <Route path="/pending-signatures" element={
+            <ProtectedRoute>
+              <PendingSignaturesPage />
+            </ProtectedRoute>
+          } />
           {/* Sin autorización */}
           <Route path="/unauthorized" element={
             <div className="min-h-screen flex items-center justify-center">
@@ -85,6 +91,11 @@ export default function App() {
           <Route path="/users/new" element={
             <ProtectedRoute requiredRole="ADMIN">
               <NewUserPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/users/:id/edit" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <EditUserPage />
             </ProtectedRoute>
           } />
           <Route path="/requests" element={

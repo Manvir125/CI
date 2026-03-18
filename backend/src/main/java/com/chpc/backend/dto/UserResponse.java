@@ -15,4 +15,5 @@ public class UserResponse {
     private Set<String> roles;
     private LocalDateTime lastLogin;
     private LocalDateTime createdAt;
+    private String serviceCode;
 }

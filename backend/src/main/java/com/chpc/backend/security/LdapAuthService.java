@@ -6,6 +6,7 @@ import com.chpc.backend.repository.RoleRepository;
 import com.chpc.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.filter.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +22,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class LdapAuthService {
+
+    @Value("${ldap.domain}")
+    private String ldapDomain;
 
     private final LdapTemplate ldapTemplate;
     private final UserRepository userRepository;
@@ -81,6 +85,7 @@ public class LdapAuthService {
                     });
 
             if (results.isEmpty()) {
+                log.warn("=== AD: Usuario {} autenticado pero no encontrado en búsqueda posterior", username);
                 return Optional.empty();
             }
 
@@ -90,16 +95,18 @@ public class LdapAuthService {
             List<String> userGroups = (List<String>) attrs.getOrDefault("memberOf", new ArrayList<>());
 
             boolean hasRequiredGroup = userGroups.stream()
-                .anyMatch(g -> g.equalsIgnoreCase(REQUIRED_GROUP_DN));
+                    .anyMatch(g -> g.equalsIgnoreCase(REQUIRED_GROUP_DN));
 
             if (!hasRequiredGroup) {
-                log.warn("=== LDAP: Usuario '{}' autenticado pero no pertenece al grupo requerido. Grupos del usuario: {}", username, userGroups);
+                log.warn(
+                        "=== LDAP: Usuario '{}' autenticado pero no pertenece al grupo requerido. Grupos del usuario: {}",
+                        username, userGroups);
                 return Optional.empty();
             }
 
             Set<String> safeGroups = userGroups.stream()
-                .map(this::extractCommonName)
-                .collect(Collectors.toSet());
+                    .map(this::extractCommonName)
+                    .collect(Collectors.toSet());
 
             log.info("=== LDAP: Autenticación exitosa y con grupo válido para '{}'", username);
 
@@ -111,7 +118,7 @@ public class LdapAuthService {
             return Optional.of(user);
 
         } catch (Exception e) {
-            log.error("=== LDAP: Error: ", e);
+            log.error("=== AD: Error: {}", e.getMessage());
             return Optional.empty();
         }
     }
@@ -134,13 +141,14 @@ public class LdapAuthService {
     @Transactional
     protected User syncUser(String username, Map<String, String> attrs,
             Set<String> groups, String password) {
+
         Set<Role> roles = groups.stream()
-                .map(group -> {
+                .map(groupDn -> {
+                    String cn = groupDn.split(",")[0].replace("CN=", "").toUpperCase();
                     try {
-                        return roleRepository
-                                .findByType(Role.RoleType.valueOf(group.toUpperCase()))
+                        return roleRepository.findByType(Role.RoleType.valueOf(cn))
                                 .orElse(null);
-                    } catch (IllegalArgumentException e) {
+                    } catch (Exception e) {
                         return null;
                     }
                 })
@@ -152,20 +160,22 @@ public class LdapAuthService {
                     .ifPresent(roles::add);
         }
 
+        String mail = attrs.getOrDefault("mail", username + "@" + ldapDomain);
+        String cn = attrs.getOrDefault("cn", username);
+        String serviceCode = attrs.getOrDefault("description", "");
+
         return userRepository.findByUsername(username).map(existing -> {
-            existing.setFullName(attrs.getOrDefault("cn", existing.getFullName()));
-            existing.setEmail(attrs.getOrDefault("mail", existing.getEmail()));
-            existing.setRoles(roles);
-            existing.setIsActive(true);
-            return userRepository.save(existing);
+            log.info("=== LDAP: Usuario '{}' ya existe en BD local, se omite sincronización", username);
+            return existing;
         }).orElseGet(() -> {
             User newUser = User.builder()
                     .username(username)
-                    .fullName(attrs.getOrDefault("cn", username))
-                    .email(attrs.getOrDefault("mail", username + "@chpc.es"))
+                    .fullName(cn)
+                    .email(mail)
                     .passwordHash(passwordEncoder.encode(password))
                     .isActive(true)
                     .roles(roles)
+                    .serviceCode(serviceCode)
                     .build();
             return userRepository.save(newUser);
         });

@@ -66,6 +66,23 @@ public class ConsentRequest {
     @Column(name = "pdf_generated_at")
     private LocalDateTime pdfGeneratedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private ConsentGroup group;
+
+    @Column(name = "responsible_service")
+    private String responsibleService;
+
+    @Column(name = "professional_signed", nullable = false)
+    private Boolean professionalSigned = false;
+
+    @Column(name = "professional_signed_at")
+    private LocalDateTime professionalSignedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "professional_signer_id")
+    private User professionalSigner;
+
     @PrePersist
     protected void prePersist() {
         if (createdAt == null)

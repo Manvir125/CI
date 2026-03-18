@@ -5,7 +5,7 @@ import {
     getActiveEpisodes, type PatientDto, type EpisodeDto
 } from '../api/his';
 import { getTemplates } from '../api/templates';
-import { createRequest, sendRequest } from '../api/consentRequests';
+import { sendRequest, createGroup } from '../api/consentRequests';
 import type { Template } from '../types';
 
 type Step = 'search' | 'episodes' | 'configure';
@@ -24,7 +24,8 @@ export default function NewRequestPage() {
     const [episodes, setEpisodes] = useState<EpisodeDto[]>([]);
     const [selectedEpisode, setSelectedEpisode] = useState<EpisodeDto | null>(null);
     const [templates, setTemplates] = useState<Template[]>([]);
-    const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+    const [mainTemplateId, setMainTemplateId] = useState<number | null>(null);
+    const [secondaryTemplateIds, setSecondaryTemplateIds] = useState<number[]>([]);
     const [channel, setChannel] = useState<'REMOTE' | 'ONSITE'>('REMOTE');
     const [patientEmail, setPatientEmail] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
@@ -62,14 +63,12 @@ export default function NewRequestPage() {
     // ── Paso 2: Seleccionar episodio ─────────────────────────────────────────
     const handleSelectEpisode = async (episode: EpisodeDto) => {
         setSelectedEpisode(episode);
+        setMainTemplateId(null);
+        setSecondaryTemplateIds([]);
         setLoading(true);
         try {
             const allTemplates = await getTemplates();
-            // Filtra plantillas que coincidan con el servicio del episodio
-            const relevant = allTemplates.filter(
-                t => !t.serviceCode || t.serviceCode === episode.serviceCode
-            );
-            setTemplates(relevant.length > 0 ? relevant : allTemplates);
+            setTemplates(allTemplates);
             setStep('configure');
         } catch {
             setError('Error al cargar las plantillas');
@@ -78,27 +77,51 @@ export default function NewRequestPage() {
         }
     };
 
+    const toggleSecondary = (id: number) => {
+        setSecondaryTemplateIds(prev =>
+            prev.includes(id)
+                ? prev.filter(tid => tid !== id)
+                : [...prev, id]
+        );
+    };
+
     // ── Paso 3: Crear y enviar solicitud ─────────────────────────────────────
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedTemplate) {
-            setError('Selecciona una plantilla');
+        if (!mainTemplateId) {
+            setError('Debes seleccionar un consentimiento principal');
             return;
         }
         setLoading(true);
         setError('');
         try {
-            const created = await createRequest({
+            // Unificamos el principal y los secundarios (filtrando si el principal se repite en secundarios)
+            const allSelectedIds = [
+                mainTemplateId,
+                ...secondaryTemplateIds.filter(id => id !== mainTemplateId)
+            ];
+
+            const groupData = {
                 nhc: patient!.nhc,
                 episodeId: selectedEpisode!.episodeId,
-                templateId: selectedTemplate,
-                channel,
                 patientEmail,
                 patientPhone,
-            });
+                items: allSelectedIds.map(id => {
+                    const t = templates.find(temp => temp.id === id);
+                    return {
+                        templateId: id,
+                        responsibleService: t?.serviceCode || selectedEpisode!.serviceCode,
+                        channel,
+                    };
+                })
+            };
 
-            if (sendNow && channel === 'REMOTE') {
-                await sendRequest(created.id);
+            const createdGroup = await createGroup(groupData);
+
+            if (sendNow && channel === 'REMOTE' && createdGroup.requests?.length > 0) {
+                // Se envía el primer consentimiento del grupo para que el acceso al portal
+                // muestre todos los consentimientos vinculados.
+                await sendRequest(createdGroup.requests[0].id);
             }
 
             navigate('/requests');
@@ -336,37 +359,81 @@ export default function NewRequestPage() {
                             </div>
                         </div>
 
-                        {/* Plantilla */}
+                        {/* Plantilla Principal */}
                         <div className="bg-white rounded-xl p-6 shadow-sm space-y-3">
                             <h2 className="font-semibold text-gray-800 text-lg">
-                                Plantilla de consentimiento *
+                                Consentimiento Principal *
                             </h2>
-                            {templates.map(t => (
-                                <label
-                                    key={t.id}
-                                    className={`flex items-start gap-3 p-3 border rounded-lg
-                               cursor-pointer transition-all
-                    ${selectedTemplate === t.id
-                                            ? 'border-emerald-500 bg-emerald-50'
-                                            : 'border-gray-200 hover:bg-gray-50'}`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="template"
-                                        value={t.id}
-                                        checked={selectedTemplate === t.id}
-                                        onChange={() => setSelectedTemplate(t.id)}
-                                        className="mt-0.5"
-                                    />
-                                    <div>
-                                        <p className="font-medium text-gray-800 text-sm">{t.name}</p>
-                                        <p className="text-gray-400 text-xs mt-0.5">
-                                            v{t.version}
-                                            {t.serviceCode && ` · ${t.serviceCode}`}
-                                        </p>
-                                    </div>
-                                </label>
-                            ))}
+                            <p className="text-sm text-gray-500 mb-2">
+                                Solo se muestran plantillas del servicio {selectedEpisode.serviceName}
+                            </p>
+                            <div className="space-y-2">
+                                {templates
+                                    .filter(t => !t.serviceCode || t.serviceCode === selectedEpisode.serviceCode)
+                                    .map(t => (
+                                        <label
+                                            key={t.id}
+                                            className={`flex items-start gap-3 p-3 border rounded-lg
+                                cursor-pointer transition-all
+                                ${mainTemplateId === t.id
+                                                    ? 'border-emerald-500 bg-emerald-50'
+                                                    : 'border-gray-200 hover:bg-gray-50'}`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="mainTemplate"
+                                                checked={mainTemplateId === t.id}
+                                                onChange={() => setMainTemplateId(t.id)}
+                                                className="mt-0.5"
+                                            />
+                                            <div>
+                                                <p className="font-medium text-gray-800 text-sm">{t.name}</p>
+                                                <p className="text-gray-400 text-xs mt-0.5">
+                                                    v{t.version}
+                                                    {t.serviceCode && ` · ${t.serviceCode}`}
+                                                </p>
+                                            </div>
+                                        </label>
+                                    ))}
+                            </div>
+                        </div>
+
+                        {/* Plantillas Secundarias */}
+                        <div className="bg-white rounded-xl p-6 shadow-sm space-y-3">
+                            <h2 className="font-semibold text-gray-800 text-lg">
+                                Consentimientos Adicionales
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-2">
+                                Puedes añadir otros consentimientos de cualquier servicio
+                            </p>
+                            <div className="space-y-2">
+                                {templates
+                                    .filter(t => t.id !== mainTemplateId)
+                                    .map(t => (
+                                        <label
+                                            key={t.id}
+                                            className={`flex items-start gap-3 p-3 border rounded-lg
+                                cursor-pointer transition-all
+                                ${secondaryTemplateIds.includes(t.id)
+                                                    ? 'border-emerald-500 bg-emerald-50'
+                                                    : 'border-gray-200 hover:bg-gray-50'}`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={secondaryTemplateIds.includes(t.id)}
+                                                onChange={() => toggleSecondary(t.id)}
+                                                className="mt-0.5"
+                                            />
+                                            <div>
+                                                <p className="font-medium text-gray-800 text-sm">{t.name}</p>
+                                                <p className="text-gray-400 text-xs mt-0.5">
+                                                    v{t.version}
+                                                    {t.serviceCode && ` · ${t.serviceCode}`}
+                                                </p>
+                                            </div>
+                                        </label>
+                                    ))}
+                            </div>
                         </div>
 
                         {/* Canal y datos de contacto */}

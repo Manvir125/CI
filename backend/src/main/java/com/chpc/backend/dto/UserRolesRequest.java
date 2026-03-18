@@ -9,4 +9,6 @@ public class UserRolesRequest {
 
     @NotEmpty(message = "Debe asignarse al menos un rol")
     private Set<String> roles;
+
+    private String serviceCode;
 }

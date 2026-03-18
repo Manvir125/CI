@@ -50,6 +50,7 @@ public class UserService {
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .isActive(true)
                                 .roles(roles)
+                                .serviceCode(request.getServiceCode())
                                 .build();
 
                 User saved = userRepository.save(user);
@@ -61,6 +62,39 @@ public class UserService {
                                 Map.of(
                                                 "username", saved.getUsername(),
                                                 "roles", request.getRoles()));
+
+                return toResponse(saved);
+        }
+
+        @Transactional
+        public UserResponse update(Long id, UserUpdateRequest request, String ipAddress) {
+
+                User user = findUser(id);
+
+                if (userRepository.existsByEmailAndIdNot(request.getEmail(), id)) {
+                        throw new RuntimeException("Ya existe otro usuario con ese email");
+                }
+
+                user.setFullName(request.getFullName());
+                user.setEmail(request.getEmail());
+                user.setServiceCode(request.getServiceCode());
+                user.setRoles(resolveRoles(request.getRoles()));
+
+                if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+                }
+
+                User saved = userRepository.save(user);
+
+                String actor = SecurityContextHolder.getContext()
+                                .getAuthentication().getName();
+
+                auditService.logWithData(actor, "USER_UPDATED", "User", id, ipAddress, true,
+                                Map.of(
+                                                "username", saved.getUsername(),
+                                                "updatedFields", request.getPassword() != null
+                                                                ? "fullName,email,serviceCode,roles,password"
+                                                                : "fullName,email,serviceCode,roles"));
 
                 return toResponse(saved);
         }
@@ -119,10 +153,14 @@ public class UserService {
                         throw new RuntimeException("No puedes eliminar tu propia cuenta");
                 }
 
-                userRepository.delete(user);
-
-                auditService.logWithData(actor, "USER_DELETED", "User", id, ipAddress, true,
-                                Map.of("username", user.getUsername()));
+                try {
+                        userRepository.delete(user);
+                        auditService.logWithData(actor, "USER_DELETED", "User", id, ipAddress, true,
+                                        Map.of("username", user.getUsername()));
+                } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        throw new RuntimeException(
+                                        "No se puede eliminar el usuario porque tiene historial en el sistema (consentimientos creados o firmados). Por seguridad, desactívalo en su lugar.");
+                }
         }
 
         private String rolesToString(Set<Role> roles) {
@@ -159,6 +197,7 @@ public class UserService {
                                                 .collect(Collectors.toSet()))
                                 .lastLogin(user.getLastLogin())
                                 .createdAt(user.getCreatedAt())
+                                .serviceCode(user.getServiceCode())
                                 .build();
         }
 }

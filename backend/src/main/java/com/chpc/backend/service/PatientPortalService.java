@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.UUID;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -36,6 +37,7 @@ public class PatientPortalService {
     private final SmsService smsService;
     private final PdfService pdfService;
     private final TemplateEngineService templateEngineService;
+    private final ConsentGroupService consentGroupService;
 
     private static final int CODE_LENGTH = 6;
     private static final int CODE_EXPIRY_MIN = 10;
@@ -63,6 +65,20 @@ public class PatientPortalService {
                 .map(p -> p.getFirstName() + " " + p.getLastName())
                 .orElse("Paciente");
 
+        List<String> groupContentHtmlList = null;
+        List<Long> groupRequestIds = null;
+
+        if (request.getGroup() != null) {
+            List<ConsentRequest> siblings = requestRepository
+                    .findByGroupIdOrderById(request.getGroup().getId());
+            groupContentHtmlList = siblings.stream()
+                    .map(r -> templateEngineService.renderHtml(r, patientName))
+                    .collect(Collectors.toList());
+            groupRequestIds = siblings.stream()
+                    .map(ConsentRequest::getId)
+                    .collect(Collectors.toList());
+        }
+
         return PortalConsentDto.builder()
                 .requestId(request.getId())
                 .patientName(patientName)
@@ -75,6 +91,9 @@ public class PatientPortalService {
                 .expiresAt(token.getExpiresAt().format(FMT))
                 .status(request.getStatus())
                 .maskedPhone(maskPhone(request.getPatientPhone()))
+                .isGroup(request.getGroup() != null)
+                .groupDocuments(groupContentHtmlList)
+                .groupRequestIds(groupRequestIds)
                 .build();
     }
 
@@ -168,85 +187,122 @@ public class PatientPortalService {
 
     @Transactional
     public void submitSignature(String rawToken, SignatureSubmitRequest req,
-            String ipAddress, String userAgent) {
+            String ipAddress, String userAgent) throws Exception {
 
         SignToken token = findValidToken(rawToken);
         ConsentRequest request = token.getConsentRequest();
-        boolean isSigning = "SIGNED".equals(req.getConfirmation());
 
-        String imagePath = null;
-        if (isSigning && req.getSignatureImageBase64() != null) {
-            imagePath = saveSignatureImage(
-                    req.getSignatureImageBase64(), request.getId());
-        }
+        if (request.getGroup() != null) {
+            List<ConsentRequest> siblings = requestRepository
+                    .findByGroupIdOrderById(request.getGroup().getId());
+            String imagePath = null;
+            if (req.getSignatureImageBase64() != null) {
+                imagePath = saveSignatureImage(req.getSignatureImageBase64(), request.getId());
+            }
 
-        SignatureCapture capture = SignatureCapture.builder()
-                .consentRequest(request)
-                .ipAddress(ipAddress)
-                .userAgent(userAgent)
-                .signatureImagePath(imagePath)
-                .signMethod("REMOTE_CANVAS")
-                .readCheckConfirmed(req.isReadCheckConfirmed())
-                .patientConfirmation(req.getConfirmation())
-                .build();
-        signatureRepository.save(capture);
-
-        if (isSigning && req.getEvents() != null && !req.getEvents().isEmpty()) {
-            List<SignatureEvent> signatureEvents = IntStream.range(0, req.getEvents().size())
-                    .mapToObj(i -> {
-                        PenEventDto dto = req.getEvents().get(i);
-                        return SignatureEvent.builder()
-                                .signatureCapture(capture)
-                                .sequenceOrder(i)
-                                .x(dto.getX())
-                                .y(dto.getY())
-                                .pressure(dto.getPressure())
-                                .status(dto.getStatus())
-                                .maxX(dto.getMaxX())
-                                .maxY(dto.getMaxY())
-                                .maxPressure(dto.getMaxPressure())
-                                .build();
-                    })
-                    .toList();
-            eventRepository.saveAll(signatureEvents);
-        }
-
-        // Genera el PDF sellado si el paciente ha firmado
-        if (isSigning) {
-            try {
-                log.info("=== PDF: Iniciando generación para solicitud {}", request.getId());
-                log.info("=== PDF: Ruta de firmas: {}", signaturesPath);
-                log.info("=== PDF: Ruta de PDFs: {}", pdfPath);
-                log.info("=== PDF: Imagen de firma path: {}", capture.getSignatureImagePath());
-
-                String patientName = hisService.findPatientByNhc(request.getNhc())
+            for (ConsentRequest sibling : siblings) {
+                SignatureCapture siblingCapture = SignatureCapture.builder()
+                        .consentRequest(sibling)
+                        .ipAddress(ipAddress)
+                        .userAgent(userAgent)
+                        .signatureImagePath(imagePath)
+                        .signMethod("REMOTE_CANVAS")
+                        .readCheckConfirmed(req.isReadCheckConfirmed())
+                        .patientConfirmation(req.getConfirmation())
+                        .build();
+                signatureRepository.save(siblingCapture);
+                sibling.setStatus("SIGNED");
+                requestRepository.save(sibling);
+                String patientName = hisService.findPatientByNhc(sibling.getNhc())
                         .map(p -> p.getFirstName() + " " + p.getLastName())
                         .orElse("Paciente");
 
-                String pdfFilePath = pdfService.generateSignedPdf(request, capture, patientName);
-                log.info("=== PDF: Fichero generado en: {}", pdfFilePath);
-
+                String pdfFilePath = pdfService.generateSignedPdf(sibling, siblingCapture, patientName);
                 String hash = pdfService.calculateHash(pdfFilePath);
-                log.info("=== PDF: Hash calculado: {}", hash);
-
-                request.setPdfPath(pdfFilePath);
-                request.setPdfHash(hash);
-                request.setPdfGeneratedAt(LocalDateTime.now());
-
-            } catch (Exception e) {
-                log.error("=== PDF: Error completo: ", e); // stack trace completo
+                sibling.setPdfPath(pdfFilePath);
+                sibling.setPdfHash(hash);
+                sibling.setPdfGeneratedAt(LocalDateTime.now());
+                requestRepository.save(sibling);
             }
+            consentGroupService.updateGroupStatus(request.getGroup());
+        } else {
+
+            boolean isSigning = "SIGNED".equals(req.getConfirmation());
+
+            String imagePath = null;
+            if (isSigning && req.getSignatureImageBase64() != null) {
+                imagePath = saveSignatureImage(
+                        req.getSignatureImageBase64(), request.getId());
+            }
+
+            SignatureCapture capture = SignatureCapture.builder()
+                    .consentRequest(request)
+                    .ipAddress(ipAddress)
+                    .userAgent(userAgent)
+                    .signatureImagePath(imagePath)
+                    .signMethod("REMOTE_CANVAS")
+                    .readCheckConfirmed(req.isReadCheckConfirmed())
+                    .patientConfirmation(req.getConfirmation())
+                    .build();
+            signatureRepository.save(capture);
+
+            if (isSigning && req.getEvents() != null && !req.getEvents().isEmpty()) {
+                List<SignatureEvent> signatureEvents = IntStream.range(0, req.getEvents().size())
+                        .mapToObj(i -> {
+                            PenEventDto dto = req.getEvents().get(i);
+                            return SignatureEvent.builder()
+                                    .signatureCapture(capture)
+                                    .sequenceOrder(i)
+                                    .x(dto.getX())
+                                    .y(dto.getY())
+                                    .pressure(dto.getPressure())
+                                    .status(dto.getStatus())
+                                    .maxX(dto.getMaxX())
+                                    .maxY(dto.getMaxY())
+                                    .maxPressure(dto.getMaxPressure())
+                                    .build();
+                        })
+                        .toList();
+                eventRepository.saveAll(signatureEvents);
+            }
+
+            // Genera el PDF sellado si el paciente ha firmado
+            if (isSigning) {
+                try {
+                    log.info("=== PDF: Iniciando generación para solicitud {}", request.getId());
+                    log.info("=== PDF: Ruta de firmas: {}", signaturesPath);
+                    log.info("=== PDF: Ruta de PDFs: {}", pdfPath);
+                    log.info("=== PDF: Imagen de firma path: {}", capture.getSignatureImagePath());
+
+                    String patientName = hisService.findPatientByNhc(request.getNhc())
+                            .map(p -> p.getFirstName() + " " + p.getLastName())
+                            .orElse("Paciente");
+
+                    String pdfFilePath = pdfService.generateSignedPdf(request, capture, patientName);
+                    log.info("=== PDF: Fichero generado en: {}", pdfFilePath);
+
+                    String hash = pdfService.calculateHash(pdfFilePath);
+                    log.info("=== PDF: Hash calculado: {}", hash);
+
+                    request.setPdfPath(pdfFilePath);
+                    request.setPdfHash(hash);
+                    request.setPdfGeneratedAt(LocalDateTime.now());
+
+                } catch (Exception e) {
+                    log.error("=== PDF: Error completo: ", e); // stack trace completo
+                }
+            }
+
+            request.setStatus(isSigning ? "SIGNED" : "REJECTED");
+            requestRepository.save(request);
+
+            token.setIsValid(false);
+            tokenRepository.save(token);
+
+            auditService.log("patient_token:" + rawToken.substring(0, 8),
+                    isSigning ? "CONSENT_SIGNED" : "CONSENT_REJECTED",
+                    "ConsentRequest", request.getId(), ipAddress, true, null);
         }
-
-        request.setStatus(isSigning ? "SIGNED" : "REJECTED");
-        requestRepository.save(request);
-
-        token.setIsValid(false);
-        tokenRepository.save(token);
-
-        auditService.log("patient_token:" + rawToken.substring(0, 8),
-                isSigning ? "CONSENT_SIGNED" : "CONSENT_REJECTED",
-                "ConsentRequest", request.getId(), ipAddress, true, null);
     }
 
     private SignToken findValidToken(String rawToken) {

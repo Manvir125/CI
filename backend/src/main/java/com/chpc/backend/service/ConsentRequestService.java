@@ -68,6 +68,8 @@ public class ConsentRequestService {
                                 .status("PENDING")
                                 .patientEmail(dto.getPatientEmail())
                                 .patientPhone(dto.getPatientPhone())
+                                .observations(dto.getObservations())
+                                .dynamicFields(dto.getDynamicFields())
                                 .build();
 
                 ConsentRequest saved = requestRepository.save(request);
@@ -236,6 +238,8 @@ public class ConsentRequestService {
                                 .professionalSignedAt(r.getProfessionalSignedAt() != null
                                                 ? r.getProfessionalSignedAt().toString()
                                                 : null)
+                                .observations(r.getObservations())
+                                .dynamicFields(r.getDynamicFields())
                                 .build();
         }
 }

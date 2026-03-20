@@ -57,6 +57,15 @@ public class ConsentRequest {
         REMOTE, ONSITE
     }
 
+    @Column(columnDefinition = "TEXT")
+    private String observations;
+
+    @ElementCollection
+    @CollectionTable(name = "consent_request_fields", joinColumns = @JoinColumn(name = "consent_request_id"))
+    @MapKeyColumn(name = "field_key")
+    @Column(name = "field_value", columnDefinition = "TEXT")
+    private java.util.Map<String, String> dynamicFields;
+
     @Column(name = "pdf_path")
     private String pdfPath;
 

@@ -26,5 +26,7 @@ public class ConsentGroupDto {
         @NotBlank
         private String responsibleService;
         private String channel;
+        private String observations;
+        private java.util.Map<String, String> dynamicFields;
     }
 }

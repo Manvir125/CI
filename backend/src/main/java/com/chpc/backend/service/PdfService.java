@@ -128,6 +128,24 @@ public class PdfService {
                                 : "N/A";
                 String createdAt = request.getCreatedAt().format(FMT);
 
+                StringBuilder extraContent = new StringBuilder();
+                if (request.getObservations() != null && !request.getObservations().isBlank()) {
+                        extraContent.append("<div style='margin-top:20px; padding:10px; background-color:#f9f9f9; border-left:3px solid #1e3a5f;'>")
+                                    .append("<strong>Observaciones:</strong><br/>")
+                                    .append(request.getObservations().replace("\n", "<br/>"))
+                                    .append("</div>");
+                }
+
+                if (request.getDynamicFields() != null && !request.getDynamicFields().isEmpty()) {
+                        extraContent.append("<div style='margin-top:10px; padding:10px; background-color:#f9f9f9; border-left:3px solid #1e3a5f;'>")
+                                    .append("<strong>Datos adicionales:</strong><ul style='margin-top:5px; margin-bottom:0;'>");
+                        request.getDynamicFields().forEach((key, value) -> {
+                                extraContent.append("<li><strong>").append(key).append(":</strong> ")
+                                            .append(value).append("</li>");
+                        });
+                        extraContent.append("</ul></div>");
+                }
+
                 return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><style>"
                                 + "body { font-family: Arial, sans-serif; margin: 40px; color: #222; }"
                                 + ".header { border-bottom: 2px solid #1e3a5f; padding-bottom: 16px;"
@@ -172,6 +190,7 @@ public class PdfService {
                                 + "<div class='content'>"
                                 + templateEngineService.renderHtml(request, patientName)
                                 + "</div>"
+                                + extraContent.toString()
 
                                 + "<div class='signature-section'>"
                                 + "<h3>Firma del paciente</h3>"

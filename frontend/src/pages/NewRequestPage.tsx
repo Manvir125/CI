@@ -26,6 +26,8 @@ export default function NewRequestPage() {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [mainTemplateId, setMainTemplateId] = useState<number | null>(null);
     const [secondaryTemplateIds, setSecondaryTemplateIds] = useState<number[]>([]);
+    const [observationsMap, setObservationsMap] = useState<Record<number, string>>({});
+    const [dynamicFieldsMap, setDynamicFieldsMap] = useState<Record<number, Record<string, string>>>({});
     const [channel, setChannel] = useState<'REMOTE' | 'ONSITE'>('REMOTE');
     const [patientEmail, setPatientEmail] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
@@ -65,6 +67,8 @@ export default function NewRequestPage() {
         setSelectedEpisode(episode);
         setMainTemplateId(null);
         setSecondaryTemplateIds([]);
+        setObservationsMap({});
+        setDynamicFieldsMap({});
         setLoading(true);
         try {
             const allTemplates = await getTemplates();
@@ -112,6 +116,8 @@ export default function NewRequestPage() {
                         templateId: id,
                         responsibleService: t?.serviceCode || selectedEpisode!.serviceCode,
                         channel,
+                        observations: observationsMap[id] || '',
+                        dynamicFields: dynamicFieldsMap[id] || {}
                     };
                 })
             };
@@ -371,13 +377,9 @@ export default function NewRequestPage() {
                                 {templates
                                     .filter(t => !t.serviceCode || t.serviceCode === selectedEpisode.serviceCode)
                                     .map(t => (
+                                        <div key={t.id} className={`border rounded-lg overflow-hidden transition-all ${mainTemplateId === t.id ? 'border-emerald-500' : 'border-gray-200'}`}>
                                         <label
-                                            key={t.id}
-                                            className={`flex items-start gap-3 p-3 border rounded-lg
-                                cursor-pointer transition-all
-                                ${mainTemplateId === t.id
-                                                    ? 'border-emerald-500 bg-emerald-50'
-                                                    : 'border-gray-200 hover:bg-gray-50'}`}
+                                            className={`flex items-start gap-3 p-3 cursor-pointer ${mainTemplateId === t.id ? 'bg-emerald-50' : 'hover:bg-gray-50'}`}
                                         >
                                             <input
                                                 type="radio"
@@ -394,6 +396,38 @@ export default function NewRequestPage() {
                                                 </p>
                                             </div>
                                         </label>
+                                        {mainTemplateId === t.id && (
+                                            <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones</label>
+                                                    <textarea 
+                                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                                                        rows={2}
+                                                        placeholder="Escribe aquí observaciones o detalles adicionales..."
+                                                        value={observationsMap[t.id] || ''}
+                                                        onChange={e => setObservationsMap(prev => ({...prev, [t.id]: e.target.value}))}
+                                                    />
+                                                </div>
+                                                {t.fields?.map(f => (
+                                                    <div key={f.fieldKey}>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                            {f.fieldLabel} {f.required && <span className="text-red-500">*</span>}
+                                                        </label>
+                                                        <input 
+                                                            type={f.fieldType === 'number' ? 'number' : 'text'}
+                                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                            required={f.required}
+                                                            value={dynamicFieldsMap[t.id]?.[f.fieldKey] ?? f.defaultValue ?? ''}
+                                                            onChange={e => setDynamicFieldsMap(prev => ({
+                                                                ...prev, 
+                                                                [t.id]: {...(prev[t.id] || {}), [f.fieldKey]: e.target.value}
+                                                            }))}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        </div>
                                     ))}
                             </div>
                         </div>
@@ -410,13 +444,9 @@ export default function NewRequestPage() {
                                 {templates
                                     .filter(t => t.id !== mainTemplateId)
                                     .map(t => (
+                                        <div key={t.id} className={`border rounded-lg overflow-hidden transition-all ${secondaryTemplateIds.includes(t.id) ? 'border-emerald-500' : 'border-gray-200'}`}>
                                         <label
-                                            key={t.id}
-                                            className={`flex items-start gap-3 p-3 border rounded-lg
-                                cursor-pointer transition-all
-                                ${secondaryTemplateIds.includes(t.id)
-                                                    ? 'border-emerald-500 bg-emerald-50'
-                                                    : 'border-gray-200 hover:bg-gray-50'}`}
+                                            className={`flex items-start gap-3 p-3 cursor-pointer ${secondaryTemplateIds.includes(t.id) ? 'bg-emerald-50' : 'hover:bg-gray-50'}`}
                                         >
                                             <input
                                                 type="checkbox"
@@ -432,6 +462,38 @@ export default function NewRequestPage() {
                                                 </p>
                                             </div>
                                         </label>
+                                        {secondaryTemplateIds.includes(t.id) && (
+                                            <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones</label>
+                                                    <textarea 
+                                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                                                        rows={2}
+                                                        placeholder="Escribe aquí observaciones o detalles adicionales..."
+                                                        value={observationsMap[t.id] || ''}
+                                                        onChange={e => setObservationsMap(prev => ({...prev, [t.id]: e.target.value}))}
+                                                    />
+                                                </div>
+                                                {t.fields?.map(f => (
+                                                    <div key={f.fieldKey}>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                            {f.fieldLabel} {f.required && <span className="text-red-500">*</span>}
+                                                        </label>
+                                                        <input 
+                                                            type={f.fieldType === 'number' ? 'number' : 'text'}
+                                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                            required={f.required}
+                                                            value={dynamicFieldsMap[t.id]?.[f.fieldKey] ?? f.defaultValue ?? ''}
+                                                            onChange={e => setDynamicFieldsMap(prev => ({
+                                                                ...prev, 
+                                                                [t.id]: {...(prev[t.id] || {}), [f.fieldKey]: e.target.value}
+                                                            }))}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        </div>
                                     ))}
                             </div>
                         </div>

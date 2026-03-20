@@ -19,6 +19,8 @@ export interface ConsentRequestResponse {
     professionalSigned: boolean;
     professionalSignerName: string;
     professionalSignedAt: string;
+    observations?: string;
+    dynamicFields?: Record<string, string>;
 
 }
 
@@ -29,6 +31,8 @@ export interface ConsentRequestDto {
     channel: string;
     patientEmail: string;
     patientPhone: string;
+    observations?: string;
+    dynamicFields?: Record<string, string>;
 }
 
 export interface PageResponse<T> {
@@ -104,6 +108,8 @@ export interface ConsentGroupDto {
         templateId: number;
         responsibleService: string;
         channel: string;
+        observations?: string;
+        dynamicFields?: Record<string, string>;
     }[];
 }
 

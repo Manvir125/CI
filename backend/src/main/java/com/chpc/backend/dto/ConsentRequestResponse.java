@@ -24,4 +24,6 @@ public class ConsentRequestResponse {
     private Boolean professionalSigned;
     private String professionalSignerName;
     private String professionalSignedAt;
+    private String observations;
+    private java.util.Map<String, String> dynamicFields;
 }

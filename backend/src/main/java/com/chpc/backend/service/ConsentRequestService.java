@@ -55,11 +55,6 @@ public class ConsentRequestService {
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Plantilla no encontrada: " + dto.getTemplateId()));
 
-                if (template.getServiceCode() != null && professional.getServiceCode() != null &&
-                        !template.getServiceCode().equalsIgnoreCase(professional.getServiceCode())) {
-                        throw new RuntimeException("Solo se pueden crear solicitudes para consentimientos principales de su misma especialidad (" + professional.getServiceCode() + ").");
-                }
-
                 if (!template.getIsActive()) {
                         throw new RuntimeException("La plantilla está desactivada");
                 }

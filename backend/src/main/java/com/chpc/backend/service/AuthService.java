@@ -78,6 +78,7 @@ public class AuthService {
                         .map(r -> r.getType().name())
                         .collect(Collectors.toSet()))
                 .expiresInMs(28800000L)
+                .serviceCode(user.getServiceCode())
                 .build();
     }
 }

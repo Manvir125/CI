@@ -7,10 +7,12 @@ import {
 import { getTemplates } from '../api/templates';
 import { sendRequest, createGroup } from '../api/consentRequests';
 import type { Template } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 type Step = 'search' | 'episodes' | 'configure';
 
 export default function NewRequestPage() {
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     const [step, setStep] = useState<Step>('search');
@@ -371,62 +373,71 @@ export default function NewRequestPage() {
                                 Consentimiento Principal *
                             </h2>
                             <p className="text-sm text-gray-500 mb-2">
-                                Solo se muestran plantillas del servicio {selectedEpisode.serviceName}
+                                {user?.serviceCode ? (
+                                    <>Solo se muestran plantillas de tu especialidad: <strong>{user.serviceCode}</strong></>
+                                ) : (
+                                    <>Solo se muestran plantillas del servicio {selectedEpisode.serviceName}</>
+                                )}
                             </p>
                             <div className="space-y-2">
                                 {templates
-                                    .filter(t => !t.serviceCode || t.serviceCode === selectedEpisode.serviceCode)
+                                    .filter(t => {
+                                        if (user?.serviceCode && t.serviceCode) {
+                                            return t.serviceCode === user.serviceCode;
+                                        }
+                                        return !t.serviceCode || t.serviceCode === selectedEpisode.serviceCode;
+                                    })
                                     .map(t => (
                                         <div key={t.id} className={`border rounded-lg overflow-hidden transition-all ${mainTemplateId === t.id ? 'border-emerald-500' : 'border-gray-200'}`}>
-                                        <label
-                                            className={`flex items-start gap-3 p-3 cursor-pointer ${mainTemplateId === t.id ? 'bg-emerald-50' : 'hover:bg-gray-50'}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="mainTemplate"
-                                                checked={mainTemplateId === t.id}
-                                                onChange={() => setMainTemplateId(t.id)}
-                                                className="mt-0.5"
-                                            />
-                                            <div>
-                                                <p className="font-medium text-gray-800 text-sm">{t.name}</p>
-                                                <p className="text-gray-400 text-xs mt-0.5">
-                                                    v{t.version}
-                                                    {t.serviceCode && ` · ${t.serviceCode}`}
-                                                </p>
-                                            </div>
-                                        </label>
-                                        {mainTemplateId === t.id && (
-                                            <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
+                                            <label
+                                                className={`flex items-start gap-3 p-3 cursor-pointer ${mainTemplateId === t.id ? 'bg-emerald-50' : 'hover:bg-gray-50'}`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="mainTemplate"
+                                                    checked={mainTemplateId === t.id}
+                                                    onChange={() => setMainTemplateId(t.id)}
+                                                    className="mt-0.5"
+                                                />
                                                 <div>
-                                                    <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones</label>
-                                                    <textarea 
-                                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" 
-                                                        rows={2}
-                                                        placeholder="Escribe aquí observaciones o detalles adicionales..."
-                                                        value={observationsMap[t.id] || ''}
-                                                        onChange={e => setObservationsMap(prev => ({...prev, [t.id]: e.target.value}))}
-                                                    />
+                                                    <p className="font-medium text-gray-800 text-sm">{t.name}</p>
+                                                    <p className="text-gray-400 text-xs mt-0.5">
+                                                        v{t.version}
+                                                        {t.serviceCode && ` · ${t.serviceCode}`}
+                                                    </p>
                                                 </div>
-                                                {t.fields?.map(f => (
-                                                    <div key={f.fieldKey}>
-                                                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                            {f.fieldLabel} {f.required && <span className="text-red-500">*</span>}
-                                                        </label>
-                                                        <input 
-                                                            type={f.fieldType === 'number' ? 'number' : 'text'}
+                                            </label>
+                                            {mainTemplateId === t.id && (
+                                                <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones</label>
+                                                        <textarea
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                            required={f.required}
-                                                            value={dynamicFieldsMap[t.id]?.[f.fieldKey] ?? f.defaultValue ?? ''}
-                                                            onChange={e => setDynamicFieldsMap(prev => ({
-                                                                ...prev, 
-                                                                [t.id]: {...(prev[t.id] || {}), [f.fieldKey]: e.target.value}
-                                                            }))}
+                                                            rows={2}
+                                                            placeholder="Escribe aquí observaciones o detalles adicionales..."
+                                                            value={observationsMap[t.id] || ''}
+                                                            onChange={e => setObservationsMap(prev => ({ ...prev, [t.id]: e.target.value }))}
                                                         />
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                                    {t.fields?.map(f => (
+                                                        <div key={f.fieldKey}>
+                                                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                                {f.fieldLabel} {f.required && <span className="text-red-500">*</span>}
+                                                            </label>
+                                                            <input
+                                                                type={f.fieldType === 'number' ? 'number' : 'text'}
+                                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                                required={f.required}
+                                                                value={dynamicFieldsMap[t.id]?.[f.fieldKey] ?? f.defaultValue ?? ''}
+                                                                onChange={e => setDynamicFieldsMap(prev => ({
+                                                                    ...prev,
+                                                                    [t.id]: { ...(prev[t.id] || {}), [f.fieldKey]: e.target.value }
+                                                                }))}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                             </div>
@@ -445,54 +456,54 @@ export default function NewRequestPage() {
                                     .filter(t => t.id !== mainTemplateId)
                                     .map(t => (
                                         <div key={t.id} className={`border rounded-lg overflow-hidden transition-all ${secondaryTemplateIds.includes(t.id) ? 'border-emerald-500' : 'border-gray-200'}`}>
-                                        <label
-                                            className={`flex items-start gap-3 p-3 cursor-pointer ${secondaryTemplateIds.includes(t.id) ? 'bg-emerald-50' : 'hover:bg-gray-50'}`}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={secondaryTemplateIds.includes(t.id)}
-                                                onChange={() => toggleSecondary(t.id)}
-                                                className="mt-0.5"
-                                            />
-                                            <div>
-                                                <p className="font-medium text-gray-800 text-sm">{t.name}</p>
-                                                <p className="text-gray-400 text-xs mt-0.5">
-                                                    v{t.version}
-                                                    {t.serviceCode && ` · ${t.serviceCode}`}
-                                                </p>
-                                            </div>
-                                        </label>
-                                        {secondaryTemplateIds.includes(t.id) && (
-                                            <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
+                                            <label
+                                                className={`flex items-start gap-3 p-3 cursor-pointer ${secondaryTemplateIds.includes(t.id) ? 'bg-emerald-50' : 'hover:bg-gray-50'}`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={secondaryTemplateIds.includes(t.id)}
+                                                    onChange={() => toggleSecondary(t.id)}
+                                                    className="mt-0.5"
+                                                />
                                                 <div>
-                                                    <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones</label>
-                                                    <textarea 
-                                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" 
-                                                        rows={2}
-                                                        placeholder="Escribe aquí observaciones o detalles adicionales..."
-                                                        value={observationsMap[t.id] || ''}
-                                                        onChange={e => setObservationsMap(prev => ({...prev, [t.id]: e.target.value}))}
-                                                    />
+                                                    <p className="font-medium text-gray-800 text-sm">{t.name}</p>
+                                                    <p className="text-gray-400 text-xs mt-0.5">
+                                                        v{t.version}
+                                                        {t.serviceCode && ` · ${t.serviceCode}`}
+                                                    </p>
                                                 </div>
-                                                {t.fields?.map(f => (
-                                                    <div key={f.fieldKey}>
-                                                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                            {f.fieldLabel} {f.required && <span className="text-red-500">*</span>}
-                                                        </label>
-                                                        <input 
-                                                            type={f.fieldType === 'number' ? 'number' : 'text'}
+                                            </label>
+                                            {secondaryTemplateIds.includes(t.id) && (
+                                                <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones</label>
+                                                        <textarea
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                            required={f.required}
-                                                            value={dynamicFieldsMap[t.id]?.[f.fieldKey] ?? f.defaultValue ?? ''}
-                                                            onChange={e => setDynamicFieldsMap(prev => ({
-                                                                ...prev, 
-                                                                [t.id]: {...(prev[t.id] || {}), [f.fieldKey]: e.target.value}
-                                                            }))}
+                                                            rows={2}
+                                                            placeholder="Escribe aquí observaciones o detalles adicionales..."
+                                                            value={observationsMap[t.id] || ''}
+                                                            onChange={e => setObservationsMap(prev => ({ ...prev, [t.id]: e.target.value }))}
                                                         />
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                                    {t.fields?.map(f => (
+                                                        <div key={f.fieldKey}>
+                                                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                                {f.fieldLabel} {f.required && <span className="text-red-500">*</span>}
+                                                            </label>
+                                                            <input
+                                                                type={f.fieldType === 'number' ? 'number' : 'text'}
+                                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                                required={f.required}
+                                                                value={dynamicFieldsMap[t.id]?.[f.fieldKey] ?? f.defaultValue ?? ''}
+                                                                onChange={e => setDynamicFieldsMap(prev => ({
+                                                                    ...prev,
+                                                                    [t.id]: { ...(prev[t.id] || {}), [f.fieldKey]: e.target.value }
+                                                                }))}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                             </div>

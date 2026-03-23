@@ -5,6 +5,7 @@ export interface LoginResponse {
     fullName: string;
     roles: string[];
     expiresInMs: number;
+    serviceCode?: string;
 }
 
 // Usuario autenticado en el contexto
@@ -13,6 +14,7 @@ export interface AuthUser {
     username: string;
     fullName: string;
     roles: string[];
+    serviceCode?: string;
 }
 
 // Campo dinámico de plantilla

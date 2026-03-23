@@ -11,4 +11,5 @@ public class LoginResponse {
     private String fullName;
     private Set<String> roles;
     private long expiresInMs;
+    private String serviceCode;
 }

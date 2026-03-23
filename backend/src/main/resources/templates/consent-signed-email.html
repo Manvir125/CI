@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background-color: #1e5f3f;
+            color: white;
+            padding: 24px 32px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .header p {
+            margin: 4px 0 0;
+            font-size: 13px;
+            color: #a0d0b0;
+        }
+
+        .body {
+            padding: 32px;
+            color: #333;
+        }
+
+        .body p {
+            line-height: 1.6;
+            margin: 0 0 16px;
+        }
+
+        .info-box {
+            background: #f0f8f3;
+            border-left: 4px solid #1e5f3f;
+            padding: 16px;
+            border-radius: 4px;
+            margin: 24px 0;
+        }
+
+        .info-box p {
+            margin: 4px 0;
+            font-size: 14px;
+        }
+
+        .footer {
+            background: #f0f8f3;
+            padding: 16px 32px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <div class="header">
+            <h1>Consorci Hospitalari Provincial de Castelló</h1>
+            <p>Sistema de Consentimientos Informados Digitales</p>
+        </div>
+
+        <div class="body">
+            <p>Estimado/a <strong th:text="${patientName}">Paciente</strong>,</p>
+
+            <p>
+                Le informamos que el proceso de firma digital para el documento de consentimiento enviado por el/la profesional
+                <strong th:text="${professionalName}">Dr/a.</strong> ha sido completado con éxito.
+            </p>
+
+            <div class="info-box">
+                <p><strong>Procedimiento:</strong>
+                    <span th:text="${procedureName}">Procedimiento</span>
+                </p>
+                <p><strong>Servicio:</strong>
+                    <span th:text="${serviceName}">Servicio</span>
+                </p>
+            </div>
+
+            <p>
+                A través de este correo confirmamos la recepción de su firma. 
+                Se adjunta en este mensaje una copia en formato PDF del consentimiento debidamente firmado para su conservación y consulta.
+            </p>
+
+            <p>
+                Si tiene alguna duda o no reconoce este consentimiento, contacte con el hospital
+                por teléfono <strong>964 25 94 00</strong>.
+            </p>
+        </div>
+
+        <div class="footer">
+            Consorci Hospitalari Provincial de Castelló ·
+            C/ Doctor Clara, 19 · 12002 Castelló de la Plana ·
+            Este mensaje es confidencial y está dirigido exclusivamente a su destinatario.
+        </div>
+
+    </div>
+</body>
+
+</html>

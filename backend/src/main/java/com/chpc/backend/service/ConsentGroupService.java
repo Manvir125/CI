@@ -34,6 +34,16 @@ public class ConsentGroupService {
         User creator = userRepository.findByUsername(creatorUsername)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        if (dto.getItems() != null && !dto.getItems().isEmpty()) {
+            ConsentTemplate mainTemplate = templateRepository.findById(dto.getItems().get(0).getTemplateId())
+                    .orElseThrow(() -> new RuntimeException("Plantilla principal no encontrada: " + dto.getItems().get(0).getTemplateId()));
+            
+            if (mainTemplate.getServiceCode() != null && creator.getServiceCode() != null &&
+                !mainTemplate.getServiceCode().equalsIgnoreCase(creator.getServiceCode())) {
+                throw new RuntimeException("Solo se pueden crear solicitudes para consentimientos principales de su misma especialidad (" + creator.getServiceCode() + ").");
+            }
+        }
+
         ConsentGroup group = ConsentGroup.builder()
                 .episodeId(dto.getEpisodeId())
                 .nhc(dto.getNhc())

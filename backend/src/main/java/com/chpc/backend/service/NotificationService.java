@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.File;
+import org.springframework.core.io.FileSystemResource;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -83,6 +86,53 @@ public class NotificationService {
             notification.setSuccess(false);
             notification.setErrorMessage(e.getMessage());
             log.error("Error enviando email a {}: {}",
+                    request.getPatientEmail(), e.getMessage());
+        }
+
+        notificationRepository.save(notification);
+    }
+
+    @Async
+    public void sendSignedConfirmationEmail(ConsentRequest request, String pdfPath, String patientName) {
+        Context ctx = new Context();
+        ctx.setVariable("patientName", patientName);
+        ctx.setVariable("professionalName", request.getProfessional().getFullName());
+        ctx.setVariable("serviceName", request.getTemplate().getServiceCode());
+        ctx.setVariable("procedureName", request.getTemplate().getName());
+
+        String htmlBody = templateEngine.process("consent-signed-email", ctx);
+
+        Notification notification = Notification.builder()
+                .consentRequest(request)
+                .type("SIGNED_CONFIRMATION")
+                .channel("EMAIL")
+                .recipient(request.getPatientEmail())
+                .subject("Copia del consentimiento informado firmado — CHPC")
+                .body(htmlBody)
+                .build();
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(mailFrom);
+            helper.setTo(request.getPatientEmail());
+            helper.setSubject("Copia del consentimiento informado firmado — CHPC");
+            helper.setText(htmlBody, true);
+
+            FileSystemResource file = new FileSystemResource(new File(pdfPath));
+            helper.addAttachment("Consentimiento_" + request.getTemplate().getId() + ".pdf", file);
+
+            mailSender.send(message);
+
+            notification.setSuccess(true);
+            notification.setSentAt(LocalDateTime.now());
+            log.info("Email adjunto PDF enviado a {}", request.getPatientEmail());
+
+        } catch (Exception e) {
+            notification.setSuccess(false);
+            notification.setErrorMessage(e.getMessage());
+            log.error("Error enviando email PDF a {}: {}",
                     request.getPatientEmail(), e.getMessage());
         }
 

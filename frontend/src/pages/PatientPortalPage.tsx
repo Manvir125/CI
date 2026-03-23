@@ -391,13 +391,36 @@ export default function PatientPortalPage() {
                                     📄 Lea el documento completo antes de continuar
                                 </p>
                             </div>
-                            <div
-                                ref={contentRef}
-                                onScroll={handleContentScroll}
-                                className="p-5 overflow-y-auto prose prose-sm max-w-none"
-                                style={{ maxHeight: '50vh', fontSize: '16px', lineHeight: '1.7' }}
-                                dangerouslySetInnerHTML={{ __html: consent.contentHtml }}
-                            />
+
+                            {consent.isGroup && consent.groupDocuments && consent.groupDocuments.length > 0 ? (
+                                <div
+                                    ref={contentRef}
+                                    onScroll={handleContentScroll}
+                                    className="p-5 overflow-y-auto max-w-none space-y-8"
+                                    style={{ maxHeight: '50vh', fontSize: '16px', lineHeight: '1.7' }}
+                                >
+                                    {consent.groupDocuments.map((doc, idx) => (
+                                        <div key={idx}>
+                                            <div 
+                                                className="prose prose-sm max-w-none" 
+                                                dangerouslySetInnerHTML={{ __html: doc }} 
+                                            />
+                                            {idx < consent.groupDocuments!.length - 1 && (
+                                                <hr className="my-8 border-t-2 border-emerald-200 border-dashed" />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div
+                                    ref={contentRef}
+                                    onScroll={handleContentScroll}
+                                    className="p-5 overflow-y-auto prose prose-sm max-w-none"
+                                    style={{ maxHeight: '50vh', fontSize: '16px', lineHeight: '1.7' }}
+                                    dangerouslySetInnerHTML={{ __html: consent.contentHtml }}
+                                />
+                            )}
+
                             {!hasScrolled && (
                                 <div className="bg-amber-50 px-5 py-3 border-t border-amber-100
                                 text-center">

@@ -38,6 +38,7 @@ public class PatientPortalService {
     private final PdfService pdfService;
     private final TemplateEngineService templateEngineService;
     private final ConsentGroupService consentGroupService;
+    private final NotificationService notificationService;
 
     private static final int CODE_LENGTH = 6;
     private static final int CODE_EXPIRY_MIN = 10;
@@ -223,6 +224,10 @@ public class PatientPortalService {
                 sibling.setPdfHash(hash);
                 sibling.setPdfGeneratedAt(LocalDateTime.now());
                 requestRepository.save(sibling);
+
+                if (sibling.getPatientEmail() != null && !sibling.getPatientEmail().isBlank()) {
+                    notificationService.sendSignedConfirmationEmail(sibling, pdfFilePath, patientName);
+                }
             }
             consentGroupService.updateGroupStatus(request.getGroup());
         } else {
@@ -287,6 +292,10 @@ public class PatientPortalService {
                     request.setPdfPath(pdfFilePath);
                     request.setPdfHash(hash);
                     request.setPdfGeneratedAt(LocalDateTime.now());
+
+                    if (request.getPatientEmail() != null && !request.getPatientEmail().isBlank()) {
+                        notificationService.sendSignedConfirmationEmail(request, pdfFilePath, patientName);
+                    }
 
                 } catch (Exception e) {
                     log.error("=== PDF: Error completo: ", e); // stack trace completo

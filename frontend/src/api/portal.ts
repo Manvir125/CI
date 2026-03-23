@@ -18,6 +18,9 @@ export interface PortalConsentDto {
     expiresAt: string;
     status: string;
     maskedPhone: string;
+    isGroup?: boolean;
+    groupDocuments?: string[];
+    groupRequestIds?: number[];
 }
 
 export const loadConsent = async (token: string): Promise<PortalConsentDto> => {

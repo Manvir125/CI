@@ -108,17 +108,25 @@ public class PdfService {
                                         ? request.getProfessionalSigner()
                                         : request.getProfessional();
 
-                        log.info("PDF: Signer for request {} is {} (ID: {}), signature path: {}",
+                        log.info("PDF: Signer for request {} is {} (ID: {}), signature method: {}",
                                         request.getId(), signer.getUsername(), signer.getId(),
-                                        signer.getSignatureImagePath());
+                                        signer.getSignatureMethod());
 
-                        byte[] profSigBytes = professionalSignatureService.readSignatureBytes(signer);
-                        if (profSigBytes != null) {
-                                String profB64 = Base64.getEncoder().encodeToString(profSigBytes);
-                                professionalSignatureTag = "<img src='data:image/png;base64," + profB64
-                                                + "' style='max-width:250px; border:1px solid #ccc;'/>";
+                        if (signer.getSignatureMethod() == User.SignatureMethod.CERTIFICATE) {
+                            professionalSignatureTag = "<div style='padding:10px; border:1px solid #ccc; max-width:400px; background-color:#f9f9f9;'>"
+                                    + "<strong style='color:#1e3a5f;'>Firmado digitalmente mediante certificado X.509</strong><br/>"
+                                    + "<span style='font-size:12px; color:#555;'>Titular: " + signer.getFullName() + "</span><br/>"
+                                    + "<span style='font-size:11px; color:#777;'>El certificado de cliente valida la identidad y fue verificado durante el handshake TLS.</span>"
+                                    + "</div>";
                         } else {
-                                log.warn("PDF: Signature bytes are NULL for signer {}", signer.getUsername());
+                            byte[] profSigBytes = professionalSignatureService.readSignatureBytes(signer);
+                            if (profSigBytes != null) {
+                                    String profB64 = Base64.getEncoder().encodeToString(profSigBytes);
+                                    professionalSignatureTag = "<img src='data:image/png;base64," + profB64
+                                                    + "' style='max-width:250px; border:1px solid #ccc;'/>";
+                            } else {
+                                    log.warn("PDF: Signature bytes are NULL for signer {}", signer.getUsername());
+                            }
                         }
                 }
 

@@ -54,4 +54,19 @@ public class ProfessionalSignatureController {
                     .body(Map.of("message", e.getMessage()));
         }
     }
+
+    // Actualiza el método de firma (TABLET o CERTIFICATE)
+    @PutMapping("/method")
+    public ResponseEntity<Map<String, String>> updateSignatureMethod(
+            @RequestBody com.chpc.backend.dto.SignatureMethodRequest body,
+            Authentication auth) {
+        try {
+            signatureService.updateSignatureMethod(auth.getName(), body.getSignatureMethod());
+            return ResponseEntity.ok(
+                    Map.of("message", "Método de firma actualizado correctamente"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", e.getMessage()));
+        }
+    }
 }

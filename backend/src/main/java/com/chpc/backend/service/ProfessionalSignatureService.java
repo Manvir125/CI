@@ -112,7 +112,24 @@ public class ProfessionalSignatureService {
         return ProfessionalSignatureResponse.builder()
                 .hasSignature(user.getSignatureImagePath() != null)
                 .updatedAt(user.getSignatureUpdatedAt())
+                .signatureMethod(user.getSignatureMethod().name())
                 .build();
+    }
+
+    // Actualiza el método de firma preferido
+    @Transactional
+    public void updateSignatureMethod(String username, String method) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                
+        try {
+            User.SignatureMethod signatureMethod = User.SignatureMethod.valueOf(method.toUpperCase());
+            user.setSignatureMethod(signatureMethod);
+            userRepository.save(user);
+            log.info("Método de firma de {} actualizado a {}", username, signatureMethod);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Método de firma no válido: " + method);
+        }
     }
 
     // Lee los bytes de la firma para incrustarla en el PDF

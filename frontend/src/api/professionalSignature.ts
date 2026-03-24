@@ -4,6 +4,7 @@ import type { PenEvent } from '../hooks/useXPPenTablet';
 export interface SignatureStatus {
     hasSignature: boolean;
     updatedAt: string | null;
+    signatureMethod: 'TABLET' | 'CERTIFICATE';
 }
 
 export const getSignatureStatus = async (): Promise<SignatureStatus> => {
@@ -20,4 +21,8 @@ export const saveSignature = async (
 
 export const deleteSignature = async (): Promise<void> => {
     await client.delete('/api/profile/signature');
+};
+
+export const updateSignatureMethod = async (signatureMethod: 'TABLET' | 'CERTIFICATE'): Promise<void> => {
+    await client.put('/api/profile/signature/method', { signatureMethod });
 };

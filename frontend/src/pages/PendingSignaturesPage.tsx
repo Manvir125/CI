@@ -5,17 +5,34 @@ import {
     getPendingMySignature, professionalSign,
     type ConsentRequestResponse
 } from '../api/consentRequests';
+import { professionalSignWithCert } from '../api/consentRequests';
+import { getSignatureStatus } from '../api/professionalSignature';
 
 export default function PendingSignaturesPage() {
     const [requests, setRequests] = useState<ConsentRequestResponse[]>([]);
+    const [signatureMethod, setSignatureMethod] = useState<'TABLET' | 'CERTIFICATE'>('TABLET');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [signing, setSigning] = useState<number | null>(null);
     const [success, setSuccess] = useState('');
 
-    useEffect(() => { loadPending(); }, []);
+    useEffect(() => { 
+        loadPending();
+        loadSignatureMethod();
+    }, []);
 
     const navigate = useNavigate();
+
+    const loadSignatureMethod = async () => {
+        try {
+            const status = await getSignatureStatus();
+            if (status.signatureMethod) {
+                setSignatureMethod(status.signatureMethod);
+            }
+        } catch (e) {
+            console.error("Error al cargar la preferencia de firma", e);
+        }
+    }
 
     const loadPending = async () => {
         setLoading(true);
@@ -31,12 +48,17 @@ export default function PendingSignaturesPage() {
 
     const handleSign = async (id: number) => {
         setSigning(id);
+        setError('');
         try {
-            await professionalSign(id);
+            if (signatureMethod === 'CERTIFICATE') {
+                await professionalSignWithCert(id);
+            } else {
+                await professionalSign(id);
+            }
             setSuccess('Consentimiento firmado correctamente');
             await loadPending();
         } catch (e: any) {
-            setError(e?.response?.data?.message || 'Error al firmar');
+            setError(e.message || e?.response?.data?.message || 'Error al firmar');
         } finally {
             setSigning(null);
         }
@@ -144,12 +166,13 @@ export default function PendingSignaturesPage() {
                                         <button
                                             onClick={() => handleSign(req.id)}
                                             disabled={signing === req.id}
-                                            className="ml-4 bg-blue-900 text-white px-5 py-2
+                                            className="ml-4 bg-emerald-700 text-white px-5 py-2
                                  rounded-lg text-sm font-medium
-                                 hover:bg-blue-800 disabled:opacity-50
-                                 transition-colors"
+                                 hover:bg-emerald-800 disabled:opacity-50
+                                 transition-colors flex gap-2 items-center"
                                         >
-                                            {signing === req.id ? 'Firmando...' : '✍️ Firmar'}
+                                            {signing === req.id ? 'Firmando...' : 
+                                                signatureMethod === 'CERTIFICATE' ? '📄 Firmar con Certificado' : '✍️ Firmar con Tableta'}
                                         </button>
                                     )}
                                 </div>

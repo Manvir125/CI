@@ -61,4 +61,26 @@ public class ConsentGroupController {
                     .body(Map.of("message", e.getMessage()));
         }
     }
+
+    // El médico firma su consentimiento mediante Certificado Digital (mTLS)
+    @PostMapping("/requests/{requestId}/professional-sign-certificate")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL')")
+    public ResponseEntity<Map<String, String>> professionalSignWithCertificate(
+            @PathVariable Long requestId,
+            jakarta.servlet.http.HttpServletRequest request,
+            Authentication auth) {
+        try {
+            // Extraer el certificado cliente enviado por el navegador/OS en el handshake mTLS
+            java.security.cert.X509Certificate[] certs = 
+                (java.security.cert.X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
+                
+            groupService.professionalSignWithCertificate(requestId, auth.getName(), certs);
+            return ResponseEntity.ok(
+                    Map.of("message", "Consentimiento firmado digitalmente de forma correcta"));
+        } catch (Exception e) {
+            log.error("Error al firmar con certificado: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", e.getMessage()));
+        }
+    }
 }

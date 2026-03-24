@@ -48,6 +48,15 @@ public class User {
     @Column(name = "service_code")
     private String serviceCode;
 
+    public enum SignatureMethod {
+        TABLET, CERTIFICATE
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "signature_method", nullable = false)
+    @Builder.Default
+    private SignatureMethod signatureMethod = SignatureMethod.TABLET;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;

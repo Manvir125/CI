@@ -95,11 +95,31 @@ public class ConsentGroupService {
                 .collect(Collectors.toList());
     }
 
-    // ── El médico secundario firma su consentimiento ──────────────────────
+    // ── El médico secundario firma su consentimiento con certificado ────────
+    @Transactional
+    public void professionalSignWithCertificate(Long requestId, String signerUsername, java.security.cert.X509Certificate[] certs)
+            throws Exception {
+            
+        if (certs == null || certs.length == 0) {
+            throw new RuntimeException("No se proporcionó ningún certificado de cliente");
+        }
+        
+        java.security.cert.X509Certificate cert = certs[0];
+        String dn = cert.getSubjectX500Principal().getName();
+        log.info("Firma con certificado detectada para {}: DN={}", signerUsername, dn);
+        
+        // Proceder con la firma normal (las validaciones se hacen dentro de doProfessionalSign)
+        doProfessionalSign(requestId, signerUsername, "CERTIFICATE_MTLS: " + dn);
+    }
+
+    // ── El médico secundario firma su consentimiento (Tableta / Normal) ─────
     @Transactional
     public void professionalSign(Long requestId, String signerUsername)
             throws Exception {
+        doProfessionalSign(requestId, signerUsername, null);
+    }
 
+    private void doProfessionalSign(Long requestId, String signerUsername, String certInfo) throws Exception {
         ConsentRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
 
@@ -112,6 +132,12 @@ public class ConsentGroupService {
                             "Corresponde al servicio: " + request.getResponsibleService());
         }
 
+        // Validación: si firma sin certificado y su método es TABLET, debe tener firma
+        if (certInfo == null && signer.getSignatureMethod() == User.SignatureMethod.TABLET && signer.getSignatureImagePath() == null) {
+            throw new RuntimeException("No tienes una firma configurada en tu perfil. " +
+                    "Sube una firma de tableta o cambia tu método a Certificado Digital.");
+        }
+
         SignatureCapture capture = signatureCaptureRepository
                 .findByConsentRequestId(requestId)
                 .orElseThrow(() -> new RuntimeException(
@@ -120,6 +146,13 @@ public class ConsentGroupService {
         request.setProfessionalSigned(true);
         request.setProfessionalSignedAt(LocalDateTime.now());
         request.setProfessionalSigner(signer);
+        
+        if (certInfo != null) {
+            // Guardar en observaciones o en un campo dedicado que la firma fue con certificado
+            String obs = request.getObservations() != null ? request.getObservations() + "\n" : "";
+            request.setObservations(obs + "Firma del profesional realizada con certificado digital: " + certInfo);
+        }
+        
         requestRepository.save(request);
 
         String patientName = hisIntegrationService.findPatientByNhc(request.getNhc())
@@ -134,11 +167,11 @@ public class ConsentGroupService {
 
         updateGroupStatus(request.getGroup());
 
-        auditService.log(signerUsername, "PROFESSIONAL_SIGNED",
+        auditService.log(signerUsername, certInfo != null ? "PROFESSIONAL_SIGNED_CERT" : "PROFESSIONAL_SIGNED",
                 "ConsentRequest", requestId, null, true, null);
 
-        log.info("Consentimiento {} firmado por profesional {}",
-                requestId, signerUsername);
+        log.info("Consentimiento {} firmado por profesional {} (Método: {})",
+                requestId, signerUsername, certInfo != null ? "CERTIFICADO" : "TABLETA");
     }
 
     // ── Actualiza el estado del grupo ─────────────────────────────────────

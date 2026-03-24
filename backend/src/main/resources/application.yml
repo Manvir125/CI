@@ -46,6 +46,10 @@ app:
   keystore-path: ${KEYSTORE_PATH:certs/chpc-keystore.p12}
   keystore-password: ${KEYSTORE_PASSWORD:chpc2026}
   keystore-alias: ${KEYSTORE_ALIAS:chpc-sign} 
+  mtls-enabled: true
+  mtls-port: 8444
+  mtls-truststore-path: certs/truststore.p12
+  mtls-truststore-password: changeit
 
 twilio:
   account-sid: ${TWILIO_ACCOUNT_SID:ACb7951f4cada5f3a765c7a5f84b652349}
@@ -56,7 +60,7 @@ server:
   port: 8080
 
 jwt:
-  secret: ${JWT_SECRET:dev_secret_cambia_en_produccion_minimo_32_chars}
+  secret: ${JWT_SECRET:dev_secret_cambia_en_produccion_minimo_32_chars_debe_tener_al_menos_64_para_ser_seguro_hs512_chpc_2026}
   expiration-ms: ${JWT_EXPIRATION_MS:28800000}
 
 his:

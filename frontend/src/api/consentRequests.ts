@@ -128,3 +128,32 @@ export const getPendingMySignature = async (): Promise<ConsentRequestResponse[]>
 export const professionalSign = async (requestId: number): Promise<void> => {
     await client.post(`/api/consent-groups/requests/${requestId}/professional-sign`);
 };
+
+export const professionalSignWithCert = async (requestId: number): Promise<void> => {
+    // LLamar al puerto 8444 para requerir mTLS (fuerza HTTPS)
+    const mtlsUrl = `https://${window.location.hostname}:8444`;
+    
+    // Extraer el token del objeto 'auth' en localStorage (mismo patrón que api/client.ts)
+    let token = '';
+    try {
+        const stored = localStorage.getItem('auth');
+        if (stored) {
+            const auth = JSON.parse(stored);
+            token = auth?.token || '';
+        }
+    } catch (e) {
+        console.error('Error parsing auth token', e);
+    }
+
+    const response = await fetch(`${mtlsUrl}/api/consent-groups/requests/${requestId}/professional-sign-certificate`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al firmar con certificado digital');
+    }
+};

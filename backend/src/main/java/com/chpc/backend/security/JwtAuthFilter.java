@@ -28,10 +28,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
+        log.debug("JWT Filter - Request: {} {}, Port: {}, Auth Header: {}", 
+                request.getMethod(), request.getRequestURI(), request.getLocalPort(), request.getHeader("Authorization"));
+
         String token = extractTokenFromRequest(request);
 
         if (token != null && jwtUtils.validateToken(token)) {
             String username = jwtUtils.getUsernameFromToken(token);
+            log.debug("JWT Filter - Token valid for user: {}", username);
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             var authentication = new UsernamePasswordAuthenticationToken(

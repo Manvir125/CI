@@ -8,4 +8,5 @@ import java.time.LocalDateTime;
 public class ProfessionalSignatureResponse {
     private boolean hasSignature;
     private LocalDateTime updatedAt;
+    private String signatureMethod;
 }

@@ -84,7 +84,7 @@ export default function KioskSignPage() {
     });
 
     // Rechazo
-    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
 
     // ── Carga el token de kiosco y luego el consentimiento ─────────────────
@@ -193,11 +193,19 @@ export default function KioskSignPage() {
 
     const handleSign = async () => {
         if (!isSigned || !canvasRef.current) return;
+        if (isRejecting && !rejectReason.trim()) return;
+
         setSubmitting(true);
         try {
             const imageBase64 = canvasRef.current.toDataURL('image/png');
-            await submitSignature(token, imageBase64, readConfirmed, 'SIGNED', undefined, penEvents);
-            setStep('confirmed');
+            const confirmation = isRejecting ? 'REJECTED' : 'SIGNED';
+            await submitSignature(token, imageBase64, readConfirmed, confirmation, isRejecting ? rejectReason : undefined, penEvents);
+            
+            if (isRejecting) {
+                setStep('rejected');
+            } else {
+                setStep('confirmed');
+            }
         } catch {
             setError('Error al enviar la firma');
         } finally {
@@ -205,19 +213,6 @@ export default function KioskSignPage() {
         }
     };
 
-    const handleReject = async () => {
-        if (!rejectReason.trim()) return;
-        setSubmitting(true);
-        try {
-            await submitSignature(token, '', false, 'REJECTED', rejectReason);
-            setStep('rejected');
-        } catch {
-            setError('Error al rechazar el consentimiento');
-        } finally {
-            setSubmitting(false);
-            setShowRejectModal(false);
-        }
-    };
 
     // ── Pantallas de estado ────────────────────────────────────────────────
     if (step === 'loading') return (
@@ -413,7 +408,10 @@ export default function KioskSignPage() {
 
                         <div className="space-y-3">
                             <button
-                                onClick={() => setStep('sign')}
+                                onClick={() => {
+                                    setIsRejecting(false);
+                                    setStep('sign');
+                                }}
                                 disabled={!readConfirmed}
                                 className="w-full bg-emerald-900 text-white py-4 rounded-xl
                            font-semibold text-base hover:bg-emerald-800
@@ -423,7 +421,10 @@ export default function KioskSignPage() {
                                 Continuar para firmar
                             </button>
                             <button
-                                onClick={() => setShowRejectModal(true)}
+                                onClick={() => {
+                                    setIsRejecting(true);
+                                    setStep('sign');
+                                }}
                                 className="w-full bg-red-500 border border-red-500 text-white
                            py-4 rounded-xl font-medium text-base hover:bg-red-600
                            transition-colors"
@@ -439,13 +440,32 @@ export default function KioskSignPage() {
                     <div className="mt-4 space-y-4">
 
                         <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
-                            <h2 className="font-bold text-gray-800 text-xl mb-2">
-                                Firma el documento
+                            <h2 className={`font-bold text-xl mb-2 ${isRejecting ? 'text-red-600' : 'text-gray-800'}`}>
+                                {isRejecting ? 'Rechazo del documento' : 'Firma del documento'}
                             </h2>
                             <p className="text-gray-500 text-sm">
-                                Dibuja tu firma en el recuadro inferior.
+                                {isRejecting 
+                                    ? 'Debe firmar para dejar constancia de que ha declinado este consentimiento.' 
+                                    : 'Dibuja tu firma en el recuadro inferior.'}
                             </p>
                         </div>
+
+                        {isRejecting && (
+                            <div className="bg-white rounded-2xl p-5 shadow-sm">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Motivo del rechazo (obligatorio):
+                                </label>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={e => setRejectReason(e.target.value)}
+                                    rows={3}
+                                    placeholder="Explique el motivo del rechazo..."
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-3
+                                         text-sm focus:outline-none focus:ring-2
+                                         focus:ring-red-500"
+                                />
+                            </div>
+                        )}
 
                         {/* Tablet status indicator */}
                         {xppenState === 'open' && (
@@ -535,47 +555,6 @@ export default function KioskSignPage() {
                     </div>
                 )}
             </main>
-
-            {/* Modal de rechazo */}
-            {showRejectModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-end
-                        justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl mb-4">
-                        <h3 className="font-bold text-gray-800 text-lg mb-2">
-                            ¿Por qué no deseas firmar?
-                        </h3>
-                        <p className="text-gray-500 text-sm mb-4">
-                            Explica brevemente el motivo.
-                        </p>
-                        <textarea
-                            value={rejectReason}
-                            onChange={e => setRejectReason(e.target.value)}
-                            rows={3}
-                            placeholder="Motivo del rechazo..."
-                            className="w-full border border-gray-300 rounded-xl px-4 py-3
-                         text-sm focus:outline-none focus:ring-2
-                         focus:ring-emerald-500 mb-4"
-                        />
-                        <div className="space-y-2">
-                            <button
-                                onClick={handleReject}
-                                disabled={submitting || !rejectReason.trim()}
-                                className="w-full bg-red-600 text-white py-3 rounded-xl
-                           font-medium disabled:opacity-50 transition-colors"
-                            >
-                                {submitting ? 'Enviando...' : 'Confirmar rechazo'}
-                            </button>
-                            <button
-                                onClick={() => setShowRejectModal(false)}
-                                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl
-                           font-medium hover:bg-gray-200 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

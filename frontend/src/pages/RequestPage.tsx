@@ -200,6 +200,15 @@ export default function RequestsPage() {
                                                     📄 PDF
                                                 </button>
                                             )}
+                                            {req.status === 'REJECTED' && (
+                                                <button
+                                                    onClick={() => handleDownloadPdf(req.id)}
+                                                    className="bg-teal-50 hover:bg-teal-100 text-teal-700
+                                                    px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                >
+                                                    📄 PDF
+                                                </button>
+                                            )}
                                             {req.status === 'PENDING' && req.channel === 'REMOTE' && (
                                                 <button
                                                     onClick={() => handleSend(req.id)}

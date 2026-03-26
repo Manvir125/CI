@@ -32,7 +32,7 @@ export default function PatientPortalPage() {
     const [isSigned, setIsSigned] = useState(false);
 
     // Rechazo
-    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
 
     useEffect(() => {
@@ -146,11 +146,19 @@ export default function PatientPortalPage() {
 
     const handleSign = async () => {
         if (!sigPadRef.current || sigPadRef.current.isEmpty()) return;
+        if (isRejecting && !rejectReason.trim()) return;
+        
         setSubmitting(true);
         try {
             const imageBase64 = sigPadRef.current.toDataURL('image/png');
-            await submitSignature(token!, imageBase64, readConfirmed, 'SIGNED');
-            setStep('confirmed');
+            const confirmation = isRejecting ? 'REJECTED' : 'SIGNED';
+            await submitSignature(token!, imageBase64, readConfirmed, confirmation, isRejecting ? rejectReason : undefined);
+            
+            if (isRejecting) {
+                setStep('rejected');
+            } else {
+                setStep('confirmed');
+            }
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Error al enviar la firma');
         } finally {
@@ -158,19 +166,6 @@ export default function PatientPortalPage() {
         }
     };
 
-    const handleReject = async () => {
-        if (!rejectReason.trim()) return;
-        setSubmitting(true);
-        try {
-            await submitSignature(token!, '', false, 'REJECTED', rejectReason);
-            setStep('rejected');
-        } catch (err: any) {
-            setError(err?.response?.data?.message || 'Error al rechazar');
-        } finally {
-            setSubmitting(false);
-            setShowRejectModal(false);
-        }
-    };
 
     // ── Renders por paso ─────────────────────────────────────────────────────
 
@@ -453,7 +448,10 @@ export default function PatientPortalPage() {
                         {/* Botones de acción */}
                         <div className="space-y-3">
                             <button
-                                onClick={() => setStep('sign')}
+                                onClick={() => {
+                                    setIsRejecting(false);
+                                    setStep('sign');
+                                }}
                                 disabled={!readConfirmed}
                                 className="w-full bg-emerald-700 text-white py-4 rounded-xl
                            font-semibold text-base hover:bg-emerald-800
@@ -463,7 +461,10 @@ export default function PatientPortalPage() {
                                 Continuar para firmar
                             </button>
                             <button
-                                onClick={() => setShowRejectModal(true)}
+                                onClick={() => {
+                                    setIsRejecting(true);
+                                    setStep('sign');
+                                }}
                                 className="w-full bg-white border border-red-300 text-red-600
                            py-4 rounded-xl font-medium text-base
                            hover:bg-red-50 transition-colors"
@@ -479,14 +480,32 @@ export default function PatientPortalPage() {
                     <div className="mt-4 space-y-4">
 
                         <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
-                            <h2 className="font-bold text-gray-800 text-xl mb-2">
-                                Firma el documento
+                            <h2 className={`font-bold text-xl mb-2 ${isRejecting ? 'text-red-600' : 'text-gray-800'}`}>
+                                {isRejecting ? 'Rechazo del documento' : 'Firma del documento'}
                             </h2>
                             <p className="text-gray-500 text-sm">
-                                Dibuja tu firma en el recuadro inferior usando el dedo
-                                o un lápiz táctil.
+                                {isRejecting 
+                                    ? 'Debe firmar para dejar constancia de que ha declinado este consentimiento.' 
+                                    : 'Dibuja tu firma en el recuadro inferior usando el dedo o un lápiz táctil.'}
                             </p>
                         </div>
+
+                        {isRejecting && (
+                            <div className="bg-white rounded-2xl p-5 shadow-sm">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Explica brevemente el motivo del rechazo:
+                                </label>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={e => setRejectReason(e.target.value)}
+                                    rows={3}
+                                    placeholder="Ej: No estoy de acuerdo con los riesgos expuestos..."
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-3
+                                         text-sm focus:outline-none focus:ring-2
+                                         focus:ring-red-500"
+                                />
+                            </div>
+                        )}
 
                         {/* Canvas de firma */}
                         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -549,49 +568,6 @@ export default function PatientPortalPage() {
                     </div>
                 )}
             </main>
-
-            {/* Modal de rechazo */}
-            {showRejectModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-end
-                        justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md
-                          shadow-xl mb-4">
-                        <h3 className="font-bold text-gray-800 text-lg mb-2">
-                            ¿Por qué no deseas firmar?
-                        </h3>
-                        <p className="text-gray-500 text-sm mb-4">
-                            Explica brevemente el motivo. El equipo médico se pondrá
-                            en contacto contigo.
-                        </p>
-                        <textarea
-                            value={rejectReason}
-                            onChange={e => setRejectReason(e.target.value)}
-                            rows={3}
-                            placeholder="Motivo del rechazo..."
-                            className="w-full border border-gray-300 rounded-xl px-4 py-3
-                         text-sm focus:outline-none focus:ring-2
-                         focus:ring-blue-500 mb-4"
-                        />
-                        <div className="space-y-2">
-                            <button
-                                onClick={handleReject}
-                                disabled={submitting || !rejectReason.trim()}
-                                className="w-full bg-red-600 text-white py-3 rounded-xl
-                           font-medium disabled:opacity-50 transition-colors"
-                            >
-                                {submitting ? 'Enviando...' : 'Confirmar rechazo'}
-                            </button>
-                            <button
-                                onClick={() => setShowRejectModal(false)}
-                                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl
-                           font-medium hover:bg-gray-200 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

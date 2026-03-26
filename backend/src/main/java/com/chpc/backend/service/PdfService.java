@@ -141,6 +141,15 @@ public class PdfService {
                 String createdAt = request.getCreatedAt().format(FMT);
 
                 StringBuilder extraContent = new StringBuilder();
+
+                if ("REJECTED".equals(capture.getPatientConfirmation())) {
+                        extraContent.append("<div style='margin-top:20px; padding:15px; background-color:#ffebeb; border-left:4px solid #d32f2f; color:#b71c1c;'>")
+                                    .append("<strong style='font-size:16px;'>EL PACIENTE HA RECHAZADO ESTE PROCEDIMIENTO</strong><br/><br/>")
+                                    .append("<strong>Motivo del rechazo:</strong> ")
+                                    .append(capture.getRejectionReason() != null ? capture.getRejectionReason().replace("\n", "<br/>") : "No especificado")
+                                    .append("</div>");
+                }
+
                 if (request.getObservations() != null && !request.getObservations().isBlank()) {
                         extraContent.append("<div style='margin-top:20px; padding:10px; background-color:#f9f9f9; border-left:3px solid #1e3a5f;'>")
                                     .append("<strong>Observaciones:</strong><br/>")

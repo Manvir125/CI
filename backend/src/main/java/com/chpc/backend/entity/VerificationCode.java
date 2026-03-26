@@ -36,9 +36,11 @@ public class VerificationCode {
     @Column(name = "used_at")
     private LocalDateTime usedAt;
 
+    @Builder.Default
     @Column(name = "is_valid", nullable = false)
     private Boolean isValid = true;
 
+    @Builder.Default
     @Column(name = "attempt_count", nullable = false)
     private Integer attemptCount = 0;
 

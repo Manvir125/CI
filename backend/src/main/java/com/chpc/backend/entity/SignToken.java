@@ -33,6 +33,7 @@ public class SignToken {
     @Column(name = "used_at")
     private LocalDateTime usedAt;
 
+    @Builder.Default
     @Column(name = "is_valid", nullable = false)
     private Boolean isValid = true;
 

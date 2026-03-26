@@ -33,14 +33,20 @@ public class SignatureCapture {
     @Column(name = "signature_image_path")
     private String signatureImagePath;
 
+    @Builder.Default
     @Column(name = "sign_method", nullable = false)
     private String signMethod = "REMOTE_CANVAS";
 
+    @Builder.Default
     @Column(name = "read_check_confirmed", nullable = false)
     private Boolean readCheckConfirmed = false;
 
+    @Builder.Default
     @Column(name = "patient_confirmation", nullable = false)
     private String patientConfirmation = "SIGNED";
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
 
     @PrePersist
     protected void prePersist() {

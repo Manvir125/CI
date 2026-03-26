@@ -210,9 +210,10 @@ public class PatientPortalService {
                         .signMethod("REMOTE_CANVAS")
                         .readCheckConfirmed(req.isReadCheckConfirmed())
                         .patientConfirmation(req.getConfirmation())
+                        .rejectionReason(req.getRejectionReason())
                         .build();
                 signatureRepository.save(siblingCapture);
-                sibling.setStatus("SIGNED");
+                sibling.setStatus("SIGNED".equals(req.getConfirmation()) ? "SIGNED" : "REJECTED");
                 requestRepository.save(sibling);
                 String patientName = hisService.findPatientByNhc(sibling.getNhc())
                         .map(p -> p.getFirstName() + " " + p.getLastName())
@@ -235,7 +236,7 @@ public class PatientPortalService {
             boolean isSigning = "SIGNED".equals(req.getConfirmation());
 
             String imagePath = null;
-            if (isSigning && req.getSignatureImageBase64() != null) {
+            if (req.getSignatureImageBase64() != null && !req.getSignatureImageBase64().isBlank()) {
                 imagePath = saveSignatureImage(
                         req.getSignatureImageBase64(), request.getId());
             }
@@ -248,10 +249,11 @@ public class PatientPortalService {
                     .signMethod("REMOTE_CANVAS")
                     .readCheckConfirmed(req.isReadCheckConfirmed())
                     .patientConfirmation(req.getConfirmation())
+                    .rejectionReason(req.getRejectionReason())
                     .build();
             signatureRepository.save(capture);
 
-            if (isSigning && req.getEvents() != null && !req.getEvents().isEmpty()) {
+            if (req.getEvents() != null && !req.getEvents().isEmpty()) {
                 List<SignatureEvent> signatureEvents = IntStream.range(0, req.getEvents().size())
                         .mapToObj(i -> {
                             PenEventDto dto = req.getEvents().get(i);
@@ -271,35 +273,33 @@ public class PatientPortalService {
                 eventRepository.saveAll(signatureEvents);
             }
 
-            // Genera el PDF sellado si el paciente ha firmado
-            if (isSigning) {
-                try {
-                    log.info("=== PDF: Iniciando generación para solicitud {}", request.getId());
-                    log.info("=== PDF: Ruta de firmas: {}", signaturesPath);
-                    log.info("=== PDF: Ruta de PDFs: {}", pdfPath);
-                    log.info("=== PDF: Imagen de firma path: {}", capture.getSignatureImagePath());
+            // Genera el PDF sellado siempre, independientemente de si es firmado o rechazado
+            try {
+                log.info("=== PDF: Iniciando generación para solicitud {}", request.getId());
+                log.info("=== PDF: Ruta de firmas: {}", signaturesPath);
+                log.info("=== PDF: Ruta de PDFs: {}", pdfPath);
+                log.info("=== PDF: Imagen de firma path: {}", capture.getSignatureImagePath());
 
-                    String patientName = hisService.findPatientByNhc(request.getNhc())
-                            .map(p -> p.getFirstName() + " " + p.getLastName())
-                            .orElse("Paciente");
+                String patientName = hisService.findPatientByNhc(request.getNhc())
+                        .map(p -> p.getFirstName() + " " + p.getLastName())
+                        .orElse("Paciente");
 
-                    String pdfFilePath = pdfService.generateSignedPdf(request, capture, patientName);
-                    log.info("=== PDF: Fichero generado en: {}", pdfFilePath);
+                String pdfFilePath = pdfService.generateSignedPdf(request, capture, patientName);
+                log.info("=== PDF: Fichero generado en: {}", pdfFilePath);
 
-                    String hash = pdfService.calculateHash(pdfFilePath);
-                    log.info("=== PDF: Hash calculado: {}", hash);
+                String hash = pdfService.calculateHash(pdfFilePath);
+                log.info("=== PDF: Hash calculado: {}", hash);
 
-                    request.setPdfPath(pdfFilePath);
-                    request.setPdfHash(hash);
-                    request.setPdfGeneratedAt(LocalDateTime.now());
+                request.setPdfPath(pdfFilePath);
+                request.setPdfHash(hash);
+                request.setPdfGeneratedAt(LocalDateTime.now());
 
-                    if (request.getPatientEmail() != null && !request.getPatientEmail().isBlank()) {
-                        notificationService.sendSignedConfirmationEmail(request, pdfFilePath, patientName);
-                    }
-
-                } catch (Exception e) {
-                    log.error("=== PDF: Error completo: ", e); // stack trace completo
+                if (request.getPatientEmail() != null && !request.getPatientEmail().isBlank()) {
+                    notificationService.sendSignedConfirmationEmail(request, pdfFilePath, patientName);
                 }
+
+            } catch (Exception e) {
+                log.error("=== PDF: Error completo: ", e); // stack trace completo
             }
 
             request.setStatus(isSigning ? "SIGNED" : "REJECTED");

@@ -35,6 +35,7 @@ public class ConsentRequest {
     @Column(nullable = false)
     private SignChannel channel;
 
+    @Builder.Default
     @Column(nullable = false)
     private String status = "PENDING";
 
@@ -82,6 +83,7 @@ public class ConsentRequest {
     @Column(name = "responsible_service")
     private String responsibleService;
 
+    @Builder.Default
     @Column(name = "professional_signed", nullable = false)
     private Boolean professionalSigned = false;
 

@@ -38,6 +38,7 @@ public class Notification {
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean success = false;
 

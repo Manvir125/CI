@@ -79,6 +79,7 @@ public class AuthService {
                         .collect(Collectors.toSet()))
                 .expiresInMs(28800000L)
                 .serviceCode(user.getServiceCode())
+                .signatureMethod(user.getSignatureMethod() != null ? user.getSignatureMethod().name() : null)
                 .build();
     }
 }

@@ -24,9 +24,14 @@ public class ConsentGroupController {
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
     public ResponseEntity<ConsentGroupResponse> createGroup(
             @Valid @RequestBody ConsentGroupDto dto,
+            jakarta.servlet.http.HttpServletRequest request,
             Authentication auth) {
+            
+        java.security.cert.X509Certificate[] certs = 
+                (java.security.cert.X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
+
         return ResponseEntity.ok(
-                groupService.createGroup(dto, auth.getName()));
+                groupService.createGroup(dto, auth.getName(), certs));
     }
 
     // Solicitudes pendientes de firma para el servicio del médico autenticado

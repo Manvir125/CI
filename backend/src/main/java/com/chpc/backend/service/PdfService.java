@@ -113,10 +113,14 @@ public class PdfService {
                                         signer.getSignatureMethod());
 
                         if (signer.getSignatureMethod() == User.SignatureMethod.CERTIFICATE) {
+                            String certDetails = request.getProfessionalCertInfo() != null 
+                                    ? request.getProfessionalCertInfo() 
+                                    : signer.getFullName();
+                            
                             professionalSignatureTag = "<div style='padding:10px; border:1px solid #ccc; max-width:400px; background-color:#f9f9f9;'>"
                                     + "<strong style='color:#1e3a5f;'>Firmado digitalmente mediante certificado X.509</strong><br/>"
-                                    + "<span style='font-size:12px; color:#555;'>Titular: " + signer.getFullName() + "</span><br/>"
-                                    + "<span style='font-size:11px; color:#777;'>El certificado de cliente valida la identidad y fue verificado durante el handshake TLS.</span>"
+                                    + "<span style='font-size:12px; color:#555;'>Datos del certificado: <br/><strong>" + certDetails + "</strong></span><br/>"
+                                    + "<span style='font-size:11px; color:#777; margin-top:5px; display:inline-block;'>El certificado de cliente valida la identidad y fue verificado durante el establecimiento de la conexión segura.</span>"
                                     + "</div>";
                         } else {
                             byte[] profSigBytes = professionalSignatureService.readSignatureBytes(signer);

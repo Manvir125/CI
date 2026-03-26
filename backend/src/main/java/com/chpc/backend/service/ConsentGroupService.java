@@ -30,7 +30,7 @@ public class ConsentGroupService {
     // ── Crea el grupo con todos sus consentimientos ───────────────────────
     @Transactional
     public ConsentGroupResponse createGroup(ConsentGroupDto dto,
-            String creatorUsername) {
+            String creatorUsername, java.security.cert.X509Certificate[] certs) {
         User creator = userRepository.findByUsername(creatorUsername)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
@@ -77,6 +77,19 @@ public class ConsentGroupService {
                     .dynamicFields(item.getDynamicFields())
                     .build();
             requestRepository.save(request);
+            
+            if (autoSign) {
+                if (creator.getSignatureMethod() == User.SignatureMethod.CERTIFICATE) {
+                    if (certs == null || certs.length == 0) {
+                        throw new RuntimeException("Debe firmar con su certificado digital para crear este consentimiento");
+                    }
+                    String dn = certs[0].getSubjectX500Principal().getName();
+                    request.setProfessionalCertInfo(dn);
+                    requestRepository.save(request);
+                } else if (creator.getSignatureMethod() == User.SignatureMethod.TABLET && creator.getSignatureImagePath() == null) {
+                    throw new RuntimeException("No tienes una firma configurada en tu perfil. Sube una firma de tableta o cambia tu método a Certificado Digital.");
+                }
+            }
         }
 
         auditService.log(creatorUsername, "GROUP_CREATED", "ConsentGroup",
@@ -148,9 +161,8 @@ public class ConsentGroupService {
         request.setProfessionalSigner(signer);
         
         if (certInfo != null) {
-            // Guardar en observaciones o en un campo dedicado que la firma fue con certificado
-            String obs = request.getObservations() != null ? request.getObservations() + "\n" : "";
-            request.setObservations(obs + "Firma del profesional realizada con certificado digital: " + certInfo);
+            // Guardar en el campo dedicado que la firma fue con certificado
+            request.setProfessionalCertInfo(certInfo);
         }
         
         requestRepository.save(request);

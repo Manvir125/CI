@@ -6,6 +6,7 @@ export interface LoginResponse {
     roles: string[];
     expiresInMs: number;
     serviceCode?: string;
+    signatureMethod?: 'TABLET' | 'CERTIFICATE';
 }
 
 // Usuario autenticado en el contexto
@@ -15,6 +16,7 @@ export interface AuthUser {
     fullName: string;
     roles: string[];
     serviceCode?: string;
+    signatureMethod?: 'TABLET' | 'CERTIFICATE';
 }
 
 // Campo dinámico de plantilla

@@ -114,8 +114,39 @@ export interface ConsentGroupDto {
 }
 
 export const createGroup = async (
-    dto: ConsentGroupDto
+    dto: ConsentGroupDto,
+    useMtls: boolean = false
 ): Promise<any> => {
+    if (useMtls) {
+        const mtlsUrl = `https://${window.location.hostname}:8444`;
+        
+        let token = '';
+        try {
+            const stored = localStorage.getItem('auth');
+            if (stored) {
+                const auth = JSON.parse(stored);
+                token = auth?.token || '';
+            }
+        } catch (e) {
+            console.error('Error parsing auth token', e);
+        }
+
+        const response = await fetch(`${mtlsUrl}/api/consent-groups`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(dto)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Error en firma con certificado' }));
+            throw { response: { data: errorData, status: response.status } };
+        }
+        return await response.json();
+    }
+
     const { data } = await client.post('/api/consent-groups', dto);
     return data;
 };

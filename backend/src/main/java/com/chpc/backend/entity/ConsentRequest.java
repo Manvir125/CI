@@ -88,6 +88,9 @@ public class ConsentRequest {
     @Column(name = "professional_signed_at")
     private LocalDateTime professionalSignedAt;
 
+    @Column(name = "professional_cert_info", length = 1000)
+    private String professionalCertInfo;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "professional_signer_id")
     private User professionalSigner;

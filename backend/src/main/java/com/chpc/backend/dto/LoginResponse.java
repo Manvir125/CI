@@ -12,4 +12,5 @@ public class LoginResponse {
     private Set<String> roles;
     private long expiresInMs;
     private String serviceCode;
+    private String signatureMethod;
 }

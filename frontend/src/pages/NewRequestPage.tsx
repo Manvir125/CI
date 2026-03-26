@@ -124,7 +124,17 @@ export default function NewRequestPage() {
                 })
             };
 
-            const createdGroup = await createGroup(groupData);
+            // Determinar si el médico principal o secundario auto-firmaría alguno de los consentimientos
+            const willAutoSign = allSelectedIds.some(id => {
+                const t = templates.find(temp => temp.id === id);
+                const respService = t?.serviceCode || selectedEpisode!.serviceCode;
+                return user?.serviceCode && user.serviceCode.toLowerCase() === respService.toLowerCase();
+            });
+
+            // Si auto-firma y su método es certificado, obligamos al request mTLS
+            const useMtls = willAutoSign && user?.signatureMethod === 'CERTIFICATE';
+
+            const createdGroup = await createGroup(groupData, useMtls);
 
             if (sendNow && channel === 'REMOTE' && createdGroup.requests?.length > 0) {
                 // Se envía el primer consentimiento del grupo para que el acceso al portal

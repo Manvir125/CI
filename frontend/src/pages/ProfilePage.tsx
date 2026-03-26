@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import SignaturePad from 'signature_pad';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useXPPenTablet, type PenEvent } from '../hooks/useXPPenTablet';
 import {
     getSignatureStatus, saveSignature,
@@ -23,6 +24,7 @@ export default function ProfilePage() {
     const [selectedMethod, setSelectedMethod] = useState<'TABLET' | 'CERTIFICATE'>('TABLET');
 
     const navigate = useNavigate();
+    const { user, loginUser } = useAuth();
 
     useEffect(() => { loadStatus(); }, []);
 
@@ -48,6 +50,9 @@ export default function ProfilePage() {
         setError('');
         try {
             await updateSignatureMethod(selectedMethod);
+            if (user) {
+                loginUser({ ...user, signatureMethod: selectedMethod });
+            }
             setMessage(`Preferencia actualizada a: ${selectedMethod === 'TABLET' ? 'Firma de Tableta' : 'Certificado Digital'}`);
             await loadStatus();
         } catch {

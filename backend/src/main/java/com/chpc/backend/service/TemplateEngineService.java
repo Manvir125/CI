@@ -19,10 +19,16 @@ public class TemplateEngineService {
      */
     public String renderHtml(ConsentRequest request, String patientName) {
         ConsentTemplate template = request.getTemplate();
-        String html = template.getContentHtml();
+        String html = request.getCustomTemplateHtml() != null 
+                ? request.getCustomTemplateHtml() 
+                : template.getContentHtml();
 
-        if (html == null || template.getFields() == null || template.getFields().isEmpty()) {
-            return html != null ? html : "";
+        if (html == null) {
+            return "";
+        }
+
+        if (template.getFields() == null || template.getFields().isEmpty()) {
+            return html;
         }
 
         for (TemplateField field : template.getFields()) {

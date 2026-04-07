@@ -61,6 +61,9 @@ public class ConsentRequest {
     @Column(columnDefinition = "TEXT")
     private String observations;
 
+    @Column(name = "custom_template_html", columnDefinition = "TEXT")
+    private String customTemplateHtml;
+
     @ElementCollection
     @CollectionTable(name = "consent_request_fields", joinColumns = @JoinColumn(name = "consent_request_id"))
     @MapKeyColumn(name = "field_key")

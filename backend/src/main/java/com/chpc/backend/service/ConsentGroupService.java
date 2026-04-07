@@ -75,6 +75,7 @@ public class ConsentGroupService {
                     .professionalSignedAt(autoSign ? LocalDateTime.now() : null)
                     .observations(item.getObservations())
                     .dynamicFields(item.getDynamicFields())
+                    .customTemplateHtml(item.getCustomTemplateHtml())
                     .build();
             requestRepository.save(request);
             

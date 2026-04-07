@@ -33,6 +33,7 @@ export interface ConsentRequestDto {
     patientPhone: string;
     observations?: string;
     dynamicFields?: Record<string, string>;
+    customTemplateHtml?: string;
 }
 
 export interface PageResponse<T> {
@@ -110,6 +111,7 @@ export interface ConsentGroupDto {
         channel: string;
         observations?: string;
         dynamicFields?: Record<string, string>;
+        customTemplateHtml?: string;
     }[];
 }
 

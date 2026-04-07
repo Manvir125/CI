@@ -28,5 +28,6 @@ public class ConsentGroupDto {
         private String channel;
         private String observations;
         private java.util.Map<String, String> dynamicFields;
+        private String customTemplateHtml;
     }
 }

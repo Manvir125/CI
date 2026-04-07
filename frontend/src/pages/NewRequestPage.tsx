@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import {
     getPatientByNhc, getPatientByDni,
     getActiveEpisodes, type PatientDto, type EpisodeDto
@@ -29,7 +31,8 @@ export default function NewRequestPage() {
     const [mainTemplateId, setMainTemplateId] = useState<number | null>(null);
     const [secondaryTemplateIds, setSecondaryTemplateIds] = useState<number[]>([]);
     const [observationsMap, setObservationsMap] = useState<Record<number, string>>({});
-    const [dynamicFieldsMap, setDynamicFieldsMap] = useState<Record<number, Record<string, string>>>({});
+    const [customTemplateMap, setCustomTemplateMap] = useState<Record<number, string>>({});
+    const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
     const [channel, setChannel] = useState<'REMOTE' | 'ONSITE'>('REMOTE');
     const [patientEmail, setPatientEmail] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
@@ -70,7 +73,8 @@ export default function NewRequestPage() {
         setMainTemplateId(null);
         setSecondaryTemplateIds([]);
         setObservationsMap({});
-        setDynamicFieldsMap({});
+        setCustomTemplateMap({});
+        setEditingTemplateId(null);
         setLoading(true);
         try {
             const allTemplates = await getTemplates();
@@ -119,7 +123,7 @@ export default function NewRequestPage() {
                         responsibleService: t?.serviceCode || selectedEpisode!.serviceCode,
                         channel,
                         observations: observationsMap[id] || '',
-                        dynamicFields: dynamicFieldsMap[id] || {}
+                        customTemplateHtml: customTemplateMap[id] || t?.contentHtml || ''
                     };
                 })
             };
@@ -420,7 +424,7 @@ export default function NewRequestPage() {
                                             {mainTemplateId === t.id && (
                                                 <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
                                                     <div>
-                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones</label>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (Añadidas al final del PDF)</label>
                                                         <textarea
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                             rows={2}
@@ -429,23 +433,44 @@ export default function NewRequestPage() {
                                                             onChange={e => setObservationsMap(prev => ({ ...prev, [t.id]: e.target.value }))}
                                                         />
                                                     </div>
-                                                    {t.fields?.map(f => (
-                                                        <div key={f.fieldKey}>
-                                                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                                {f.fieldLabel} {f.required && <span className="text-red-500">*</span>}
-                                                            </label>
-                                                            <input
-                                                                type={f.fieldType === 'number' ? 'number' : 'text'}
-                                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                                required={f.required}
-                                                                value={dynamicFieldsMap[t.id]?.[f.fieldKey] ?? f.defaultValue ?? ''}
-                                                                onChange={e => setDynamicFieldsMap(prev => ({
-                                                                    ...prev,
-                                                                    [t.id]: { ...(prev[t.id] || {}), [f.fieldKey]: e.target.value }
-                                                                }))}
-                                                            />
-                                                        </div>
-                                                    ))}
+                                                    <div className="pt-2">
+                                                        {editingTemplateId === t.id ? (
+                                                            <div className="border border-emerald-200 rounded-lg p-3 bg-slate-50 mt-2 shadow-sm">
+                                                                <div className="flex justify-between items-center mb-2">
+                                                                    <label className="block text-sm font-semibold text-gray-800">
+                                                                        Editando plantilla...
+                                                                    </label>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setEditingTemplateId(null)}
+                                                                        className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md hover:bg-emerald-200 font-medium transition-colors"
+                                                                    >
+                                                                        Terminar edición
+                                                                    </button>
+                                                                </div>
+                                                                <div className="bg-white border border-gray-300 rounded overflow-hidden">
+                                                                    <ReactQuill
+                                                                        theme="snow"
+                                                                        value={customTemplateMap[t.id] ?? t.contentHtml ?? ''}
+                                                                        onChange={(content) => {
+                                                                            setCustomTemplateMap(prev => ({
+                                                                                ...prev, [t.id]: content
+                                                                            }))
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingTemplateId(t.id)}
+                                                                className="mt-1 w-full bg-gray-50 border border-gray-300 border-dashed text-gray-600 py-3 rounded-lg text-sm hover:bg-gray-100 hover:text-gray-800 transition-colors flex items-center justify-center gap-2"
+                                                            >
+                                                                <span>✏️</span>
+                                                                {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar texto de la plantilla"}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -486,7 +511,7 @@ export default function NewRequestPage() {
                                             {secondaryTemplateIds.includes(t.id) && (
                                                 <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
                                                     <div>
-                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones</label>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (Añadidas al final del PDF)</label>
                                                         <textarea
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                             rows={2}
@@ -495,23 +520,44 @@ export default function NewRequestPage() {
                                                             onChange={e => setObservationsMap(prev => ({ ...prev, [t.id]: e.target.value }))}
                                                         />
                                                     </div>
-                                                    {t.fields?.map(f => (
-                                                        <div key={f.fieldKey}>
-                                                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                                {f.fieldLabel} {f.required && <span className="text-red-500">*</span>}
-                                                            </label>
-                                                            <input
-                                                                type={f.fieldType === 'number' ? 'number' : 'text'}
-                                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                                required={f.required}
-                                                                value={dynamicFieldsMap[t.id]?.[f.fieldKey] ?? f.defaultValue ?? ''}
-                                                                onChange={e => setDynamicFieldsMap(prev => ({
-                                                                    ...prev,
-                                                                    [t.id]: { ...(prev[t.id] || {}), [f.fieldKey]: e.target.value }
-                                                                }))}
-                                                            />
-                                                        </div>
-                                                    ))}
+                                                    <div className="pt-2">
+                                                        {editingTemplateId === t.id ? (
+                                                            <div className="border border-emerald-200 rounded-lg p-3 bg-slate-50 mt-2 shadow-sm">
+                                                                <div className="flex justify-between items-center mb-2">
+                                                                    <label className="block text-sm font-semibold text-gray-800">
+                                                                        Editando plantilla...
+                                                                    </label>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setEditingTemplateId(null)}
+                                                                        className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md hover:bg-emerald-200 font-medium transition-colors"
+                                                                    >
+                                                                        Terminar edición
+                                                                    </button>
+                                                                </div>
+                                                                <div className="bg-white border border-gray-300 rounded overflow-hidden">
+                                                                    <ReactQuill
+                                                                        theme="snow"
+                                                                        value={customTemplateMap[t.id] ?? t.contentHtml ?? ''}
+                                                                        onChange={(content) => {
+                                                                            setCustomTemplateMap(prev => ({
+                                                                                ...prev, [t.id]: content
+                                                                            }))
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingTemplateId(t.id)}
+                                                                className="mt-1 w-full bg-gray-50 border border-gray-300 border-dashed text-gray-600 py-3 rounded-lg text-sm hover:bg-gray-100 hover:text-gray-800 transition-colors flex items-center justify-center gap-2"
+                                                            >
+                                                                <span>✏️</span>
+                                                                {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar texto de la plantilla"}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>

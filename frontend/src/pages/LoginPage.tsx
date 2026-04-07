@@ -38,6 +38,7 @@ export default function LoginPage() {
                 fullName: data.fullName,
                 roles: data.roles,
                 serviceCode: data.serviceCode,
+                signatureMethod: data.signatureMethod,
             });
         } catch {
             setError('Usuario o contraseña incorrectos');

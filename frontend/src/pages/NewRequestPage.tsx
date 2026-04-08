@@ -8,8 +8,10 @@ import {
 } from '../api/his';
 import { getTemplates } from '../api/templates';
 import { sendRequest, createGroup } from '../api/consentRequests';
+import { getSignatureStatus } from '../api/professionalSignature';
 import type { Template } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
 
 type Step = 'search' | 'episodes' | 'configure';
 
@@ -37,6 +39,13 @@ export default function NewRequestPage() {
     const [patientEmail, setPatientEmail] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
     const [sendNow, setSendNow] = useState(true);
+    const [hasSignature, setHasSignature] = useState(false);
+
+    useEffect(() => {
+        getSignatureStatus().then(status => {
+            setHasSignature(status.hasSignature);
+        }).catch(err => console.error("Error fetching signature status", err));
+    }, []);
 
     // ── Paso 1: Buscar paciente ──────────────────────────────────────────────
     const handleSearch = async (e: React.FormEvent) => {
@@ -134,6 +143,12 @@ export default function NewRequestPage() {
                 const respService = t?.serviceCode || selectedEpisode!.serviceCode;
                 return user?.serviceCode && user.serviceCode.toLowerCase() === respService.toLowerCase();
             });
+
+            if (willAutoSign && user?.signatureMethod !== 'CERTIFICATE' && !hasSignature) {
+                setError('No tienes una firma predeterminada configurada para auto-firmar. Ve a tu perfil para configurar una firma con tableta.');
+                setLoading(false);
+                return;
+            }
 
             // Si auto-firma y su método es certificado, obligamos al request mTLS
             const useMtls = willAutoSign && user?.signatureMethod === 'CERTIFICATE';

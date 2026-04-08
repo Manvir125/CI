@@ -15,6 +15,7 @@ export default function PendingSignaturesPage() {
     const [error, setError] = useState('');
     const [signing, setSigning] = useState<number | null>(null);
     const [success, setSuccess] = useState('');
+    const [hasSignature, setHasSignature] = useState(false);
 
     useEffect(() => { 
         loadPending();
@@ -29,6 +30,7 @@ export default function PendingSignaturesPage() {
             if (status.signatureMethod) {
                 setSignatureMethod(status.signatureMethod);
             }
+            setHasSignature(status.hasSignature);
         } catch (e) {
             console.error("Error al cargar la preferencia de firma", e);
         }
@@ -47,6 +49,11 @@ export default function PendingSignaturesPage() {
     };
 
     const handleSign = async (id: number) => {
+        if (signatureMethod === 'TABLET' && !hasSignature) {
+            setError('No tienes una firma predeterminada configurada. Ve a tu perfil para configurar una firma con tableta.');
+            return;
+        }
+
         setSigning(id);
         setError('');
         try {

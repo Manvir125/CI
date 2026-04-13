@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -51,9 +52,12 @@ public class ConsentGroupService {
                     .orElseThrow(() -> new RuntimeException(
                             "Plantilla no encontrada: " + item.getTemplateId()));
 
+            User assignedProfessional = resolveAssignedProfessional(item.getAssignedProfessionalId());
             String respService = item.getResponsibleService();
             String creatorService = creator.getServiceCode();
-            boolean autoSign = creatorService != null && creatorService.equalsIgnoreCase(respService);
+            boolean autoSign = (assignedProfessional != null && assignedProfessional.getId().equals(creator.getId()))
+                    || (assignedProfessional == null && creatorService != null
+                            && creatorService.equalsIgnoreCase(respService));
 
             log.info("CREATING REQUEST: template={}, respService={}, creatorService={}, autoSign={}",
                     template.getId(), respService, creatorService, autoSign);
@@ -70,6 +74,7 @@ public class ConsentGroupService {
                     .patientPhone(dto.getPatientPhone())
                     .group(group)
                     .responsibleService(item.getResponsibleService())
+                    .assignedProfessional(assignedProfessional)
                     .professionalSigned(autoSign)
                     .professionalSigner(autoSign ? creator : null)
                     .professionalSignedAt(autoSign ? LocalDateTime.now() : null)
@@ -100,11 +105,14 @@ public class ConsentGroupService {
     }
 
     // ── Devuelve las solicitudes pendientes de firma por servicio ─────────
-    public List<ConsentRequestResponse> getPendingForService(String serviceCode) {
+    public List<ConsentRequestResponse> getPendingForProfessional(String username) {
+        User professional = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        String serviceCode = professional.getServiceCode();
+
         return requestRepository
-                .findByResponsibleServiceAndProfessionalSignedFalse(serviceCode)
+                .findPendingForProfessional(professional.getId(), serviceCode)
                 .stream()
-                .filter(r -> "SIGNED".equals(r.getStatus()))
                 .map(requestService::toResponse)
                 .collect(Collectors.toList());
     }
@@ -140,7 +148,14 @@ public class ConsentGroupService {
         User signer = userRepository.findByUsername(signerUsername)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        if (!signer.getServiceCode().equals(request.getResponsibleService())) {
+        if (request.getAssignedProfessional() != null) {
+            if (!request.getAssignedProfessional().getId().equals(signer.getId())) {
+                throw new RuntimeException(
+                        "No tienes permiso para firmar este consentimiento. " +
+                                "Est\u00e1 asignado a: " + request.getAssignedProfessional().getFullName());
+            }
+        } else if (signer.getServiceCode() == null
+                || !signer.getServiceCode().equalsIgnoreCase(request.getResponsibleService())) {
             throw new RuntimeException(
                     "No tienes permiso para firmar este consentimiento. " +
                             "Corresponde al servicio: " + request.getResponsibleService());
@@ -231,5 +246,27 @@ public class ConsentGroupService {
                             "Contacta con el administrador.");
         }
         return user.getServiceCode();
+    }
+
+    private User resolveAssignedProfessional(Long assignedProfessionalId) {
+        if (assignedProfessionalId == null) {
+            return null;
+        }
+
+        User assignedProfessional = userRepository.findById(assignedProfessionalId)
+                .orElseThrow(() -> new RuntimeException("Profesional asignado no encontrado"));
+
+        if (!Boolean.TRUE.equals(assignedProfessional.getIsActive())) {
+            throw new RuntimeException("El profesional asignado est\u00e1 inactivo");
+        }
+
+        Set<String> roleNames = assignedProfessional.getRoles().stream()
+                .map(role -> role.getType().name())
+                .collect(Collectors.toSet());
+        if (!roleNames.contains(Role.RoleType.PROFESSIONAL.name())) {
+            throw new RuntimeException("El usuario asignado no es un profesional sanitario");
+        }
+
+        return assignedProfessional;
     }
 }

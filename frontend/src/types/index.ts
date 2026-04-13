@@ -1,5 +1,6 @@
 // Respuesta del login
 export interface LoginResponse {
+    id: number;
     token: string;
     username: string;
     fullName: string;
@@ -11,6 +12,7 @@ export interface LoginResponse {
 
 // Usuario autenticado en el contexto
 export interface AuthUser {
+    id: number;
     token: string;
     username: string;
     fullName: string;

@@ -34,6 +34,11 @@ export const getUsers = async (): Promise<UserResponse[]> => {
     return data;
 };
 
+export const getActiveProfessionals = async (): Promise<UserResponse[]> => {
+    const { data } = await client.get('/api/users/active-professionals');
+    return data;
+};
+
 export const getUser = async (id: number): Promise<UserResponse> => {
     const { data } = await client.get(`/api/users/${id}`);
     return data;

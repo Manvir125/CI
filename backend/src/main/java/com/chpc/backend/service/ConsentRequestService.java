@@ -231,6 +231,12 @@ public class ConsentRequestService {
                                 .updatedAt(r.getUpdatedAt())
                                 .groupId(r.getGroup() != null ? r.getGroup().getId() : null)
                                 .responsibleService(r.getResponsibleService())
+                                .assignedProfessionalId(r.getAssignedProfessional() != null
+                                                ? r.getAssignedProfessional().getId()
+                                                : null)
+                                .assignedProfessionalName(r.getAssignedProfessional() != null
+                                                ? r.getAssignedProfessional().getFullName()
+                                                : null)
                                 .professionalSigned(r.getProfessionalSigned())
                                 .professionalSignerName(r.getProfessionalSigner() != null
                                                 ? r.getProfessionalSigner().getFullName()

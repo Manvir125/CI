@@ -34,6 +34,14 @@ public class UserService {
                 return toResponse(findUser(id));
         }
 
+        @Transactional(readOnly = true)
+        public List<UserResponse> getActiveProfessionals() {
+                return userRepository.findActiveProfessionals()
+                                .stream()
+                                .map(this::toResponse)
+                                .collect(Collectors.toList());
+        }
+
         @Transactional
         public UserResponse create(UserRequest request, String ipAddress) {
 

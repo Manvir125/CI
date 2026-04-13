@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,8 +28,18 @@ public interface ConsentRequestRepository extends JpaRepository<ConsentRequest, 
 
         List<ConsentRequest> findByStatusInAndCreatedAtBefore(List<String> statuses, LocalDateTime date);
 
-        List<ConsentRequest> findByResponsibleServiceAndProfessionalSignedFalse(
-                        String responsibleService);
+        @Query("""
+                        SELECT r FROM ConsentRequest r
+                        WHERE r.professionalSigned = false
+                          AND r.status = 'SIGNED'
+                          AND (
+                                r.assignedProfessional.id = :professionalId
+                                OR (r.assignedProfessional IS NULL AND r.responsibleService = :serviceCode)
+                          )
+                        ORDER BY r.updatedAt DESC
+                        """)
+        List<ConsentRequest> findPendingForProfessional(@Param("professionalId") Long professionalId,
+                        @Param("serviceCode") String serviceCode);
 
         List<ConsentRequest> findByGroupIdOrderById(Long groupId);
 }

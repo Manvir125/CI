@@ -37,13 +37,11 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
 
-                // CORS debe configurarse ANTES que cualquier otra cosa
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        // Permite explícitamente las peticiones OPTIONS (preflight CORS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Rutas públicas
                         .requestMatchers("/api/auth/**").permitAll()
@@ -59,7 +57,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // BCrypt con coste 12 (recomendado para datos médicos)
         return new BCryptPasswordEncoder(12);
     }
 

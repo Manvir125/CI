@@ -33,6 +33,7 @@ export default function LoginPage() {
         try {
             const data = await login(username, password);
             loginUser({
+                id: data.id,
                 token: data.token,
                 username: data.username,
                 fullName: data.fullName,

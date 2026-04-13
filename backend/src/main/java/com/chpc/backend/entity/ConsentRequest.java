@@ -97,6 +97,10 @@ public class ConsentRequest {
     private String professionalCertInfo;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_professional_id")
+    private User assignedProfessional;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "professional_signer_id")
     private User professionalSigner;
 

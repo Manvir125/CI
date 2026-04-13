@@ -40,10 +40,8 @@ public class ConsentGroupController {
     public ResponseEntity<?> getPendingForMe(
             Authentication auth) {
         try {
-            // Obtiene el serviceCode del usuario autenticado
-            String serviceCode = groupService.getServiceCodeForUser(auth.getName());
             return ResponseEntity.ok(
-                    groupService.getPendingForService(serviceCode));
+                    groupService.getPendingForProfessional(auth.getName()));
         } catch (Exception e) {
             log.error("Error en getPendingForMe: {}", e.getMessage());
             return ResponseEntity.badRequest()

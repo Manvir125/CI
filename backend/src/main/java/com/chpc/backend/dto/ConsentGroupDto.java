@@ -25,6 +25,7 @@ public class ConsentGroupDto {
         private Long templateId;
         @NotBlank
         private String responsibleService;
+        private Long assignedProfessionalId;
         private String channel;
         private String observations;
         private java.util.Map<String, String> dynamicFields;

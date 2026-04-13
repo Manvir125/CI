@@ -9,6 +9,7 @@ import {
 import { getTemplates } from '../api/templates';
 import { sendRequest, createGroup } from '../api/consentRequests';
 import { getSignatureStatus } from '../api/professionalSignature';
+import { getActiveProfessionals, type UserResponse } from '../api/user';
 import type { Template } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useEffect } from 'react';
@@ -35,6 +36,9 @@ export default function NewRequestPage() {
     const [observationsMap, setObservationsMap] = useState<Record<number, string>>({});
     const [customTemplateMap, setCustomTemplateMap] = useState<Record<number, string>>({});
     const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
+    const [assignedProfessionalMap, setAssignedProfessionalMap] = useState<Record<number, number | null>>({});
+    const [professionalSearchMap, setProfessionalSearchMap] = useState<Record<number, string>>({});
+    const [activeProfessionals, setActiveProfessionals] = useState<UserResponse[]>([]);
     const [channel, setChannel] = useState<'REMOTE' | 'ONSITE'>('REMOTE');
     const [patientEmail, setPatientEmail] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
@@ -45,6 +49,10 @@ export default function NewRequestPage() {
         getSignatureStatus().then(status => {
             setHasSignature(status.hasSignature);
         }).catch(err => console.error("Error fetching signature status", err));
+
+        getActiveProfessionals()
+            .then(setActiveProfessionals)
+            .catch(err => console.error('Error fetching active professionals', err));
     }, []);
 
     // ── Paso 1: Buscar paciente ──────────────────────────────────────────────
@@ -84,6 +92,8 @@ export default function NewRequestPage() {
         setObservationsMap({});
         setCustomTemplateMap({});
         setEditingTemplateId(null);
+        setAssignedProfessionalMap({});
+        setProfessionalSearchMap({});
         setLoading(true);
         try {
             const allTemplates = await getTemplates();
@@ -130,6 +140,7 @@ export default function NewRequestPage() {
                     return {
                         templateId: id,
                         responsibleService: t?.serviceCode || selectedEpisode!.serviceCode,
+                        assignedProfessionalId: assignedProfessionalMap[id] ?? null,
                         channel,
                         observations: observationsMap[id] || '',
                         customTemplateHtml: customTemplateMap[id] || t?.contentHtml || ''
@@ -139,6 +150,15 @@ export default function NewRequestPage() {
 
             // Determinar si el médico principal o secundario auto-firmaría alguno de los consentimientos
             const willAutoSign = allSelectedIds.some(id => {
+                const assignedProfessionalId = assignedProfessionalMap[id];
+                if (assignedProfessionalId) {
+                    const assignedProfessional = activeProfessionals.find(
+                        professional => professional.id === assignedProfessionalId
+                    );
+                    return user?.id === assignedProfessionalId ||
+                        (!!assignedProfessional && assignedProfessional.username === user?.username);
+                }
+
                 const t = templates.find(temp => temp.id === id);
                 const respService = t?.serviceCode || selectedEpisode!.serviceCode;
                 return user?.serviceCode && user.serviceCode.toLowerCase() === respService.toLowerCase();
@@ -167,6 +187,19 @@ export default function NewRequestPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const getFilteredProfessionals = (templateId: number) => {
+        const search = (professionalSearchMap[templateId] || '').trim().toLowerCase();
+        if (!search) {
+            return activeProfessionals;
+        }
+
+        return activeProfessionals.filter(professional =>
+            professional.fullName.toLowerCase().includes(search) ||
+            professional.username.toLowerCase().includes(search) ||
+            (professional.serviceCode || '').toLowerCase().includes(search)
+        );
     };
 
     return (
@@ -525,6 +558,37 @@ export default function NewRequestPage() {
                                             </label>
                                             {secondaryTemplateIds.includes(t.id) && (
                                                 <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
+                                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                            Profesional asignado
+                                                        </label>
+                                                        <p className="text-xs text-gray-500 mb-2">
+                                                            Si eliges un profesional, esta solicitud pendiente solo le aparecerá a esa persona. Si no eliges ninguno, se asignará por código de servicio.
+                                                        </p>
+                                                        <input
+                                                            type="text"
+                                                            value={professionalSearchMap[t.id] || ''}
+                                                            onChange={e => setProfessionalSearchMap(prev => ({ ...prev, [t.id]: e.target.value }))}
+                                                            placeholder="Buscar profesional activo por nombre, usuario o servicio"
+                                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                        />
+                                                        <select
+                                                            value={assignedProfessionalMap[t.id] ?? ''}
+                                                            onChange={e => setAssignedProfessionalMap(prev => ({
+                                                                ...prev,
+                                                                [t.id]: e.target.value ? Number(e.target.value) : null
+                                                            }))}
+                                                            className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                        >
+                                                            <option value="">Sin asignación específica (usar servicio)</option>
+                                                            {getFilteredProfessionals(t.id).map(professional => (
+                                                                <option key={professional.id} value={professional.id}>
+                                                                    {professional.fullName}
+                                                                    {professional.serviceCode ? ` · ${professional.serviceCode}` : ''}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
                                                     <div>
                                                         <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (Añadidas al final del PDF)</label>
                                                         <textarea

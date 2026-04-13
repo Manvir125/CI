@@ -16,6 +16,8 @@ export interface ConsentRequestResponse {
     updatedAt: string;
     groupId: number;
     responsibleService: string;
+    assignedProfessionalId?: number | null;
+    assignedProfessionalName?: string | null;
     professionalSigned: boolean;
     professionalSignerName: string;
     professionalSignedAt: string;
@@ -108,6 +110,7 @@ export interface ConsentGroupDto {
     items: {
         templateId: number;
         responsibleService: string;
+        assignedProfessionalId?: number | null;
         channel: string;
         observations?: string;
         dynamicFields?: Record<string, string>;

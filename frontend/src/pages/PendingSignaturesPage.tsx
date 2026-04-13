@@ -158,6 +158,12 @@ export default function PendingSignaturesPage() {
                                                 Servicio responsable:{' '}
                                                 <strong>{req.responsibleService}</strong>
                                             </span>
+                                            {req.assignedProfessionalName && (
+                                                <span>
+                                                    Asignado a:{' '}
+                                                    <strong>{req.assignedProfessionalName}</strong>
+                                                </span>
+                                            )}
                                         </div>
 
                                         <p className="text-xs text-gray-400 mt-1">

@@ -71,6 +71,7 @@ public class AuthService {
         auditService.log(user.getUsername(), "USER_LOGIN", ipAddress, true);
 
         return LoginResponse.builder()
+                .id(user.getId())
                 .token(token)
                 .username(user.getUsername())
                 .fullName(user.getFullName())

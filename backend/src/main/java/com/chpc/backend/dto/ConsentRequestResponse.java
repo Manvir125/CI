@@ -21,6 +21,8 @@ public class ConsentRequestResponse {
     private LocalDateTime updatedAt;
     private Long groupId;
     private String responsibleService;
+    private Long assignedProfessionalId;
+    private String assignedProfessionalName;
     private Boolean professionalSigned;
     private String professionalSignerName;
     private String professionalSignedAt;

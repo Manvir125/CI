@@ -2,6 +2,8 @@ package com.chpc.backend.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class EpisodeDto {
     private String episodeId;
@@ -18,4 +20,11 @@ public class EpisodeDto {
     private String attendingPhysician;
     private String status;
     private String priority;
+    private String diagnosis;
+    private String icd10Code;
+    private PatientDto patient;
+    private ProfessionalDto professional;
+    private AgendaDto agenda;
+    private AgendaAppointmentDto appointment;
+    private List<EpisodeDiagnosisDto> diagnoses;
 }

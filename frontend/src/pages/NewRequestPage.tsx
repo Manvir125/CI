@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import {
     getPatientByNhc, getPatientByDni,
-    getActiveEpisodes, type PatientDto, type EpisodeDto
+    getActiveEpisodes, getEpisode, type PatientDto, type EpisodeDto
 } from '../api/his';
 import { getTemplates } from '../api/templates';
 import { sendRequest, createGroup } from '../api/consentRequests';
@@ -19,6 +19,9 @@ type Step = 'search' | 'episodes' | 'configure';
 export default function NewRequestPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const preselectedEpisodeId = searchParams.get('episodeId');
+    const startedFromAgenda = Boolean(preselectedEpisodeId);
 
     const [step, setStep] = useState<Step>('search');
     const [loading, setLoading] = useState(false);
@@ -45,6 +48,22 @@ export default function NewRequestPage() {
     const [sendNow, setSendNow] = useState(true);
     const [hasSignature, setHasSignature] = useState(false);
 
+    const resetConfiguration = () => {
+        setMainTemplateId(null);
+        setSecondaryTemplateIds([]);
+        setObservationsMap({});
+        setCustomTemplateMap({});
+        setEditingTemplateId(null);
+        setAssignedProfessionalMap({});
+        setProfessionalSearchMap({});
+    };
+
+    const loadTemplatesForConfiguration = async () => {
+        const allTemplates = await getTemplates();
+        setTemplates(allTemplates);
+        setStep('configure');
+    };
+
     useEffect(() => {
         getSignatureStatus().then(status => {
             setHasSignature(status.hasSignature);
@@ -54,6 +73,49 @@ export default function NewRequestPage() {
             .then(setActiveProfessionals)
             .catch(err => console.error('Error fetching active professionals', err));
     }, []);
+
+    useEffect(() => {
+        if (!preselectedEpisodeId) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const preloadFromAgenda = async () => {
+            setLoading(true);
+            setError('');
+            try {
+                const episode = await getEpisode(preselectedEpisodeId);
+                const resolvedPatient = episode.patient ?? await getPatientByNhc(episode.nhc);
+
+                if (cancelled) {
+                    return;
+                }
+
+                setPatient(resolvedPatient);
+                setSelectedEpisode(episode);
+                setPatientEmail(resolvedPatient.email ?? '');
+                setPatientPhone(resolvedPatient.phone ?? '');
+                resetConfiguration();
+                await loadTemplatesForConfiguration();
+            } catch {
+                if (!cancelled) {
+                    setError('No se ha podido cargar la cita seleccionada. Puedes buscar el paciente manualmente.');
+                    setStep('search');
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        preloadFromAgenda();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [preselectedEpisodeId]);
 
     // ── Paso 1: Buscar paciente ──────────────────────────────────────────────
     const handleSearch = async (e: React.FormEvent) => {
@@ -87,18 +149,10 @@ export default function NewRequestPage() {
     // ── Paso 2: Seleccionar episodio ─────────────────────────────────────────
     const handleSelectEpisode = async (episode: EpisodeDto) => {
         setSelectedEpisode(episode);
-        setMainTemplateId(null);
-        setSecondaryTemplateIds([]);
-        setObservationsMap({});
-        setCustomTemplateMap({});
-        setEditingTemplateId(null);
-        setAssignedProfessionalMap({});
-        setProfessionalSearchMap({});
+        resetConfiguration();
         setLoading(true);
         try {
-            const allTemplates = await getTemplates();
-            setTemplates(allTemplates);
-            setStep('configure');
+            await loadTemplatesForConfiguration();
         } catch {
             setError('Error al cargar las plantillas');
         } finally {
@@ -208,10 +262,10 @@ export default function NewRequestPage() {
             <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => navigate('/requests')}
+                        onClick={() => navigate(startedFromAgenda ? '/dashboard' : '/requests')}
                         className="text-emerald-300 hover:text-white text-sm transition-colors"
                     >
-                        ← Solicitudes
+                        {startedFromAgenda ? '← Dashboard' : '← Solicitudes'}
                     </button>
                     <span className="text-emerald-500">|</span>
                     <h1 className="font-bold">Nueva Solicitud de Consentimiento</h1>
@@ -411,7 +465,7 @@ export default function NewRequestPage() {
                                 <div>
                                     <p className="text-gray-500">Paciente</p>
                                     <p className="font-medium">
-                                        {patient.firstName} {patient.lastName}
+                                        {patient.fullName || `${patient.firstName} ${patient.lastName}`.trim()}
                                     </p>
                                 </div>
                                 <div>
@@ -426,6 +480,20 @@ export default function NewRequestPage() {
                                     <p className="text-gray-500">Servicio</p>
                                     <p className="font-medium">{selectedEpisode.serviceName}</p>
                                 </div>
+                                {selectedEpisode.agenda && (
+                                    <div>
+                                        <p className="text-gray-500">Agenda</p>
+                                        <p className="font-medium">{selectedEpisode.agenda.name}</p>
+                                    </div>
+                                )}
+                                {selectedEpisode.appointment && (
+                                    <div>
+                                        <p className="text-gray-500">Cita</p>
+                                        <p className="font-medium">
+                                            {selectedEpisode.appointment.appointmentDate} · {selectedEpisode.appointment.startTime} - {selectedEpisode.appointment.endTime}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -743,11 +811,11 @@ export default function NewRequestPage() {
                         <div className="flex gap-3 justify-end">
                             <button
                                 type="button"
-                                onClick={() => setStep('episodes')}
+                                onClick={() => startedFromAgenda ? navigate('/dashboard') : setStep('episodes')}
                                 className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
                            hover:bg-gray-50 transition-colors"
                             >
-                                Atrás
+                                {startedFromAgenda ? 'Volver al dashboard' : 'Atrás'}
                             </button>
                             <button
                                 type="submit"

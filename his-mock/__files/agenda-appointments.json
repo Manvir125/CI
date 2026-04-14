@@ -1,0 +1,80 @@
+[
+    {
+        "episodeId": "EP-2026-001234",
+        "nhc": "10045623",
+        "agendaId": "AG-DIG-SABADO",
+        "professionalId": "PROF-DIG-001",
+        "appointmentDate": "2026-04-15",
+        "startTime": "09:00",
+        "endTime": "09:10",
+        "prestation": "SUCESIVA",
+        "status": "PENDING",
+        "patient": {
+            "nhc": "10045623",
+            "sip": "4542960",
+            "dni": "12345678A",
+            "fullName": "Maria Gonzalez Perez",
+            "firstName": "Maria",
+            "lastName": "Gonzalez Perez",
+            "birthDate": "1978-03-15",
+            "gender": "F",
+            "email": "maria.gonzalez@email.com",
+            "phone": "666123456",
+            "active": true
+        },
+        "agenda": {
+            "agendaId": "AG-DIG-SABADO",
+            "name": "DIGESTIVO Dr. SABADO",
+            "serviceCode": "DIGESTIVO-CE",
+            "serviceName": "Digestivo Consultas Externas",
+            "status": "ACTIVE"
+        },
+        "professional": {
+            "professionalId": "PROF-DIG-001",
+            "sip": "920001",
+            "dni": "44556677D",
+            "fullName": "Dr. Fernando Sabado Marti",
+            "specialtyCode": "DIG",
+            "specialtyName": "Digestivo"
+        }
+    },
+    {
+        "episodeId": "EP-2026-001236",
+        "nhc": "10045624",
+        "agendaId": "AG-DIG-SABADO",
+        "professionalId": "PROF-DIG-001",
+        "appointmentDate": "2026-04-15",
+        "startTime": "09:10",
+        "endTime": "09:20",
+        "prestation": "PRIMERA",
+        "status": "SCHEDULED",
+        "patient": {
+            "nhc": "10045624",
+            "sip": "4542961",
+            "dni": "87654321B",
+            "fullName": "Juan Gonzalez Martinez",
+            "firstName": "Juan",
+            "lastName": "Gonzalez Martinez",
+            "birthDate": "1965-07-22",
+            "gender": "M",
+            "email": "juan.gonzalez@email.com",
+            "phone": "666654321",
+            "active": true
+        },
+        "agenda": {
+            "agendaId": "AG-DIG-SABADO",
+            "name": "DIGESTIVO Dr. SABADO",
+            "serviceCode": "DIGESTIVO-CE",
+            "serviceName": "Digestivo Consultas Externas",
+            "status": "ACTIVE"
+        },
+        "professional": {
+            "professionalId": "PROF-DIG-001",
+            "sip": "920001",
+            "dni": "44556677D",
+            "fullName": "Dr. Fernando Sabado Marti",
+            "specialtyCode": "DIG",
+            "specialtyName": "Digestivo"
+        }
+    }
+]

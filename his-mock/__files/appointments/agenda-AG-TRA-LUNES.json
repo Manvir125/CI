@@ -1,0 +1,80 @@
+[
+    {
+        "episodeId": "EP-2026-001250",
+        "nhc": "10045629",
+        "agendaId": "AG-TRA-LUNES",
+        "professionalId": "PROF-TRA-001",
+        "appointmentDate": "2026-04-21",
+        "startTime": "08:30",
+        "endTime": "08:45",
+        "prestation": "PRIMERA",
+        "status": "PENDING",
+        "patient": {
+            "nhc": "10045629",
+            "sip": "4542966",
+            "dni": "55667788M",
+            "fullName": "Jose Martinez Aparicio",
+            "firstName": "Jose",
+            "lastName": "Martinez Aparicio",
+            "birthDate": "1969-05-20",
+            "gender": "M",
+            "email": "jose.martinez@email.com",
+            "phone": "666753159",
+            "active": true
+        },
+        "agenda": {
+            "agendaId": "AG-TRA-LUNES",
+            "name": "TRAUMATOLOGIA LUNES",
+            "serviceCode": "TRA",
+            "serviceName": "Traumatologia",
+            "status": "ACTIVE"
+        },
+        "professional": {
+            "professionalId": "PROF-TRA-001",
+            "sip": "920005",
+            "dni": "22334455T",
+            "fullName": "Dr. Miguel Ribes",
+            "specialtyCode": "TRA",
+            "specialtyName": "Traumatologia"
+        }
+    },
+    {
+        "episodeId": "EP-2026-001251",
+        "nhc": "10045630",
+        "agendaId": "AG-TRA-LUNES",
+        "professionalId": "PROF-TRA-001",
+        "appointmentDate": "2026-04-21",
+        "startTime": "08:45",
+        "endTime": "09:00",
+        "prestation": "REVISION",
+        "status": "CONFIRMED",
+        "patient": {
+            "nhc": "10045630",
+            "sip": "4542967",
+            "dni": "66778899N",
+            "fullName": "Sandra Piquer Carregui",
+            "firstName": "Sandra",
+            "lastName": "Piquer Carregui",
+            "birthDate": "1978-07-19",
+            "gender": "F",
+            "email": "sandra.piquer@email.com",
+            "phone": "666147258",
+            "active": true
+        },
+        "agenda": {
+            "agendaId": "AG-TRA-LUNES",
+            "name": "TRAUMATOLOGIA LUNES",
+            "serviceCode": "TRA",
+            "serviceName": "Traumatologia",
+            "status": "ACTIVE"
+        },
+        "professional": {
+            "professionalId": "PROF-TRA-001",
+            "sip": "920005",
+            "dni": "22334455T",
+            "fullName": "Dr. Miguel Ribes",
+            "specialtyCode": "TRA",
+            "specialtyName": "Traumatologia"
+        }
+    }
+]

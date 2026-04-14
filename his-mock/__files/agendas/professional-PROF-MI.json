@@ -1,0 +1,17 @@
+[
+    {
+        "agendaId": "AG-MI-VIERNES",
+        "name": "MED. INTERNA VIERNES",
+        "serviceCode": "MI",
+        "serviceName": "Medicina Interna",
+        "status": "ACTIVE",
+        "professional": {
+            "professionalId": "PROF-MI-002",
+            "sip": "920002",
+            "dni": "55667788F",
+            "fullName": "Dra. Ana Garcia Lopez",
+            "specialtyCode": "MI",
+            "specialtyName": "Medicina Interna"
+        }
+    }
+]

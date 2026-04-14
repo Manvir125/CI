@@ -15,7 +15,68 @@
             }
         },
         {
-            "name": "Episodio por ID",
+            "name": "Episodio detalle DIG 001234",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/episodes/EP-2026-001234"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "episodes/detail-EP-2026-001234.json"
+            }
+        },
+        {
+            "name": "Episodio detalle MI 001235",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/episodes/EP-2026-001235"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "episodes/detail-EP-2026-001235.json"
+            }
+        },
+        {
+            "name": "Episodio detalle DIG 001240",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/episodes/EP-2026-001240"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "episodes/detail-EP-2026-001240.json"
+            }
+        },
+        {
+            "name": "Episodio detalle TRA 001250",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/episodes/EP-2026-001250"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "episodes/detail-EP-2026-001250.json"
+            }
+        },
+        {
+            "name": "Episodio por ID fallback",
+            "priority": 10,
             "request": {
                 "method": "GET",
                 "urlPattern": "/his/api/episodes/([A-Z0-9\\-]+)"
@@ -25,7 +86,202 @@
                 "headers": {
                     "Content-Type": "application/json"
                 },
-                "bodyFileName": "episode-detail.json"
+                "bodyFileName": "episodes/detail-EP-2026-001234.json"
+            }
+        },
+        {
+            "name": "Agendas por profesional DIG",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/professionals/PROF-DIG-[0-9]+/agendas"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "agendas/professional-PROF-DIG.json"
+            }
+        },
+        {
+            "name": "Agendas por profesional MI",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/professionals/PROF-MI-[0-9]+/agendas"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "agendas/professional-PROF-MI.json"
+            }
+        },
+        {
+            "name": "Agendas por profesional TRA",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/professionals/PROF-TRA-[0-9]+/agendas"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "agendas/professional-PROF-TRA.json"
+            }
+        },
+        {
+            "name": "Agendas por profesional sin datos",
+            "priority": 10,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/professionals/([A-Z0-9\\-]+)/agendas"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "jsonBody": []
+            }
+        },
+        {
+            "name": "Agendas por servicio DIG",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/services/DIG/agendas"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "agendas/service-DIG.json"
+            }
+        },
+        {
+            "name": "Agendas por servicio MI",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/services/MI/agendas"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "agendas/service-MI.json"
+            }
+        },
+        {
+            "name": "Agendas por servicio TRA",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/services/TRA/agendas"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "agendas/service-TRA.json"
+            }
+        },
+        {
+            "name": "Agendas por servicio sin datos",
+            "priority": 10,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/services/([A-Z0-9\\-]+)/agendas"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "jsonBody": []
+            }
+        },
+        {
+            "name": "Citas por agenda DIG SABADO",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/agendas/AG-DIG-SABADO/appointments"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "appointments/agenda-AG-DIG-SABADO.json"
+            }
+        },
+        {
+            "name": "Citas por agenda DIG PLANA",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/agendas/AG-DIG-PLANA/appointments"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "appointments/agenda-AG-DIG-PLANA.json"
+            }
+        },
+        {
+            "name": "Citas por agenda MI VIERNES",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/agendas/AG-MI-VIERNES/appointments"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "appointments/agenda-AG-MI-VIERNES.json"
+            }
+        },
+        {
+            "name": "Citas por agenda TRA LUNES",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/agendas/AG-TRA-LUNES/appointments"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "appointments/agenda-AG-TRA-LUNES.json"
+            }
+        },
+        {
+            "name": "Citas por agenda sin datos",
+            "priority": 10,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/agendas/([A-Z0-9\\-]+)/appointments"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "jsonBody": []
             }
         }
     ]

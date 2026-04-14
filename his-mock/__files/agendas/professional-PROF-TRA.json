@@ -1,0 +1,17 @@
+[
+    {
+        "agendaId": "AG-TRA-LUNES",
+        "name": "TRAUMATOLOGIA LUNES",
+        "serviceCode": "TRA",
+        "serviceName": "Traumatologia",
+        "status": "ACTIVE",
+        "professional": {
+            "professionalId": "PROF-TRA-001",
+            "sip": "920005",
+            "dni": "22334455T",
+            "fullName": "Dr. Miguel Ribes",
+            "specialtyCode": "TRA",
+            "specialtyName": "Traumatologia"
+        }
+    }
+]

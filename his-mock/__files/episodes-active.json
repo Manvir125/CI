@@ -2,33 +2,203 @@
     {
         "episodeId": "EP-2026-001234",
         "nhc": "10045623",
-        "serviceCode": "CIR",
-        "serviceName": "Cirugía General",
-        "procedureCode": "PROC-CIR-001",
-        "procedureName": "Colecistectomía laparoscópica",
-        "episodeDate": "2026-02-20",
-        "admissionDate": "2026-02-20",
-        "expectedDischargeDate": "2026-02-27",
-        "ward": "Planta 3B",
-        "bed": "312A",
-        "attendingPhysician": "Dr. Roberto Sánchez",
+        "serviceCode": "DIG",
+        "serviceName": "Digestivo",
+        "procedureCode": "PROC-DIG-001",
+        "procedureName": "Consulta externa digestivo",
+        "episodeDate": "2026-04-15",
+        "admissionDate": "2026-04-15",
+        "expectedDischargeDate": null,
+        "ward": "Consultas externas",
+        "bed": null,
+        "attendingPhysician": "Dr. Fernando Sabado Marti",
         "status": "ACTIVE",
-        "priority": "PROGRAMADA"
+        "priority": "ORDINARIA",
+        "diagnosis": "Dolor abdominal en estudio",
+        "icd10Code": "R10.9",
+        "patient": {
+            "nhc": "10045623",
+            "sip": "4542960",
+            "dni": "12345678A",
+            "fullName": "Maria Gonzalez Perez",
+            "firstName": "Maria",
+            "lastName": "Gonzalez Perez",
+            "birthDate": "1978-03-15",
+            "gender": "F",
+            "email": "maria.gonzalez@email.com",
+            "phone": "666123456",
+            "active": true
+        },
+        "professional": {
+            "professionalId": "PROF-DIG-001",
+            "sip": "920001",
+            "dni": "44556677D",
+            "fullName": "Dr. Fernando Sabado Marti",
+            "specialtyCode": "DIG",
+            "specialtyName": "Digestivo"
+        },
+        "agenda": {
+            "agendaId": "AG-DIG-SABADO",
+            "name": "DIGESTIVO Dr. SABADO",
+            "serviceCode": "DIGESTIVO-CE",
+            "serviceName": "Digestivo Consultas Externas",
+            "status": "ACTIVE",
+            "professional": {
+                "professionalId": "PROF-DIG-001",
+                "sip": "920001",
+                "dni": "44556677D",
+                "fullName": "Dr. Fernando Sabado Marti",
+                "specialtyCode": "DIG",
+                "specialtyName": "Digestivo"
+            }
+        },
+        "appointment": {
+            "episodeId": "EP-2026-001234",
+            "nhc": "10045623",
+            "agendaId": "AG-DIG-SABADO",
+            "professionalId": "PROF-DIG-001",
+            "appointmentDate": "2026-04-15",
+            "startTime": "09:00",
+            "endTime": "09:10",
+            "prestation": "SUCESIVA",
+            "status": "PENDING",
+            "patient": {
+                "nhc": "10045623",
+                "sip": "4542960",
+                "dni": "12345678A",
+                "fullName": "Maria Gonzalez Perez",
+                "firstName": "Maria",
+                "lastName": "Gonzalez Perez",
+                "birthDate": "1978-03-15",
+                "gender": "F",
+                "email": "maria.gonzalez@email.com",
+                "phone": "666123456",
+                "active": true
+            },
+            "agenda": {
+                "agendaId": "AG-DIG-SABADO",
+                "name": "DIGESTIVO Dr. SABADO",
+                "serviceCode": "DIGESTIVO-CE",
+                "serviceName": "Digestivo Consultas Externas",
+                "status": "ACTIVE"
+            },
+            "professional": {
+                "professionalId": "PROF-DIG-001",
+                "sip": "920001",
+                "dni": "44556677D",
+                "fullName": "Dr. Fernando Sabado Marti",
+                "specialtyCode": "DIG",
+                "specialtyName": "Digestivo"
+            }
+        },
+        "diagnoses": [
+            {
+                "diagnosisCode": "R10.9",
+                "diagnosisName": "Dolor abdominal",
+                "diagnosisType": "PRINCIPAL",
+                "primary": true
+            }
+        ]
     },
     {
         "episodeId": "EP-2026-001235",
         "nhc": "10045623",
-        "serviceCode": "MED",
+        "serviceCode": "MI",
         "serviceName": "Medicina Interna",
-        "procedureCode": "PROC-MED-045",
-        "procedureName": "Control analítico y revisión",
-        "episodeDate": "2026-02-25",
-        "admissionDate": "2026-02-25",
+        "procedureCode": "PROC-MI-011",
+        "procedureName": "Revision de medicina interna",
+        "episodeDate": "2026-04-17",
+        "admissionDate": "2026-04-17",
         "expectedDischargeDate": null,
         "ward": "Consultas externas",
         "bed": null,
-        "attendingPhysician": "Dra. Ana García López",
+        "attendingPhysician": "Dra. Ana Garcia Lopez",
         "status": "ACTIVE",
-        "priority": "ORDINARIA"
+        "priority": "PREFERENTE",
+        "diagnosis": "Seguimiento clinico",
+        "icd10Code": "Z09.9",
+        "patient": {
+            "nhc": "10045623",
+            "sip": "4542960",
+            "dni": "12345678A",
+            "fullName": "Maria Gonzalez Perez",
+            "firstName": "Maria",
+            "lastName": "Gonzalez Perez",
+            "birthDate": "1978-03-15",
+            "gender": "F",
+            "email": "maria.gonzalez@email.com",
+            "phone": "666123456",
+            "active": true
+        },
+        "professional": {
+            "professionalId": "PROF-MI-002",
+            "sip": "920002",
+            "dni": "55667788F",
+            "fullName": "Dra. Ana Garcia Lopez",
+            "specialtyCode": "MI",
+            "specialtyName": "Medicina Interna"
+        },
+        "agenda": {
+            "agendaId": "AG-MI-VIERNES",
+            "name": "MED. INTERNA VIERNES",
+            "serviceCode": "MI-CE",
+            "serviceName": "Medicina Interna Consultas Externas",
+            "status": "ACTIVE",
+            "professional": {
+                "professionalId": "PROF-MI-002",
+                "sip": "920002",
+                "dni": "55667788F",
+                "fullName": "Dra. Ana Garcia Lopez",
+                "specialtyCode": "MI",
+                "specialtyName": "Medicina Interna"
+            }
+        },
+        "appointment": {
+            "episodeId": "EP-2026-001235",
+            "nhc": "10045623",
+            "agendaId": "AG-MI-VIERNES",
+            "professionalId": "PROF-MI-002",
+            "appointmentDate": "2026-04-17",
+            "startTime": "10:00",
+            "endTime": "10:15",
+            "prestation": "SUCESIVA",
+            "status": "SCHEDULED",
+            "patient": {
+                "nhc": "10045623",
+                "sip": "4542960",
+                "dni": "12345678A",
+                "fullName": "Maria Gonzalez Perez",
+                "firstName": "Maria",
+                "lastName": "Gonzalez Perez",
+                "birthDate": "1978-03-15",
+                "gender": "F",
+                "email": "maria.gonzalez@email.com",
+                "phone": "666123456",
+                "active": true
+            },
+            "agenda": {
+                "agendaId": "AG-MI-VIERNES",
+                "name": "MED. INTERNA VIERNES",
+                "serviceCode": "MI-CE",
+                "serviceName": "Medicina Interna Consultas Externas",
+                "status": "ACTIVE"
+            },
+            "professional": {
+                "professionalId": "PROF-MI-002",
+                "sip": "920002",
+                "dni": "55667788F",
+                "fullName": "Dra. Ana Garcia Lopez",
+                "specialtyCode": "MI",
+                "specialtyName": "Medicina Interna"
+            }
+        },
+        "diagnoses": [
+            {
+                "diagnosisCode": "Z09.9",
+                "diagnosisName": "Seguimiento despues del tratamiento",
+                "diagnosisType": "PRINCIPAL",
+                "primary": true
+            }
+        ]
     }
 ]

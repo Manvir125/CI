@@ -1,0 +1,47 @@
+[
+    {
+        "agendaId": "AG-DIG-SABADO",
+        "name": "DIGESTIVO Dr. SABADO",
+        "serviceCode": "DIG",
+        "serviceName": "Digestivo",
+        "status": "ACTIVE",
+        "professional": {
+            "professionalId": "PROF-DIG-001",
+            "sip": "920001",
+            "dni": "44556677D",
+            "fullName": "Dr. Fernando Sabado Marti",
+            "specialtyCode": "DIG",
+            "specialtyName": "Digestivo"
+        }
+    },
+    {
+        "agendaId": "AG-DIG-PLANA",
+        "name": "DIGESTIVO Dra. PLANA",
+        "serviceCode": "DIG",
+        "serviceName": "Digestivo",
+        "status": "ACTIVE",
+        "professional": {
+            "professionalId": "PROF-DIG-002",
+            "sip": "920003",
+            "dni": "99887766L",
+            "fullName": "Dra. Isabel Plana",
+            "specialtyCode": "DIG",
+            "specialtyName": "Digestivo"
+        }
+    },
+    {
+        "agendaId": "AG-DIG-TELEFONO",
+        "name": "DIGESTIVO Telefonica",
+        "serviceCode": "DIG",
+        "serviceName": "Digestivo",
+        "status": "INACTIVE",
+        "professional": {
+            "professionalId": "PROF-DIG-001",
+            "sip": "920001",
+            "dni": "44556677D",
+            "fullName": "Dr. Fernando Sabado Marti",
+            "specialtyCode": "DIG",
+            "specialtyName": "Digestivo"
+        }
+    }
+]

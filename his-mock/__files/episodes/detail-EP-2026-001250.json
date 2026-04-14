@@ -1,0 +1,65 @@
+{
+    "episodeId": "EP-2026-001250",
+    "nhc": "10045629",
+    "serviceCode": "TRA",
+    "serviceName": "Traumatologia",
+    "procedureCode": "PROC-TRA-003",
+    "procedureName": "Primera consulta traumatologia",
+    "episodeDate": "2026-04-21",
+    "admissionDate": "2026-04-21",
+    "expectedDischargeDate": null,
+    "ward": "Consultas externas",
+    "bed": null,
+    "attendingPhysician": "Dr. Miguel Ribes",
+    "status": "ACTIVE",
+    "priority": "ORDINARIA",
+    "diagnosis": "Dolor de rodilla",
+    "icd10Code": "M25.56",
+    "patient": {
+        "nhc": "10045629",
+        "sip": "4542966",
+        "dni": "55667788M",
+        "fullName": "Jose Martinez Aparicio",
+        "firstName": "Jose",
+        "lastName": "Martinez Aparicio",
+        "birthDate": "1969-05-20",
+        "gender": "M",
+        "email": "jose.martinez@email.com",
+        "phone": "666753159",
+        "active": true
+    },
+    "professional": {
+        "professionalId": "PROF-TRA-001",
+        "sip": "920005",
+        "dni": "22334455T",
+        "fullName": "Dr. Miguel Ribes",
+        "specialtyCode": "TRA",
+        "specialtyName": "Traumatologia"
+    },
+    "agenda": {
+        "agendaId": "AG-TRA-LUNES",
+        "name": "TRAUMATOLOGIA LUNES",
+        "serviceCode": "TRA",
+        "serviceName": "Traumatologia",
+        "status": "ACTIVE"
+    },
+    "appointment": {
+        "episodeId": "EP-2026-001250",
+        "nhc": "10045629",
+        "agendaId": "AG-TRA-LUNES",
+        "professionalId": "PROF-TRA-001",
+        "appointmentDate": "2026-04-21",
+        "startTime": "08:30",
+        "endTime": "08:45",
+        "prestation": "PRIMERA",
+        "status": "PENDING"
+    },
+    "diagnoses": [
+        {
+            "diagnosisCode": "M25.56",
+            "diagnosisName": "Dolor en rodilla",
+            "diagnosisType": "PRINCIPAL",
+            "primary": true
+        }
+    ]
+}

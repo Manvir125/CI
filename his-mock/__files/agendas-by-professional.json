@@ -1,0 +1,32 @@
+[
+    {
+        "agendaId": "AG-DIG-SABADO",
+        "name": "DIGESTIVO Dr. SABADO",
+        "serviceCode": "DIGESTIVO-CE",
+        "serviceName": "Digestivo Consultas Externas",
+        "status": "ACTIVE",
+        "professional": {
+            "professionalId": "PROF-DIG-001",
+            "sip": "920001",
+            "dni": "44556677D",
+            "fullName": "Dr. Fernando Sabado Marti",
+            "specialtyCode": "DIG",
+            "specialtyName": "Digestivo"
+        }
+    },
+    {
+        "agendaId": "AG-DIG-TELEFONO",
+        "name": "DIGESTIVO TELEFONICA",
+        "serviceCode": "DIGESTIVO-CE",
+        "serviceName": "Digestivo Consultas Externas",
+        "status": "ACTIVE",
+        "professional": {
+            "professionalId": "PROF-DIG-001",
+            "sip": "920001",
+            "dni": "44556677D",
+            "fullName": "Dr. Fernando Sabado Marti",
+            "specialtyCode": "DIG",
+            "specialtyName": "Digestivo"
+        }
+    }
+]

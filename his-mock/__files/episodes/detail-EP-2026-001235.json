@@ -1,0 +1,65 @@
+{
+    "episodeId": "EP-2026-001235",
+    "nhc": "10045623",
+    "serviceCode": "MI",
+    "serviceName": "Medicina Interna",
+    "procedureCode": "PROC-MI-011",
+    "procedureName": "Revision de medicina interna",
+    "episodeDate": "2026-04-17",
+    "admissionDate": "2026-04-17",
+    "expectedDischargeDate": null,
+    "ward": "Consultas externas",
+    "bed": null,
+    "attendingPhysician": "Dra. Ana Garcia Lopez",
+    "status": "ACTIVE",
+    "priority": "PREFERENTE",
+    "diagnosis": "Seguimiento clinico",
+    "icd10Code": "Z09.9",
+    "patient": {
+        "nhc": "10045623",
+        "sip": "4542960",
+        "dni": "12345678A",
+        "fullName": "Maria Gonzalez Perez",
+        "firstName": "Maria",
+        "lastName": "Gonzalez Perez",
+        "birthDate": "1978-03-15",
+        "gender": "F",
+        "email": "maria.gonzalez@email.com",
+        "phone": "666123456",
+        "active": true
+    },
+    "professional": {
+        "professionalId": "PROF-MI-002",
+        "sip": "920002",
+        "dni": "55667788F",
+        "fullName": "Dra. Ana Garcia Lopez",
+        "specialtyCode": "MI",
+        "specialtyName": "Medicina Interna"
+    },
+    "agenda": {
+        "agendaId": "AG-MI-VIERNES",
+        "name": "MED. INTERNA VIERNES",
+        "serviceCode": "MI",
+        "serviceName": "Medicina Interna",
+        "status": "ACTIVE"
+    },
+    "appointment": {
+        "episodeId": "EP-2026-001235",
+        "nhc": "10045623",
+        "agendaId": "AG-MI-VIERNES",
+        "professionalId": "PROF-MI-002",
+        "appointmentDate": "2026-04-17",
+        "startTime": "10:00",
+        "endTime": "10:15",
+        "prestation": "SUCESIVA",
+        "status": "SCHEDULED"
+    },
+    "diagnoses": [
+        {
+            "diagnosisCode": "Z09.9",
+            "diagnosisName": "Seguimiento despues del tratamiento",
+            "diagnosisType": "PRINCIPAL",
+            "primary": true
+        }
+    ]
+}

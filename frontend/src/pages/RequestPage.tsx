@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
+import { useAuth } from '../context/AuthContext';
 import {
     getMyRequests, cancelRequest,
     type ConsentRequestResponse, sendRequest, downloadPdf
@@ -18,6 +19,8 @@ const STATUSES = [
 
 export default function RequestsPage() {
     const navigate = useNavigate();
+    const { hasRole } = useAuth();
+    const newRequestTarget = hasRole('PROFESSIONAL') ? '/dashboard' : '/requests/new';
 
     const [requests, setRequests] = useState<ConsentRequestResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -94,11 +97,11 @@ export default function RequestsPage() {
                     <h1 className="font-bold">Gestión de Solicitudes</h1>
                 </div>
                 <button
-                    onClick={() => navigate('/requests/new')}
+                    onClick={() => navigate(newRequestTarget)}
                     className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg
                        text-sm font-medium transition-colors"
                 >
-                    + Nueva solicitud
+                    {hasRole('PROFESSIONAL') ? 'Ir a agendas' : '+ Nueva solicitud'}
                 </button>
             </nav>
 
@@ -139,11 +142,11 @@ export default function RequestsPage() {
                             {statusFilter ? ` con estado "${statusFilter}"` : ''}
                         </p>
                         <button
-                            onClick={() => navigate('/requests/new')}
+                            onClick={() => navigate(newRequestTarget)}
                             className="bg-emerald-700 text-white px-6 py-2 rounded-lg
                          hover:bg-emerald-600 transition-colors"
                         >
-                            Crear primera solicitud
+                            {hasRole('PROFESSIONAL') ? 'Ir a agendas' : 'Crear primera solicitud'}
                         </button>
                     </div>
                 ) : (

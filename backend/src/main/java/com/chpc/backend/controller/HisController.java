@@ -1,5 +1,7 @@
 package com.chpc.backend.controller;
 
+import com.chpc.backend.dto.AgendaAppointmentDto;
+import com.chpc.backend.dto.AgendaDto;
 import com.chpc.backend.dto.EpisodeDto;
 import com.chpc.backend.dto.PatientDto;
 import com.chpc.backend.service.HisIntegrationService;
@@ -51,5 +53,23 @@ public class HisController {
         return hisService.getEpisode(episodeId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/professionals/{professionalId}/agendas")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<List<AgendaDto>> getProfessionalAgendas(@PathVariable String professionalId) {
+        return ResponseEntity.ok(hisService.getProfessionalAgendas(professionalId));
+    }
+
+    @GetMapping("/services/{serviceCode}/agendas")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<List<AgendaDto>> getServiceAgendas(@PathVariable String serviceCode) {
+        return ResponseEntity.ok(hisService.getAgendasByService(serviceCode));
+    }
+
+    @GetMapping("/agendas/{agendaId}/appointments")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<List<AgendaAppointmentDto>> getAgendaAppointments(@PathVariable String agendaId) {
+        return ResponseEntity.ok(hisService.getAgendaAppointments(agendaId));
     }
 }

@@ -1,0 +1,80 @@
+[
+    {
+        "episodeId": "EP-2026-001235",
+        "nhc": "10045623",
+        "agendaId": "AG-MI-VIERNES",
+        "professionalId": "PROF-MI-002",
+        "appointmentDate": "2026-04-17",
+        "startTime": "10:00",
+        "endTime": "10:15",
+        "prestation": "SUCESIVA",
+        "status": "SCHEDULED",
+        "patient": {
+            "nhc": "10045623",
+            "sip": "4542960",
+            "dni": "12345678A",
+            "fullName": "Maria Gonzalez Perez",
+            "firstName": "Maria",
+            "lastName": "Gonzalez Perez",
+            "birthDate": "1978-03-15",
+            "gender": "F",
+            "email": "maria.gonzalez@email.com",
+            "phone": "666123456",
+            "active": true
+        },
+        "agenda": {
+            "agendaId": "AG-MI-VIERNES",
+            "name": "MED. INTERNA VIERNES",
+            "serviceCode": "MI",
+            "serviceName": "Medicina Interna",
+            "status": "ACTIVE"
+        },
+        "professional": {
+            "professionalId": "PROF-MI-002",
+            "sip": "920002",
+            "dni": "55667788F",
+            "fullName": "Dra. Ana Garcia Lopez",
+            "specialtyCode": "MI",
+            "specialtyName": "Medicina Interna"
+        }
+    },
+    {
+        "episodeId": "EP-2026-001242",
+        "nhc": "10045628",
+        "agendaId": "AG-MI-VIERNES",
+        "professionalId": "PROF-MI-002",
+        "appointmentDate": "2026-04-17",
+        "startTime": "10:15",
+        "endTime": "10:30",
+        "prestation": "CONTROL",
+        "status": "PENDING",
+        "patient": {
+            "nhc": "10045628",
+            "sip": "4542965",
+            "dni": "44556677K",
+            "fullName": "Tomas Morales Castro",
+            "firstName": "Tomas",
+            "lastName": "Morales Castro",
+            "birthDate": "1948-09-18",
+            "gender": "M",
+            "email": "tomas.morales@email.com",
+            "phone": "666951357",
+            "active": true
+        },
+        "agenda": {
+            "agendaId": "AG-MI-VIERNES",
+            "name": "MED. INTERNA VIERNES",
+            "serviceCode": "MI",
+            "serviceName": "Medicina Interna",
+            "status": "ACTIVE"
+        },
+        "professional": {
+            "professionalId": "PROF-MI-002",
+            "sip": "920002",
+            "dni": "55667788F",
+            "fullName": "Dra. Ana Garcia Lopez",
+            "specialtyCode": "MI",
+            "specialtyName": "Medicina Interna"
+        }
+    }
+]

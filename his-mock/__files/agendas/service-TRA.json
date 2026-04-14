@@ -1,0 +1,32 @@
+[
+    {
+        "agendaId": "AG-TRA-LUNES",
+        "name": "TRAUMATOLOGIA LUNES",
+        "serviceCode": "TRA",
+        "serviceName": "Traumatologia",
+        "status": "ACTIVE",
+        "professional": {
+            "professionalId": "PROF-TRA-001",
+            "sip": "920005",
+            "dni": "22334455T",
+            "fullName": "Dr. Miguel Ribes",
+            "specialtyCode": "TRA",
+            "specialtyName": "Traumatologia"
+        }
+    },
+    {
+        "agendaId": "AG-TRA-JUEVES",
+        "name": "TRAUMATOLOGIA JUEVES",
+        "serviceCode": "TRA",
+        "serviceName": "Traumatologia",
+        "status": "ACTIVE",
+        "professional": {
+            "professionalId": "PROF-TRA-002",
+            "sip": "920006",
+            "dni": "33445566Q",
+            "fullName": "Dra. Marta Soler",
+            "specialtyCode": "TRA",
+            "specialtyName": "Traumatologia"
+        }
+    }
+]

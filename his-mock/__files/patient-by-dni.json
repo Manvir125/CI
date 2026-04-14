@@ -1,13 +1,15 @@
 {
     "nhc": "10045623",
+    "sip": "4542960",
     "dni": "12345678A",
-    "firstName": "María",
-    "lastName": "González Pérez",
+    "fullName": "Maria Gonzalez Perez",
+    "firstName": "Maria",
+    "lastName": "Gonzalez Perez",
     "birthDate": "1978-03-15",
     "gender": "F",
     "email": "maria.gonzalez@email.com",
     "phone": "666123456",
-    "address": "Calle Mayor 12, Castelló de la Plana",
+    "address": "Calle Mayor 12, Castellon de la Plana",
     "bloodType": "A+",
     "allergies": [
         "Penicilina"

@@ -16,6 +16,83 @@ import { useEffect } from 'react';
 
 type Step = 'search' | 'episodes' | 'configure';
 
+const firstNonEmpty = (...values: Array<string | null | undefined>) =>
+    values.find(value => typeof value === 'string' && value.trim().length > 0)?.trim() ?? '';
+
+const mergePatientData = (
+    base: PatientDto | null | undefined,
+    override: PatientDto | null | undefined
+): PatientDto | null => {
+    if (!base && !override) {
+        return null;
+    }
+
+    const allergies = override?.allergies?.length
+        ? override.allergies
+        : (base?.allergies ?? []);
+
+    return {
+        nhc: firstNonEmpty(override?.nhc, base?.nhc),
+        dni: firstNonEmpty(override?.dni, base?.dni),
+        firstName: firstNonEmpty(override?.firstName, base?.firstName),
+        lastName: firstNonEmpty(override?.lastName, base?.lastName),
+        birthDate: firstNonEmpty(override?.birthDate, base?.birthDate),
+        gender: firstNonEmpty(override?.gender, base?.gender),
+        email: firstNonEmpty(override?.email, base?.email),
+        phone: firstNonEmpty(override?.phone, base?.phone),
+        address: firstNonEmpty(override?.address, base?.address),
+        bloodType: firstNonEmpty(override?.bloodType, base?.bloodType),
+        fullName: firstNonEmpty(override?.fullName, base?.fullName) || null,
+        sip: firstNonEmpty(override?.sip, base?.sip) || null,
+        allergies,
+        active: override?.active ?? base?.active ?? true
+    };
+};
+
+const normalizeEpisode = (
+    episode: EpisodeDto,
+    fallbackPatient?: PatientDto | null
+): EpisodeDto => {
+    const mergedPatient = mergePatientData(
+        fallbackPatient,
+        episode.patient ?? episode.appointment?.patient ?? null
+    );
+
+    const professional = episode.professional ?? episode.appointment?.professional ?? null;
+    const agenda = episode.agenda ?? episode.appointment?.agenda ?? null;
+
+    return {
+        ...episode,
+        nhc: firstNonEmpty(episode.nhc, mergedPatient?.nhc),
+        serviceCode: firstNonEmpty(episode.serviceCode, agenda?.serviceCode),
+        serviceName: firstNonEmpty(episode.serviceName, agenda?.serviceName),
+        procedureCode: firstNonEmpty(episode.procedureCode),
+        procedureName: firstNonEmpty(episode.procedureName, episode.appointment?.prestation),
+        attendingPhysician: firstNonEmpty(
+            episode.attendingPhysician,
+            professional?.fullName,
+            episode.appointment?.professional?.fullName
+        ),
+        diagnosis: firstNonEmpty(
+            episode.diagnosis,
+            episode.diagnoses?.find(diagnosis => diagnosis.primary)?.diagnosisName,
+            episode.diagnoses?.[0]?.diagnosisName
+        ) || null,
+        patient: mergedPatient,
+        professional,
+        agenda,
+        appointment: episode.appointment
+            ? {
+                ...episode.appointment,
+                nhc: firstNonEmpty(episode.appointment.nhc, mergedPatient?.nhc),
+                patient: mergePatientData(mergedPatient, episode.appointment.patient ?? null),
+                agenda: episode.appointment.agenda ?? agenda,
+                professional: episode.appointment.professional ?? professional
+            }
+            : null
+    };
+};
+
 export default function NewRequestPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -85,8 +162,12 @@ export default function NewRequestPage() {
             setLoading(true);
             setError('');
             try {
-                const episode = await getEpisode(preselectedEpisodeId);
-                const resolvedPatient = episode.patient ?? await getPatientByNhc(episode.nhc);
+                const rawEpisode = await getEpisode(preselectedEpisodeId);
+                const patientFromHis = rawEpisode.patient
+                    ?? rawEpisode.appointment?.patient
+                    ?? await getPatientByNhc(rawEpisode.nhc);
+                const episode = normalizeEpisode(rawEpisode, patientFromHis);
+                const resolvedPatient = mergePatientData(patientFromHis, episode.patient);
 
                 if (cancelled) {
                     return;
@@ -94,8 +175,8 @@ export default function NewRequestPage() {
 
                 setPatient(resolvedPatient);
                 setSelectedEpisode(episode);
-                setPatientEmail(resolvedPatient.email ?? '');
-                setPatientPhone(resolvedPatient.phone ?? '');
+                setPatientEmail(resolvedPatient?.email ?? '');
+                setPatientPhone(resolvedPatient?.phone ?? '');
                 resetConfiguration();
                 await loadTemplatesForConfiguration();
             } catch {
@@ -127,12 +208,13 @@ export default function NewRequestPage() {
                 ? await getPatientByNhc(searchValue)
                 : await getPatientByDni(searchValue);
 
-            setPatient(found);
-            setPatientEmail(found.email ?? '');
-            setPatientPhone(found.phone ?? '');
+            const resolvedPatient = mergePatientData(found, found);
+            setPatient(resolvedPatient);
+            setPatientEmail(resolvedPatient?.email ?? '');
+            setPatientPhone(resolvedPatient?.phone ?? '');
 
             const eps = await getActiveEpisodes(found.nhc);
-            setEpisodes(eps);
+            setEpisodes(eps.map(ep => normalizeEpisode(ep, resolvedPatient)));
             setStep('episodes');
 
         } catch (err: any) {
@@ -148,10 +230,15 @@ export default function NewRequestPage() {
 
     // ── Paso 2: Seleccionar episodio ─────────────────────────────────────────
     const handleSelectEpisode = async (episode: EpisodeDto) => {
-        setSelectedEpisode(episode);
-        resetConfiguration();
         setLoading(true);
+        setError('');
         try {
+            const detailedEpisode = normalizeEpisode(await getEpisode(episode.episodeId), patient);
+            setSelectedEpisode(detailedEpisode);
+            setPatient(prev => mergePatientData(prev, detailedEpisode.patient));
+            setPatientEmail(current => current || detailedEpisode.patient?.email || '');
+            setPatientPhone(current => current || detailedEpisode.patient?.phone || '');
+            resetConfiguration();
             await loadTemplatesForConfiguration();
         } catch {
             setError('Error al cargar las plantillas');
@@ -377,7 +464,7 @@ export default function NewRequestPage() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="font-bold text-gray-800 text-lg">
-                                        {patient.firstName} {patient.lastName}
+                                        {patient.fullName || `${patient.firstName} ${patient.lastName}`.trim()}
                                     </h3>
                                     <div className="flex gap-4 text-sm text-gray-500 mt-1">
                                         <span>NHC: <strong>{patient.nhc}</strong></span>
@@ -427,7 +514,7 @@ export default function NewRequestPage() {
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="font-medium text-gray-800">
-                                                        {ep.procedureName}
+                                                        {ep.procedureName || 'Procedimiento no informado'}
                                                     </p>
                                                     <div className="flex gap-3 text-sm text-gray-500 mt-1">
                                                         <span>🏥 {ep.serviceName}</span>
@@ -474,12 +561,20 @@ export default function NewRequestPage() {
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Procedimiento</p>
-                                    <p className="font-medium">{selectedEpisode.procedureName}</p>
+                                    <p className="font-medium">{selectedEpisode.procedureName || 'No informado'}</p>
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Servicio</p>
-                                    <p className="font-medium">{selectedEpisode.serviceName}</p>
+                                    <p className="font-medium">{selectedEpisode.serviceName || selectedEpisode.agenda?.serviceName || 'No informado'}</p>
                                 </div>
+                                {(selectedEpisode.attendingPhysician || selectedEpisode.professional?.fullName) && (
+                                    <div>
+                                        <p className="text-gray-500">Profesional</p>
+                                        <p className="font-medium">
+                                            {selectedEpisode.attendingPhysician || selectedEpisode.professional?.fullName}
+                                        </p>
+                                    </div>
+                                )}
                                 {selectedEpisode.agenda && (
                                     <div>
                                         <p className="text-gray-500">Agenda</p>
@@ -491,6 +586,17 @@ export default function NewRequestPage() {
                                         <p className="text-gray-500">Cita</p>
                                         <p className="font-medium">
                                             {selectedEpisode.appointment.appointmentDate} · {selectedEpisode.appointment.startTime} - {selectedEpisode.appointment.endTime}
+                                        </p>
+                                    </div>
+                                )}
+                                {selectedEpisode.diagnoses && selectedEpisode.diagnoses.length > 0 && (
+                                    <div className="col-span-2">
+                                        <p className="text-gray-500">Diagnosticos HIS</p>
+                                        <p className="font-medium">
+                                            {selectedEpisode.diagnoses
+                                                .map(diagnosis => diagnosis.diagnosisName)
+                                                .filter(Boolean)
+                                                .join(' · ')}
                                         </p>
                                     </div>
                                 )}

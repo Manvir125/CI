@@ -40,6 +40,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class HisIntegrationService {
 
+    private final Object hisSnapshotLock = new Object();
+
     private final RestTemplate restTemplate;
     private final HisPatientRepository patientRepository;
     private final HisProfessionalRepository professionalRepository;
@@ -195,27 +197,29 @@ public class HisIntegrationService {
             return;
         }
 
-        HisPatient patient = patientRepository.findById(dto.getNhc())
-                .orElseGet(HisPatient::new);
+        synchronized (hisSnapshotLock) {
+            HisPatient patient = patientRepository.findById(dto.getNhc())
+                    .orElseGet(HisPatient::new);
 
-        patient.setNhc(dto.getNhc());
-        patient.setSip(dto.getSip());
-        patient.setDni(dto.getDni());
-        patient.setFirstName(dto.getFirstName());
-        patient.setLastName(dto.getLastName());
-        patient.setFullName(firstNonBlank(dto.getFullName(), joinNames(dto.getFirstName(), dto.getLastName()), dto.getNhc()));
-        patient.setBirthDate(parseDate(dto.getBirthDate()));
-        patient.setGender(dto.getGender());
-        patient.setEmail(dto.getEmail());
-        patient.setPhone(dto.getPhone());
-        patient.setAddress(dto.getAddress());
-        patient.setBloodType(dto.getBloodType());
-        patient.setActive(dto.getActive() != null ? dto.getActive() : Boolean.TRUE);
-        patient.setAllergies(dto.getAllergies() != null
-                ? new LinkedHashSet<>(dto.getAllergies())
-                : new LinkedHashSet<>());
+            patient.setNhc(dto.getNhc());
+            patient.setSip(dto.getSip());
+            patient.setDni(dto.getDni());
+            patient.setFirstName(dto.getFirstName());
+            patient.setLastName(dto.getLastName());
+            patient.setFullName(firstNonBlank(dto.getFullName(), joinNames(dto.getFirstName(), dto.getLastName()), dto.getNhc()));
+            patient.setBirthDate(parseDate(dto.getBirthDate()));
+            patient.setGender(dto.getGender());
+            patient.setEmail(dto.getEmail());
+            patient.setPhone(dto.getPhone());
+            patient.setAddress(dto.getAddress());
+            patient.setBloodType(dto.getBloodType());
+            patient.setActive(dto.getActive() != null ? dto.getActive() : Boolean.TRUE);
+            patient.setAllergies(dto.getAllergies() != null
+                    ? new LinkedHashSet<>(dto.getAllergies())
+                    : new LinkedHashSet<>());
 
-        patientRepository.save(patient);
+            patientRepository.save(patient);
+        }
     }
 
     private HisProfessional syncProfessionalSnapshot(ProfessionalDto dto) {
@@ -223,17 +227,19 @@ public class HisIntegrationService {
             return null;
         }
 
-        HisProfessional professional = professionalRepository.findById(dto.getProfessionalId())
-                .orElseGet(HisProfessional::new);
+        synchronized (hisSnapshotLock) {
+            HisProfessional professional = professionalRepository.findById(dto.getProfessionalId())
+                    .orElseGet(HisProfessional::new);
 
-        professional.setProfessionalId(dto.getProfessionalId());
-        professional.setSip(dto.getSip());
-        professional.setDni(dto.getDni());
-        professional.setFullName(firstNonBlank(dto.getFullName(), dto.getProfessionalId()));
-        professional.setSpecialtyCode(dto.getSpecialtyCode());
-        professional.setSpecialtyName(dto.getSpecialtyName());
+            professional.setProfessionalId(dto.getProfessionalId());
+            professional.setSip(dto.getSip());
+            professional.setDni(dto.getDni());
+            professional.setFullName(firstNonBlank(dto.getFullName(), dto.getProfessionalId()));
+            professional.setSpecialtyCode(dto.getSpecialtyCode());
+            professional.setSpecialtyName(dto.getSpecialtyName());
 
-        return professionalRepository.save(professional);
+            return professionalRepository.save(professional);
+        }
     }
 
     private HisAgenda syncAgendaSnapshot(AgendaDto dto) {
@@ -241,17 +247,19 @@ public class HisIntegrationService {
             return null;
         }
 
-        HisAgenda agenda = agendaRepository.findById(dto.getAgendaId())
-                .orElseGet(HisAgenda::new);
+        synchronized (hisSnapshotLock) {
+            HisAgenda agenda = agendaRepository.findById(dto.getAgendaId())
+                    .orElseGet(HisAgenda::new);
 
-        agenda.setAgendaId(dto.getAgendaId());
-        agenda.setName(firstNonBlank(dto.getName(), dto.getAgendaId()));
-        agenda.setServiceCode(dto.getServiceCode());
-        agenda.setServiceName(dto.getServiceName());
-        agenda.setStatus(dto.getStatus());
-        agenda.setProfessional(syncProfessionalSnapshot(dto.getProfessional()));
+            agenda.setAgendaId(dto.getAgendaId());
+            agenda.setName(firstNonBlank(dto.getName(), dto.getAgendaId()));
+            agenda.setServiceCode(dto.getServiceCode());
+            agenda.setServiceName(dto.getServiceName());
+            agenda.setStatus(dto.getStatus());
+            agenda.setProfessional(syncProfessionalSnapshot(dto.getProfessional()));
 
-        return agendaRepository.save(agenda);
+            return agendaRepository.save(agenda);
+        }
     }
 
     private void syncEpisodeSnapshot(EpisodeDto dto) {
@@ -259,44 +267,46 @@ public class HisIntegrationService {
             return;
         }
 
-        if (dto.getPatient() == null && !isBlank(dto.getNhc())) {
-            PatientDto patientDto = new PatientDto();
-            patientDto.setNhc(dto.getNhc());
-            dto.setPatient(patientDto);
-        }
+        synchronized (hisSnapshotLock) {
+            if (dto.getPatient() == null && !isBlank(dto.getNhc())) {
+                PatientDto patientDto = new PatientDto();
+                patientDto.setNhc(dto.getNhc());
+                dto.setPatient(patientDto);
+            }
 
-        syncPatientSnapshot(dto.getPatient());
-        HisProfessional professional = syncProfessionalSnapshot(dto.getProfessional());
-        HisAgenda agenda = syncAgendaSnapshot(dto.getAgenda());
+            syncPatientSnapshot(dto.getPatient());
+            HisProfessional professional = syncProfessionalSnapshot(dto.getProfessional());
+            HisAgenda agenda = syncAgendaSnapshot(dto.getAgenda());
 
-        HisEpisode episode = episodeRepository.findById(dto.getEpisodeId())
-                .orElseGet(HisEpisode::new);
+            HisEpisode episode = episodeRepository.findById(dto.getEpisodeId())
+                    .orElseGet(HisEpisode::new);
 
-        episode.setEpisodeId(dto.getEpisodeId());
-        episode.setPatient(resolvePatient(dto.getPatient(), dto.getNhc()));
-        episode.setProfessional(professional != null ? professional : resolveProfessional(dto.getAppointment() != null ? dto.getAppointment().getProfessionalId() : null));
-        episode.setAgenda(agenda != null ? agenda : resolveAgenda(dto.getAppointment() != null ? dto.getAppointment().getAgendaId() : null));
-        episode.setServiceCode(dto.getServiceCode());
-        episode.setServiceName(dto.getServiceName());
-        episode.setProcedureCode(dto.getProcedureCode());
-        episode.setProcedureName(dto.getProcedureName());
-        episode.setEpisodeDate(parseDate(dto.getEpisodeDate()));
-        episode.setAdmissionDate(parseDate(dto.getAdmissionDate()));
-        episode.setExpectedDischargeDate(parseDate(dto.getExpectedDischargeDate()));
-        episode.setWard(dto.getWard());
-        episode.setBed(dto.getBed());
-        episode.setAttendingPhysician(firstNonBlank(dto.getAttendingPhysician(), dto.getProfessional() != null ? dto.getProfessional().getFullName() : null));
-        episode.setStatus(dto.getStatus());
-        episode.setPriority(dto.getPriority());
-        episode.setDiagnosisSummary(dto.getDiagnosis());
-        episode.setIcd10Code(dto.getIcd10Code());
+            episode.setEpisodeId(dto.getEpisodeId());
+            episode.setPatient(resolvePatient(dto.getPatient(), dto.getNhc()));
+            episode.setProfessional(professional != null ? professional : resolveProfessional(dto.getAppointment() != null ? dto.getAppointment().getProfessionalId() : null));
+            episode.setAgenda(agenda != null ? agenda : resolveAgenda(dto.getAppointment() != null ? dto.getAppointment().getAgendaId() : null));
+            episode.setServiceCode(dto.getServiceCode());
+            episode.setServiceName(dto.getServiceName());
+            episode.setProcedureCode(dto.getProcedureCode());
+            episode.setProcedureName(dto.getProcedureName());
+            episode.setEpisodeDate(parseDate(dto.getEpisodeDate()));
+            episode.setAdmissionDate(parseDate(dto.getAdmissionDate()));
+            episode.setExpectedDischargeDate(parseDate(dto.getExpectedDischargeDate()));
+            episode.setWard(dto.getWard());
+            episode.setBed(dto.getBed());
+            episode.setAttendingPhysician(firstNonBlank(dto.getAttendingPhysician(), dto.getProfessional() != null ? dto.getProfessional().getFullName() : null));
+            episode.setStatus(dto.getStatus());
+            episode.setPriority(dto.getPriority());
+            episode.setDiagnosisSummary(dto.getDiagnosis());
+            episode.setIcd10Code(dto.getIcd10Code());
 
-        HisEpisode savedEpisode = episodeRepository.save(episode);
+            HisEpisode savedEpisode = episodeRepository.save(episode);
 
-        syncEpisodeDiagnoses(savedEpisode, dto.getDiagnoses());
+            syncEpisodeDiagnoses(savedEpisode, dto.getDiagnoses());
 
-        if (dto.getAppointment() != null) {
-            syncAppointmentSnapshot(dto.getAppointment(), savedEpisode);
+            if (dto.getAppointment() != null) {
+                syncAppointmentSnapshot(dto.getAppointment(), savedEpisode);
+            }
         }
     }
 
@@ -305,32 +315,34 @@ public class HisIntegrationService {
             return;
         }
 
-        syncPatientSnapshot(dto.getPatient());
-        HisProfessional professional = syncProfessionalSnapshot(dto.getProfessional());
-        HisAgenda agenda = syncAgendaSnapshot(dto.getAgenda());
+        synchronized (hisSnapshotLock) {
+            syncPatientSnapshot(dto.getPatient());
+            HisProfessional professional = syncProfessionalSnapshot(dto.getProfessional());
+            HisAgenda agenda = syncAgendaSnapshot(dto.getAgenda());
 
-        HisEpisode episode = episodeRepository.findById(dto.getEpisodeId())
-                .orElseGet(HisEpisode::new);
+            HisEpisode episode = episodeRepository.findById(dto.getEpisodeId())
+                    .orElseGet(HisEpisode::new);
 
-        episode.setEpisodeId(dto.getEpisodeId());
-        if (episode.getPatient() == null) {
-            episode.setPatient(resolvePatient(dto.getPatient(), dto.getNhc()));
-        }
-        if (episode.getProfessional() == null) {
-            episode.setProfessional(professional != null ? professional : resolveProfessional(dto.getProfessionalId()));
-        }
-        if (episode.getAgenda() == null) {
-            episode.setAgenda(agenda != null ? agenda : resolveAgenda(dto.getAgendaId()));
-        }
-        if (episode.getEpisodeDate() == null) {
-            episode.setEpisodeDate(parseDate(dto.getAppointmentDate()));
-        }
-        if (isBlank(episode.getStatus())) {
-            episode.setStatus(dto.getStatus());
-        }
+            episode.setEpisodeId(dto.getEpisodeId());
+            if (episode.getPatient() == null) {
+                episode.setPatient(resolvePatient(dto.getPatient(), dto.getNhc()));
+            }
+            if (episode.getProfessional() == null) {
+                episode.setProfessional(professional != null ? professional : resolveProfessional(dto.getProfessionalId()));
+            }
+            if (episode.getAgenda() == null) {
+                episode.setAgenda(agenda != null ? agenda : resolveAgenda(dto.getAgendaId()));
+            }
+            if (episode.getEpisodeDate() == null) {
+                episode.setEpisodeDate(parseDate(dto.getAppointmentDate()));
+            }
+            if (isBlank(episode.getStatus())) {
+                episode.setStatus(dto.getStatus());
+            }
 
-        HisEpisode savedEpisode = episodeRepository.save(episode);
-        syncAppointmentSnapshot(dto, savedEpisode);
+            HisEpisode savedEpisode = episodeRepository.save(episode);
+            syncAppointmentSnapshot(dto, savedEpisode);
+        }
     }
 
     private void syncAppointmentSnapshot(AgendaAppointmentDto dto, HisEpisode episode) {
@@ -338,41 +350,45 @@ public class HisIntegrationService {
             return;
         }
 
-        HisAgendaAppointment appointment = appointmentRepository.findById(episode.getEpisodeId())
-                .orElseGet(HisAgendaAppointment::new);
+        synchronized (hisSnapshotLock) {
+            HisAgendaAppointment appointment = appointmentRepository.findById(episode.getEpisodeId())
+                    .orElseGet(HisAgendaAppointment::new);
 
-        appointment.setEpisodeId(episode.getEpisodeId());
-        appointment.setEpisode(episode);
-        appointment.setPatient(resolvePatient(dto.getPatient(), firstNonBlank(dto.getNhc(), episode.getPatient() != null ? episode.getPatient().getNhc() : null)));
-        appointment.setAgenda(resolveAgendaFromDto(dto.getAgenda(), firstNonBlank(dto.getAgendaId(), episode.getAgenda() != null ? episode.getAgenda().getAgendaId() : null)));
-        appointment.setProfessional(resolveProfessionalFromDto(dto.getProfessional(), firstNonBlank(dto.getProfessionalId(), episode.getProfessional() != null ? episode.getProfessional().getProfessionalId() : null)));
-        appointment.setAppointmentDate(parseDate(dto.getAppointmentDate()));
-        appointment.setStartTime(parseTime(dto.getStartTime()));
-        appointment.setEndTime(parseTime(dto.getEndTime()));
-        appointment.setPrestation(dto.getPrestation());
-        appointment.setStatus(dto.getStatus());
+            appointment.setEpisodeId(episode.getEpisodeId());
+            appointment.setEpisode(episode);
+            appointment.setPatient(resolvePatient(dto.getPatient(), firstNonBlank(dto.getNhc(), episode.getPatient() != null ? episode.getPatient().getNhc() : null)));
+            appointment.setAgenda(resolveAgendaFromDto(dto.getAgenda(), firstNonBlank(dto.getAgendaId(), episode.getAgenda() != null ? episode.getAgenda().getAgendaId() : null)));
+            appointment.setProfessional(resolveProfessionalFromDto(dto.getProfessional(), firstNonBlank(dto.getProfessionalId(), episode.getProfessional() != null ? episode.getProfessional().getProfessionalId() : null)));
+            appointment.setAppointmentDate(parseDate(dto.getAppointmentDate()));
+            appointment.setStartTime(parseTime(dto.getStartTime()));
+            appointment.setEndTime(parseTime(dto.getEndTime()));
+            appointment.setPrestation(dto.getPrestation());
+            appointment.setStatus(dto.getStatus());
 
-        appointmentRepository.save(appointment);
+            appointmentRepository.save(appointment);
+        }
     }
 
     private void syncEpisodeDiagnoses(HisEpisode episode, List<EpisodeDiagnosisDto> diagnoses) {
-        diagnosisRepository.deleteByEpisodeEpisodeId(episode.getEpisodeId());
+        synchronized (hisSnapshotLock) {
+            diagnosisRepository.deleteByEpisodeEpisodeId(episode.getEpisodeId());
 
-        if (diagnoses == null || diagnoses.isEmpty()) {
-            return;
+            if (diagnoses == null || diagnoses.isEmpty()) {
+                return;
+            }
+
+            List<HisEpisodeDiagnosis> entities = diagnoses.stream()
+                    .map(diagnosis -> HisEpisodeDiagnosis.builder()
+                            .episode(episode)
+                            .diagnosisCode(diagnosis.getDiagnosisCode())
+                            .diagnosisName(firstNonBlank(diagnosis.getDiagnosisName(), "Diagnostico"))
+                            .diagnosisType(diagnosis.getDiagnosisType())
+                            .primary(Boolean.TRUE.equals(diagnosis.getPrimary()))
+                            .build())
+                    .toList();
+
+            diagnosisRepository.saveAll(entities);
         }
-
-        List<HisEpisodeDiagnosis> entities = diagnoses.stream()
-                .map(diagnosis -> HisEpisodeDiagnosis.builder()
-                        .episode(episode)
-                        .diagnosisCode(diagnosis.getDiagnosisCode())
-                        .diagnosisName(firstNonBlank(diagnosis.getDiagnosisName(), "Diagnostico"))
-                        .diagnosisType(diagnosis.getDiagnosisType())
-                        .primary(Boolean.TRUE.equals(diagnosis.getPrimary()))
-                        .build())
-                .toList();
-
-        diagnosisRepository.saveAll(entities);
     }
 
     private HisPatient resolvePatient(PatientDto patientDto, String nhc) {

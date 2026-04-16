@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import {
     getPatientByNhc, getPatientByDni,
-    getActiveEpisodes, getEpisode, type PatientDto, type EpisodeDto
+    getActiveEpisodes, getEpisode, type PatientDto, type EpisodeDto, type AgendaAppointmentDto
 } from '../api/his';
 import { getTemplates } from '../api/templates';
 import { sendRequest, createGroup } from '../api/consentRequests';
@@ -93,12 +93,46 @@ const normalizeEpisode = (
     };
 };
 
+const buildEpisodeFromAppointment = (appointment: AgendaAppointmentDto): EpisodeDto =>
+({
+    episodeId: appointment.episodeId,
+    nhc: appointment.nhc,
+    serviceCode: firstNonEmpty(
+        appointment.agenda?.serviceCode,
+        appointment.professional?.specialtyCode
+    ),
+    serviceName: firstNonEmpty(
+        appointment.agenda?.serviceName,
+        appointment.professional?.specialtyName
+    ),
+    procedureCode: '',
+    procedureName: firstNonEmpty(appointment.prestation, 'Consulta'),
+    episodeDate: appointment.appointmentDate,
+    admissionDate: appointment.appointmentDate,
+    expectedDischargeDate: null,
+    ward: '',
+    bed: null,
+    attendingPhysician: firstNonEmpty(appointment.professional?.fullName),
+    status: appointment.status,
+    priority: '',
+    diagnosis: null,
+    icd10Code: null,
+    patient: appointment.patient ?? null,
+    professional: appointment.professional ?? null,
+    agenda: appointment.agenda ?? null,
+    appointment,
+    diagnoses: []
+});
+
 export default function NewRequestPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
     const preselectedEpisodeId = searchParams.get('episodeId');
+    const preselectedNhc = searchParams.get('nhc');
     const startedFromAgenda = Boolean(preselectedEpisodeId);
+    const agendaSelection = (location.state as { appointment?: AgendaAppointmentDto } | null)?.appointment ?? null;
 
     const [step, setStep] = useState<Step>('search');
     const [loading, setLoading] = useState(false);
@@ -162,11 +196,49 @@ export default function NewRequestPage() {
             setLoading(true);
             setError('');
             try {
+                const appointmentEpisode = agendaSelection
+                    ? normalizeEpisode(
+                        buildEpisodeFromAppointment(agendaSelection),
+                        agendaSelection.patient ?? null
+                    )
+                    : null;
+
                 const rawEpisode = await getEpisode(preselectedEpisodeId);
+                const lookupNhc = firstNonEmpty(
+                    appointmentEpisode?.nhc,
+                    preselectedNhc,
+                    rawEpisode.nhc
+                );
                 const patientFromHis = rawEpisode.patient
                     ?? rawEpisode.appointment?.patient
-                    ?? await getPatientByNhc(rawEpisode.nhc);
-                const episode = normalizeEpisode(rawEpisode, patientFromHis);
+                    ?? appointmentEpisode?.patient
+                    ?? (lookupNhc ? await getPatientByNhc(lookupNhc) : null);
+
+                const normalizedRemoteEpisode = normalizeEpisode(rawEpisode, patientFromHis);
+                const selectedFromAgenda = appointmentEpisode
+                    && (
+                        normalizedRemoteEpisode.episodeId !== appointmentEpisode.episodeId
+                        || normalizedRemoteEpisode.nhc !== appointmentEpisode.nhc
+                    )
+                    ? normalizeEpisode({
+                        ...normalizedRemoteEpisode,
+                        episodeId: appointmentEpisode.episodeId,
+                        nhc: appointmentEpisode.nhc,
+                        serviceCode: firstNonEmpty(appointmentEpisode.serviceCode, normalizedRemoteEpisode.serviceCode),
+                        serviceName: firstNonEmpty(appointmentEpisode.serviceName, normalizedRemoteEpisode.serviceName),
+                        procedureName: firstNonEmpty(appointmentEpisode.procedureName, normalizedRemoteEpisode.procedureName),
+                        episodeDate: firstNonEmpty(appointmentEpisode.episodeDate, normalizedRemoteEpisode.episodeDate),
+                        admissionDate: firstNonEmpty(appointmentEpisode.admissionDate, normalizedRemoteEpisode.admissionDate),
+                        attendingPhysician: firstNonEmpty(appointmentEpisode.attendingPhysician, normalizedRemoteEpisode.attendingPhysician),
+                        status: firstNonEmpty(appointmentEpisode.status, normalizedRemoteEpisode.status),
+                        patient: mergePatientData(normalizedRemoteEpisode.patient, appointmentEpisode.patient),
+                        professional: appointmentEpisode.professional ?? normalizedRemoteEpisode.professional,
+                        agenda: appointmentEpisode.agenda ?? normalizedRemoteEpisode.agenda,
+                        appointment: appointmentEpisode.appointment ?? normalizedRemoteEpisode.appointment
+                    }, appointmentEpisode.patient)
+                    : normalizedRemoteEpisode;
+
+                const episode = selectedFromAgenda;
                 const resolvedPatient = mergePatientData(patientFromHis, episode.patient);
 
                 if (cancelled) {
@@ -272,7 +344,7 @@ export default function NewRequestPage() {
             ];
 
             const groupData = {
-                nhc: patient!.nhc,
+                nhc: selectedEpisode!.nhc || patient!.nhc,
                 episodeId: selectedEpisode!.episodeId,
                 patientEmail,
                 patientPhone,

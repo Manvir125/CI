@@ -82,6 +82,13 @@ public class ConsentRequestController {
                 requestService.getMyRequests(status, page, size));
     }
 
+    @GetMapping("/kiosk/patient/{nhc}")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<java.util.List<ConsentRequestResponse>> getKioskRequestsByNhc(
+            @PathVariable String nhc) {
+        return ResponseEntity.ok(requestService.getKioskRequestsByNhc(nhc));
+    }
+
     @GetMapping("/{id}/pdf")
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE','SUPERVISOR')")
     public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import SignaturePad from 'signature_pad';
-import { getKioskToken } from '../api/consentRequests';
+import { getKioskToken, type ConsentRequestResponse } from '../api/consentRequests';
 import { loadConsent, submitSignature, type PortalConsentDto } from '../api/portal';
+import type { PatientDto } from '../api/his';
 import { useXPPenTablet, type PenEvent } from '../hooks/useXPPenTablet';
 
 type Step = 'loading' | 'read' | 'sign' | 'confirmed' | 'rejected' | 'error';
@@ -10,6 +11,14 @@ type Step = 'loading' | 'read' | 'sign' | 'confirmed' | 'rejected' | 'error';
 export default function KioskSignPage() {
     const { requestId } = useParams<{ requestId: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const navigationState = location.state as {
+        patient?: PatientDto | null;
+        request?: ConsentRequestResponse | null;
+    } | null;
+    const selectedPatient = navigationState?.patient ?? null;
+    const selectedRequest = navigationState?.request ?? null;
 
     const [step, setStep] = useState<Step>('loading');
     const [token, setToken] = useState('');
@@ -86,6 +95,13 @@ export default function KioskSignPage() {
     // Rechazo
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
+
+    const fallbackPatientName = selectedPatient
+        ? selectedPatient.fullName || `${selectedPatient.firstName} ${selectedPatient.lastName}`.trim()
+        : '';
+    const resolvedPatientName = consent?.patientName || fallbackPatientName || 'Paciente';
+    const resolvedProcedureName = consent?.procedureName || selectedRequest?.templateName || 'Consentimiento';
+    const resolvedProfessionalName = consent?.professionalName || selectedRequest?.professionalName || 'Profesional';
 
     // ── Carga el token de kiosco y luego el consentimiento ─────────────────
     useEffect(() => {
@@ -257,11 +273,11 @@ export default function KioskSignPage() {
                 <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-2 mb-6">
                     <p className="text-gray-600">
                         <span className="font-medium">Procedimiento:</span>{' '}
-                        {consent?.procedureName}
+                        {resolvedProcedureName}
                     </p>
                     <p className="text-gray-600">
                         <span className="font-medium">Profesional:</span>{' '}
-                        {consent?.professionalName}
+                        {resolvedProfessionalName}
                     </p>
                 </div>
                 <button
@@ -333,10 +349,13 @@ export default function KioskSignPage() {
                                 {consent.templateName}
                             </h2>
                             <div className="space-y-1 text-sm text-gray-600">
-                                <p>👤 Paciente: <strong>{consent.patientName}</strong></p>
-                                <p>👨‍⚕️ Profesional: <strong>{consent.professionalName}</strong></p>
+                                <p>👤 Paciente: <strong>{resolvedPatientName}</strong></p>
+                                <p>👨‍⚕️ Profesional: <strong>{resolvedProfessionalName}</strong></p>
                                 <p>🏥 Servicio: <strong>{consent.serviceName}</strong></p>
                                 <p>📅 Fecha: <strong>{consent.episodeDate}</strong></p>
+                                {selectedPatient?.nhc && (
+                                    <p>NHC: <strong>{selectedPatient.nhc}</strong></p>
+                                )}
                             </div>
                         </div>
 

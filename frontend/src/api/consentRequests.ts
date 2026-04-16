@@ -83,6 +83,13 @@ export const getMyRequests = async (
     return data;
 };
 
+export const getKioskRequestsByNhc = async (
+    nhc: string
+): Promise<ConsentRequestResponse[]> => {
+    const { data } = await client.get(`/api/consent-requests/kiosk/patient/${nhc}`);
+    return data;
+};
+
 export const downloadPdf = async (id: number): Promise<void> => {
     const response = await client.get(`/api/consent-requests/${id}/pdf`, {
         responseType: 'blob',

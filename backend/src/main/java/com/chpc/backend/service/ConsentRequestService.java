@@ -3,6 +3,7 @@ package com.chpc.backend.service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -188,6 +189,17 @@ public class ConsentRequestService {
         @Transactional(readOnly = true)
         public ConsentRequestResponse getById(Long id) {
                 return toResponse(findRequest(id));
+        }
+
+        @Transactional(readOnly = true)
+        public List<ConsentRequestResponse> getKioskRequestsByNhc(String nhc) {
+                return requestRepository.findByNhcAndChannelAndStatusInOrderByCreatedAtDesc(
+                                nhc,
+                                ConsentRequest.SignChannel.ONSITE,
+                                List.of("PENDING", "SENT"))
+                                .stream()
+                                .map(this::toResponse)
+                                .toList();
         }
 
         // Genera token seguro de 256 bits

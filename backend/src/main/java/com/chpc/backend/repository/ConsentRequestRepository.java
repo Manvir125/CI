@@ -42,4 +42,9 @@ public interface ConsentRequestRepository extends JpaRepository<ConsentRequest, 
                         @Param("serviceCode") String serviceCode);
 
         List<ConsentRequest> findByGroupIdOrderById(Long groupId);
+
+        List<ConsentRequest> findByNhcAndChannelAndStatusInOrderByCreatedAtDesc(
+                        String nhc,
+                        ConsentRequest.SignChannel channel,
+                        List<String> statuses);
 }

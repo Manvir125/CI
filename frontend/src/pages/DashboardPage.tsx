@@ -66,7 +66,10 @@ export default function DashboardPage() {
     };
 
     const handleCreateConsent = (appointment: AgendaAppointmentDto) => {
-        navigate(`/requests/new?episodeId=${encodeURIComponent(appointment.episodeId)}&agendaId=${encodeURIComponent(appointment.agendaId)}`);
+        navigate(
+            `/requests/new?episodeId=${encodeURIComponent(appointment.episodeId)}&agendaId=${encodeURIComponent(appointment.agendaId)}&nhc=${encodeURIComponent(appointment.nhc)}`,
+            { state: { appointment } }
+        );
     };
 
     return (

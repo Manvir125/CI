@@ -8,6 +8,7 @@ const portalClient = axios.create({
 
 export interface PortalConsentDto {
     requestId: number;
+    nhc: string;
     patientName: string;
     professionalName: string;
     serviceName: string;

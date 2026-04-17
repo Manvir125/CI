@@ -373,6 +373,7 @@ export default function PatientPortalPage() {
                             </h2>
                             <div className="space-y-1 text-sm text-gray-600">
                                 <p>👤 Paciente: <strong>{consent.patientName}</strong></p>
+                                <p>NHC: <strong>{consent.nhc}</strong></p>
                                 <p>👨‍⚕️ Profesional: <strong>{consent.professionalName}</strong></p>
                                 <p>🏥 Servicio: <strong>{consent.serviceName}</strong></p>
                                 <p>📅 Fecha: <strong>{consent.episodeDate}</strong></p>

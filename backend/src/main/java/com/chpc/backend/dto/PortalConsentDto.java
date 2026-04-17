@@ -8,6 +8,7 @@ import lombok.*;
 @Builder
 public class PortalConsentDto {
     private Long requestId;
+    private String nhc;
     private String patientName;
     private String professionalName;
     private String serviceName;

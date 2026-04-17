@@ -39,6 +39,7 @@ public class PatientPortalService {
     private final TemplateEngineService templateEngineService;
     private final ConsentGroupService consentGroupService;
     private final NotificationService notificationService;
+    private final HisPatientRepository hisPatientRepository;
 
     private static final int CODE_LENGTH = 6;
     private static final int CODE_EXPIRY_MIN = 10;
@@ -62,9 +63,7 @@ public class PatientPortalService {
                 "PORTAL_ACCESSED", "ConsentRequest",
                 request.getId(), ipAddress, true, null);
 
-        String patientName = hisService.findPatientByNhc(request.getNhc())
-                .map(p -> p.getFirstName() + " " + p.getLastName())
-                .orElse("Paciente");
+        String patientName = resolvePatientName(request.getNhc());
 
         List<String> groupContentHtmlList = null;
         List<Long> groupRequestIds = null;
@@ -82,6 +81,7 @@ public class PatientPortalService {
 
         return PortalConsentDto.builder()
                 .requestId(request.getId())
+                .nhc(request.getNhc())
                 .patientName(patientName)
                 .professionalName(request.getProfessional().getFullName())
                 .serviceName(request.getTemplate().getServiceCode())
@@ -215,9 +215,7 @@ public class PatientPortalService {
                 signatureRepository.save(siblingCapture);
                 sibling.setStatus("SIGNED".equals(req.getConfirmation()) ? "SIGNED" : "REJECTED");
                 requestRepository.save(sibling);
-                String patientName = hisService.findPatientByNhc(sibling.getNhc())
-                        .map(p -> p.getFirstName() + " " + p.getLastName())
-                        .orElse("Paciente");
+                String patientName = resolvePatientName(sibling.getNhc());
 
                 String pdfFilePath = pdfService.generateSignedPdf(sibling, siblingCapture, patientName);
                 String hash = pdfService.calculateHash(pdfFilePath);
@@ -231,6 +229,7 @@ public class PatientPortalService {
                 }
             }
             consentGroupService.updateGroupStatus(request.getGroup());
+            invalidateToken(token);
         } else {
 
             boolean isSigning = "SIGNED".equals(req.getConfirmation());
@@ -280,9 +279,7 @@ public class PatientPortalService {
                 log.info("=== PDF: Ruta de PDFs: {}", pdfPath);
                 log.info("=== PDF: Imagen de firma path: {}", capture.getSignatureImagePath());
 
-                String patientName = hisService.findPatientByNhc(request.getNhc())
-                        .map(p -> p.getFirstName() + " " + p.getLastName())
-                        .orElse("Paciente");
+                String patientName = resolvePatientName(request.getNhc());
 
                 String pdfFilePath = pdfService.generateSignedPdf(request, capture, patientName);
                 log.info("=== PDF: Fichero generado en: {}", pdfFilePath);
@@ -305,8 +302,7 @@ public class PatientPortalService {
             request.setStatus(isSigning ? "SIGNED" : "REJECTED");
             requestRepository.save(request);
 
-            token.setIsValid(false);
-            tokenRepository.save(token);
+            invalidateToken(token);
 
             auditService.log("patient_token:" + rawToken.substring(0, 8),
                     isSigning ? "CONSENT_SIGNED" : "CONSENT_REJECTED",
@@ -323,6 +319,45 @@ public class PatientPortalService {
             throw new RuntimeException("El enlace ha expirado");
         }
         return token;
+    }
+
+    private String resolvePatientName(String nhc) {
+        return hisService.findPatientByNhc(nhc)
+                .map(this::buildPatientName)
+                .or(() -> hisPatientRepository.findById(nhc)
+                        .map(patient -> firstNonBlank(
+                                patient.getFullName(),
+                                joinNames(patient.getFirstName(), patient.getLastName()),
+                                patient.getNhc())))
+                .orElse(firstNonBlank(nhc, "Paciente"));
+    }
+
+    private String buildPatientName(PatientDto patient) {
+        return firstNonBlank(
+                patient.getFullName(),
+                joinNames(patient.getFirstName(), patient.getLastName()),
+                patient.getNhc(),
+                "Paciente");
+    }
+
+    private String joinNames(String firstName, String lastName) {
+        String fullName = ((firstName == null ? "" : firstName) + " " + (lastName == null ? "" : lastName)).trim();
+        return fullName.isBlank() ? null : fullName;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private void invalidateToken(SignToken token) {
+        token.setIsValid(false);
+        token.setUsedAt(LocalDateTime.now());
+        tokenRepository.save(token);
     }
 
     private String generateCode() {

@@ -1,0 +1,16 @@
+{
+    "nhc": "10045626",
+    "sip": "4542963",
+    "dni": "22334455H",
+    "fullName": "Ramon Miravet Gil",
+    "firstName": "Ramon",
+    "lastName": "Miravet Gil",
+    "birthDate": "1974-06-19",
+    "gender": "M",
+    "email": "ramon.miravet@email.com",
+    "phone": "666321654",
+    "address": "Calle Herrero 18, Castellon de la Plana",
+    "bloodType": "A-",
+    "allergies": [],
+    "active": true
+}

@@ -1,0 +1,16 @@
+{
+    "nhc": "10045624",
+    "sip": "4542961",
+    "dni": "87654321B",
+    "fullName": "Juan Gonzalez Martinez",
+    "firstName": "Juan",
+    "lastName": "Gonzalez Martinez",
+    "birthDate": "1965-07-22",
+    "gender": "M",
+    "email": "juan.gonzalez@email.com",
+    "phone": "666654321",
+    "address": "Avenida del Mar 24, Castellon de la Plana",
+    "bloodType": "O+",
+    "allergies": [],
+    "active": true
+}

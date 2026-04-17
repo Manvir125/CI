@@ -1,0 +1,18 @@
+{
+    "nhc": "10045629",
+    "sip": "4542966",
+    "dni": "55667788M",
+    "fullName": "Jose Martinez Aparicio",
+    "firstName": "Jose",
+    "lastName": "Martinez Aparicio",
+    "birthDate": "1969-05-20",
+    "gender": "M",
+    "email": "jose.martinez@email.com",
+    "phone": "666753159",
+    "address": "Avenida Valencia 102, Vila-real",
+    "bloodType": "B-",
+    "allergies": [
+        "Contraste yodado"
+    ],
+    "active": true
+}

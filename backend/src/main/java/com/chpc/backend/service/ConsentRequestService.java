@@ -193,13 +193,28 @@ public class ConsentRequestService {
 
         @Transactional(readOnly = true)
         public List<ConsentRequestResponse> getKioskRequestsByNhc(String nhc) {
-                return requestRepository.findByNhcAndChannelAndStatusInOrderByCreatedAtDesc(
+                User professional = getCurrentUser();
+
+                return requestRepository.findByNhcAndProfessionalIdAndChannelAndStatusInOrderByCreatedAtDesc(
                                 nhc,
+                                professional.getId(),
                                 ConsentRequest.SignChannel.ONSITE,
                                 List.of("PENDING", "SENT"))
                                 .stream()
                                 .map(this::toResponse)
                                 .toList();
+        }
+
+        @Transactional(readOnly = true)
+        public ConsentRequest getKioskRequestForCurrentProfessional(Long requestId) {
+                ConsentRequest request = findRequest(requestId);
+                User professional = getCurrentUser();
+
+                if (!request.getProfessional().getId().equals(professional.getId())) {
+                        throw new RuntimeException("No tienes permiso para acceder a esta solicitud de kiosco");
+                }
+
+                return request;
         }
 
         // Genera token seguro de 256 bits
@@ -224,6 +239,12 @@ public class ConsentRequestService {
                 return requestRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Solicitud no encontrada: " + id));
+        }
+
+        private User getCurrentUser() {
+                String username = SecurityContextHolder.getContext()
+                                .getAuthentication().getName();
+                return userRepository.findByUsername(username).orElseThrow();
         }
 
         public ConsentRequestResponse toResponse(ConsentRequest r) {

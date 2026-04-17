@@ -1,31 +1,243 @@
 {
     "mappings": [
         {
-            "name": "Buscar paciente por NHC",
+            "name": "Paciente NHC 10045623",
+            "priority": 1,
             "request": {
                 "method": "GET",
-                "urlPattern": "/his/api/patients/nhc/([0-9]+)"
+                "url": "/his/api/patients/nhc/10045623"
             },
             "response": {
                 "status": 200,
                 "headers": {
                     "Content-Type": "application/json"
                 },
-                "bodyFileName": "patient-by-nhc.json"
+                "bodyFileName": "patients/patient-10045623.json"
             }
         },
         {
-            "name": "Buscar paciente por DNI",
+            "name": "Paciente NHC 10045624",
+            "priority": 1,
             "request": {
                 "method": "GET",
-                "urlPattern": "/his/api/patients/dni/([0-9A-Za-z]+)"
+                "url": "/his/api/patients/nhc/10045624"
             },
             "response": {
                 "status": 200,
                 "headers": {
                     "Content-Type": "application/json"
                 },
-                "bodyFileName": "patient-by-dni.json"
+                "bodyFileName": "patients/patient-10045624.json"
+            }
+        },
+        {
+            "name": "Paciente NHC 10045625",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/nhc/10045625"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045625.json"
+            }
+        },
+        {
+            "name": "Paciente NHC 10045626",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/nhc/10045626"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045626.json"
+            }
+        },
+        {
+            "name": "Paciente NHC 10045627",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/nhc/10045627"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045627.json"
+            }
+        },
+        {
+            "name": "Paciente NHC 10045628",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/nhc/10045628"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045628.json"
+            }
+        },
+        {
+            "name": "Paciente NHC 10045629",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/nhc/10045629"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045629.json"
+            }
+        },
+        {
+            "name": "Paciente NHC 10045630",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/nhc/10045630"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045630.json"
+            }
+        },
+        {
+            "name": "Paciente DNI 12345678A",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/dni/12345678A"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045623.json"
+            }
+        },
+        {
+            "name": "Paciente DNI 87654321B",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/dni/87654321B"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045624.json"
+            }
+        },
+        {
+            "name": "Paciente DNI 11223344C",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/dni/11223344C"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045625.json"
+            }
+        },
+        {
+            "name": "Paciente DNI 22334455H",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/dni/22334455H"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045626.json"
+            }
+        },
+        {
+            "name": "Paciente DNI 33445566J",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/dni/33445566J"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045627.json"
+            }
+        },
+        {
+            "name": "Paciente DNI 44556677K",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/dni/44556677K"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045628.json"
+            }
+        },
+        {
+            "name": "Paciente DNI 55667788M",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/dni/55667788M"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045629.json"
+            }
+        },
+        {
+            "name": "Paciente DNI 66778899N",
+            "priority": 1,
+            "request": {
+                "method": "GET",
+                "url": "/his/api/patients/dni/66778899N"
+            },
+            "response": {
+                "status": 200,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyFileName": "patients/patient-10045630.json"
             }
         },
         {
@@ -43,10 +255,26 @@
             }
         },
         {
-            "name": "Paciente no encontrado",
+            "name": "Paciente por NHC no encontrado",
+            "priority": 10,
             "request": {
                 "method": "GET",
-                "url": "/his/api/patients/nhc/99999"
+                "urlPattern": "/his/api/patients/nhc/([0-9]+)"
+            },
+            "response": {
+                "status": 404,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": "{\"error\": \"Paciente no encontrado\"}"
+            }
+        },
+        {
+            "name": "Paciente por DNI no encontrado",
+            "priority": 10,
+            "request": {
+                "method": "GET",
+                "urlPattern": "/his/api/patients/dni/([0-9A-Za-z]+)"
             },
             "response": {
                 "status": 404,

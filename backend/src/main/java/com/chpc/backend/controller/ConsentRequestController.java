@@ -118,8 +118,7 @@ public class ConsentRequestController {
             @PathVariable Long id,
             HttpServletRequest httpRequest) {
 
-        ConsentRequest request = requestRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+        ConsentRequest request = requestService.getKioskRequestForCurrentProfessional(id);
 
         tokenRepository.findAll().stream()
                 .filter(t -> t.getConsentRequest().getId().equals(id) && t.getIsValid())

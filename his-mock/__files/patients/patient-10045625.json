@@ -1,0 +1,18 @@
+{
+    "nhc": "10045625",
+    "sip": "4542962",
+    "dni": "11223344C",
+    "fullName": "Carmen Lopez Gonzalez",
+    "firstName": "Carmen",
+    "lastName": "Lopez Gonzalez",
+    "birthDate": "1990-11-08",
+    "gender": "F",
+    "email": "carmen.lopez@email.com",
+    "phone": "666789012",
+    "address": "Plaza Fadrell 7, Castellon de la Plana",
+    "bloodType": "B+",
+    "allergies": [
+        "Latex"
+    ],
+    "active": true
+}

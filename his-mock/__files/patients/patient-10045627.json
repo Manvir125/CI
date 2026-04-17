@@ -1,0 +1,18 @@
+{
+    "nhc": "10045627",
+    "sip": "4542964",
+    "dni": "33445566J",
+    "fullName": "Beatriz Vilar Ballester",
+    "firstName": "Beatriz",
+    "lastName": "Vilar Ballester",
+    "birthDate": "1982-09-21",
+    "gender": "F",
+    "email": "beatriz.vilar@email.com",
+    "phone": "666852741",
+    "address": "Calle Navarra 5, Benicasim",
+    "bloodType": "AB+",
+    "allergies": [
+        "Ibuprofeno"
+    ],
+    "active": true
+}

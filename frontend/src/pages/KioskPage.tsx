@@ -20,13 +20,25 @@ export default function KioskPage() {
         setLoading(true);
 
         try {
-            const found = searchType === 'nhc'
-                ? await getPatientByNhc(searchValue)
-                : await getPatientByDni(searchValue);
+            let resolvedPatient: PatientDto | null = null;
+            let resolvedNhc = searchValue.trim();
 
-            setPatient(found);
+            if (searchType === 'dni') {
+                resolvedPatient = await getPatientByDni(resolvedNhc);
+                resolvedNhc = resolvedPatient.nhc;
+            } else {
+                try {
+                    resolvedPatient = await getPatientByNhc(resolvedNhc);
+                } catch (patientError: any) {
+                    if (patientError?.response?.status !== 404) {
+                        throw patientError;
+                    }
+                }
+            }
 
-            const patientRequests = await getKioskRequestsByNhc(found.nhc);
+            setPatient(resolvedPatient);
+
+            const patientRequests = await getKioskRequestsByNhc(resolvedNhc);
 
             if (patientRequests.length === 0) {
                 setRequests([]);
@@ -37,7 +49,7 @@ export default function KioskPage() {
             setRequests(patientRequests);
             setStep('select');
         } catch (err: any) {
-            if (err?.response?.status === 404) {
+            if (err?.response?.status === 404 && searchType === 'dni') {
                 setError('Paciente no encontrado');
             } else {
                 setError('Error al buscar el paciente o sus solicitudes');
@@ -131,20 +143,29 @@ export default function KioskPage() {
                     </div>
                 )}
 
-                {step === 'select' && patient && (
+                {step === 'select' && (
                     <div className="bg-white rounded-2xl p-6 shadow-2xl">
                         <div className="text-center mb-6">
                             <p className="text-gray-500 text-sm">Bienvenido/a</p>
-                            <h2 className="font-bold text-gray-800 text-xl">
-                                {patient.fullName || `${patient.firstName} ${patient.lastName}`.trim()}
-                            </h2>
-                            <div className="mt-2 space-y-1 text-sm text-gray-400">
-                                <p>NHC: {patient.nhc}</p>
-                                <p>DNI: {patient.dni}</p>
-                                {patient.birthDate && <p>Nacimiento: {patient.birthDate}</p>}
-                                {patient.phone && <p>Telefono: {patient.phone}</p>}
-                                {patient.email && <p>Email: {patient.email}</p>}
-                            </div>
+                            {patient ? (
+                                <>
+                                    <h2 className="font-bold text-gray-800 text-xl">
+                                        {patient.fullName || `${patient.firstName} ${patient.lastName}`.trim()}
+                                    </h2>
+                                    <div className="mt-2 space-y-1 text-sm text-gray-400">
+                                        <p>NHC: {patient.nhc}</p>
+                                        <p>DNI: {patient.dni}</p>
+                                        {patient.birthDate && <p>Nacimiento: {patient.birthDate}</p>}
+                                        {patient.phone && <p>Telefono: {patient.phone}</p>}
+                                        {patient.email && <p>Email: {patient.email}</p>}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="mt-2 space-y-1 text-sm text-gray-400">
+                                    <p>NHC: {searchValue.trim()}</p>
+                                    <p>No se han podido recuperar los datos demograficos del paciente desde HIS.</p>
+                                </div>
+                            )}
                         </div>
 
                         <p className="text-gray-600 text-sm mb-4 text-center">

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("xppen-bridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+32075d5793bd1a0cc4007db9618d504e4675f81c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5a433ceab7413488764f61478dbee1b90887de74")]
 [assembly: System.Reflection.AssemblyProductAttribute("xppen-bridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("xppen-bridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

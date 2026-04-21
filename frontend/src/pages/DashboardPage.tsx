@@ -17,7 +17,7 @@ export default function DashboardPage() {
     const isProfessional = hasRole('PROFESSIONAL');
 
     useEffect(() => {
-        if (!isProfessional || !user?.serviceCode) {
+        if (!isProfessional || !user?.serviceCode || !user?.dni) {
             return;
         }
 
@@ -36,7 +36,7 @@ export default function DashboardPage() {
         };
 
         loadAgendas();
-    }, [isProfessional, user?.serviceCode]);
+    }, [isProfessional, user?.serviceCode, user?.dni]);
 
     useEffect(() => {
         if (!selectedAgenda) {
@@ -136,6 +136,11 @@ export default function DashboardPage() {
                                 {!user?.serviceCode && (
                                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                                         Tu usuario no tiene especialidad o servicio asignado.
+                                    </div>
+                                )}
+                                {user?.serviceCode && !user?.dni && (
+                                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                        Tu usuario no tiene DNI configurado y no puede consultar citas en ApiKewan.
                                     </div>
                                 )}
                                 {agendaError && (

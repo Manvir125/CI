@@ -16,6 +16,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByUsername(String username);
 
+    boolean existsByDni(String dni);
+
+    boolean existsByDniAndIdNot(String dni, Long id);
+
+    Optional<User> findByDni(String dni);
+
     Optional<User> findByServiceCode(String serviceCode);
 
     @Query("""

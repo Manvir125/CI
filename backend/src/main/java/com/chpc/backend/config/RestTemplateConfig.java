@@ -12,10 +12,14 @@ import java.time.Duration;
 public class RestTemplateConfig {
 
     @Value("${his.timeout-ms:5000}")
-    private int timeoutMs;
+    private int hisTimeoutMs;
+
+    @Value("${apikewan.timeout-ms:5000}")
+    private int apiKewanTimeoutMs;
 
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        int timeoutMs = Math.max(hisTimeoutMs, apiKewanTimeoutMs);
         return builder
                 .connectTimeout(Duration.ofMillis(timeoutMs))
                 .readTimeout(Duration.ofMillis(timeoutMs))

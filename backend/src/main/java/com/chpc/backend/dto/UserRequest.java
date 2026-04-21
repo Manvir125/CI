@@ -26,4 +26,7 @@ public class UserRequest {
     private Set<String> roles;
 
     private String serviceCode;
+
+    @Size(max = 32, message = "El DNI no puede superar 32 caracteres")
+    private String dni;
 }

@@ -22,6 +22,7 @@ export default function NewUserPage() {
         email: '',
         password: '',
         serviceCode: '',
+        dni: '',
     });
 
     const [selectedRoles, setSelectedRoles] = useState<string[]>(['PROFESSIONAL']);
@@ -41,7 +42,12 @@ export default function NewUserPage() {
         setLoading(true);
         setError('');
         try {
-            await createUser({ ...form, roles: selectedRoles });
+            await createUser({
+                ...form,
+                roles: selectedRoles,
+                dni: form.dni || undefined,
+                serviceCode: form.serviceCode || undefined,
+            });
             navigate('/users');
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Error al crear el usuario');
@@ -52,7 +58,6 @@ export default function NewUserPage() {
 
     return (
         <div className="min-h-screen bg-gray-100">
-
             <nav className="bg-emerald-700 text-white px-6 py-4 flex items-center gap-3">
                 <button
                     onClick={() => navigate('/users')}
@@ -66,8 +71,6 @@ export default function NewUserPage() {
 
             <main className="p-6 max-w-lg mx-auto">
                 <form onSubmit={handleSubmit} className="space-y-6">
-
-                    {/* Datos personales */}
                     <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-800 text-lg">Datos personales</h2>
 
@@ -79,9 +82,8 @@ export default function NewUserPage() {
                                 type="text"
                                 value={form.fullName}
                                 onChange={e => setForm({ ...form, fullName: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Dra. Ana García López"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Dra. Ana Garcia Lopez"
                                 required
                             />
                         </div>
@@ -94,8 +96,7 @@ export default function NewUserPage() {
                                 type="text"
                                 value={form.username}
                                 onChange={e => setForm({ ...form, username: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 placeholder="ana.garcia"
                                 required
                             />
@@ -109,8 +110,7 @@ export default function NewUserPage() {
                                 type="email"
                                 value={form.email}
                                 onChange={e => setForm({ ...form, email: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 placeholder="ana.garcia@chpc.es"
                                 required
                             />
@@ -124,45 +124,43 @@ export default function NewUserPage() {
                                 type="password"
                                 value={form.password}
                                 onChange={e => setForm({ ...form, password: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Mínimo 8 caracteres"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Minimo 8 caracteres"
                                 required
                                 minLength={8}
                             />
                         </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Confirmar contraseña *
+                                DNI profesional
                             </label>
                             <input
-                                type="password"
-                                value={form.password}
-                                onChange={e => setForm({ ...form, password: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Mínimo 8 caracteres"
-                                required
-                                minLength={8}
+                                type="text"
+                                value={form.dni}
+                                onChange={e => setForm({ ...form, dni: e.target.value.toUpperCase() })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Ej: 48581393B"
                             />
+                            <p className="text-xs text-gray-400 mt-1">
+                                Necesario para consultar las citas del profesional en ApiKewan.
+                            </p>
                         </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Código de servicio
+                                Codigo de servicio
                             </label>
                             <input
                                 type="text"
                                 value={form.serviceCode}
                                 onChange={e => setForm({ ...form, serviceCode: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Ej: CIR"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Ej: 138"
                             />
                         </div>
-
                     </div>
 
-                    {/* Roles */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
                         <h2 className="font-semibold text-gray-800 text-lg mb-4">
                             Roles asignados *
@@ -171,9 +169,7 @@ export default function NewUserPage() {
                             {ALL_ROLES.map(role => (
                                 <label
                                     key={role}
-                                    className="flex items-center gap-3 cursor-pointer p-3
-                             border border-gray-200 rounded-lg hover:bg-gray-50
-                             transition-colors"
+                                    className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     <input
                                         type="checkbox"
@@ -193,8 +189,7 @@ export default function NewUserPage() {
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700
-                            px-4 py-3 rounded-lg text-sm">
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                             {error}
                         </div>
                     )}
@@ -203,16 +198,14 @@ export default function NewUserPage() {
                         <button
                             type="button"
                             onClick={() => navigate('/users')}
-                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
-                         hover:bg-gray-50 transition-colors"
+                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
-                         hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                         >
                             {loading ? 'Creando...' : 'Crear usuario'}
                         </button>

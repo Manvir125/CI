@@ -67,6 +67,18 @@ his:
   base-url: ${HIS_BASE_URL:http://localhost:9090}
   timeout-ms: 5000
 
+apikewan:
+  enabled: ${APIKEWAN_ENABLED:false}
+  base-url: ${APIKEWAN_BASE_URL:http://127.0.0.1:5298}
+  server-id: ${APIKEWAN_SERVER_ID:}
+  issuer: ${APIKEWAN_ISSUER:}
+  kid: ${APIKEWAN_KID:}
+  audience: ${APIKEWAN_AUDIENCE:api-hospital}
+  scope: ${APIKEWAN_SCOPE:citas.read}
+  private-key: ${APIKEWAN_PRIVATE_KEY:}
+  private-key-path: ${APIKEWAN_PRIVATE_KEY_PATH:}
+  timeout-ms: ${APIKEWAN_TIMEOUT_MS:5000}
+
 logging:
   level:
     com.chpc: DEBUG

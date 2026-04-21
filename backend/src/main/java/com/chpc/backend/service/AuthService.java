@@ -75,6 +75,8 @@ public class AuthService {
                 .token(token)
                 .username(user.getUsername())
                 .fullName(user.getFullName())
+                .email(user.getEmail())
+                .dni(user.getDni())
                 .roles(user.getRoles().stream()
                         .map(r -> r.getType().name())
                         .collect(Collectors.toSet()))

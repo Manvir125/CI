@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface HisEpisodeDiagnosisRepository extends JpaRepository<HisEpisodeDiagnosis, Long> {
 
+    java.util.List<HisEpisodeDiagnosis> findByEpisodeEpisodeIdOrderByIdAsc(String episodeId);
+
     @Transactional
     void deleteByEpisodeEpisodeId(String episodeId);
 }

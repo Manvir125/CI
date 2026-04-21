@@ -4,6 +4,8 @@ export interface LoginResponse {
     token: string;
     username: string;
     fullName: string;
+    email: string;
+    dni?: string;
     roles: string[];
     expiresInMs: number;
     serviceCode?: string;
@@ -16,6 +18,8 @@ export interface AuthUser {
     token: string;
     username: string;
     fullName: string;
+    email: string;
+    dni?: string;
     roles: string[];
     serviceCode?: string;
     signatureMethod?: 'TABLET' | 'CERTIFICATE';

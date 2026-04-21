@@ -37,6 +37,8 @@ export default function LoginPage() {
                 token: data.token,
                 username: data.username,
                 fullName: data.fullName,
+                email: data.email,
+                dni: data.dni,
                 roles: data.roles,
                 serviceCode: data.serviceCode,
                 signatureMethod: data.signatureMethod,

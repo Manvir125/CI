@@ -48,6 +48,9 @@ public class User {
     @Column(name = "service_code")
     private String serviceCode;
 
+    @Column(name = "dni", unique = true)
+    private String dni;
+
     public enum SignatureMethod {
         TABLET, CERTIFICATE
     }

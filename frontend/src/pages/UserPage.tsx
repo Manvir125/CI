@@ -135,7 +135,7 @@ export default function UsersPage() {
                                     Usuario
                                 </th>
                                 <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">
-                                    Email
+                                    Contacto
                                 </th>
                                 <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">
                                     Roles
@@ -161,7 +161,9 @@ export default function UsersPage() {
 
                                     {/* Email */}
                                     <td className="px-4 py-3 text-sm text-gray-600">
-                                        {user.email}
+                                        <p>{user.email}</p>
+                                        {user.dni && <p className="text-xs text-gray-400 mt-1">DNI: {user.dni}</p>}
+                                        {user.serviceCode && <p className="text-xs text-gray-400 mt-1">Servicio: {user.serviceCode}</p>}
                                     </td>
 
                                     {/* Roles — modo edición o modo visualización */}

@@ -1,0 +1,6 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS dni VARCHAR(32);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_users_dni
+    ON users (dni)
+    WHERE dni IS NOT NULL;

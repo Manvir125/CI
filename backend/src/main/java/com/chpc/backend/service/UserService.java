@@ -49,6 +49,10 @@ public class UserService {
                         throw new RuntimeException("Ya existe un usuario con ese email");
                 }
 
+                if (hasText(request.getDni()) && userRepository.existsByDni(request.getDni())) {
+                        throw new RuntimeException("Ya existe un usuario con ese DNI");
+                }
+
                 Set<Role> roles = resolveRoles(request.getRoles());
 
                 User user = User.builder()
@@ -59,6 +63,7 @@ public class UserService {
                                 .isActive(true)
                                 .roles(roles)
                                 .serviceCode(request.getServiceCode())
+                                .dni(normalizeBlank(request.getDni()))
                                 .build();
 
                 User saved = userRepository.save(user);
@@ -83,9 +88,14 @@ public class UserService {
                         throw new RuntimeException("Ya existe otro usuario con ese email");
                 }
 
+                if (hasText(request.getDni()) && userRepository.existsByDniAndIdNot(request.getDni(), id)) {
+                        throw new RuntimeException("Ya existe otro usuario con ese DNI");
+                }
+
                 user.setFullName(request.getFullName());
                 user.setEmail(request.getEmail());
                 user.setServiceCode(request.getServiceCode());
+                user.setDni(normalizeBlank(request.getDni()));
                 user.setRoles(resolveRoles(request.getRoles()));
 
                 if (request.getPassword() != null && !request.getPassword().isBlank()) {
@@ -206,6 +216,15 @@ public class UserService {
                                 .lastLogin(user.getLastLogin())
                                 .createdAt(user.getCreatedAt())
                                 .serviceCode(user.getServiceCode())
+                                .dni(user.getDni())
                                 .build();
+        }
+
+        private boolean hasText(String value) {
+                return value != null && !value.isBlank();
+        }
+
+        private String normalizeBlank(String value) {
+                return hasText(value) ? value.trim() : null;
         }
 }

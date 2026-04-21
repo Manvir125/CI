@@ -16,4 +16,5 @@ public class UserResponse {
     private LocalDateTime lastLogin;
     private LocalDateTime createdAt;
     private String serviceCode;
+    private String dni;
 }

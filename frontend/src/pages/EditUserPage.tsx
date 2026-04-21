@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUser, updateUser } from '../api/user';
+import { useAuth } from '../context/AuthContext';
 
 const ALL_ROLES = ['ADMIN', 'PROFESSIONAL', 'ADMINISTRATIVE', 'SUPERVISOR'];
 
@@ -12,6 +13,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function EditUserPage() {
+    const { user: currentUser, updateSessionUser } = useAuth();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -23,6 +25,7 @@ export default function EditUserPage() {
         email: '',
         password: '',
         serviceCode: '',
+        dni: '',
     });
 
     const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -37,6 +40,7 @@ export default function EditUserPage() {
                     email: user.email,
                     password: '',
                     serviceCode: user.serviceCode || '',
+                    dni: user.dni || '',
                 });
                 setSelectedRoles([...user.roles]);
                 setUsername(user.username);
@@ -70,7 +74,18 @@ export default function EditUserPage() {
                 password: form.password || undefined,
                 roles: selectedRoles,
                 serviceCode: form.serviceCode || undefined,
+                dni: form.dni || undefined,
             });
+
+            if (currentUser && currentUser.id === Number(id)) {
+                updateSessionUser({
+                    fullName: form.fullName,
+                    email: form.email,
+                    serviceCode: form.serviceCode || undefined,
+                    dni: form.dni || undefined,
+                });
+            }
+
             navigate('/users');
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Error al actualizar el usuario');
@@ -79,15 +94,16 @@ export default function EditUserPage() {
         }
     };
 
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            <p className="text-gray-400">Cargando usuario...</p>
-        </div>
-    );
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <p className="text-gray-400">Cargando usuario...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-100">
-
             <nav className="bg-emerald-700 text-white px-6 py-4 flex items-center gap-3">
                 <button
                     onClick={() => navigate('/users')}
@@ -96,13 +112,11 @@ export default function EditUserPage() {
                     ← Usuarios
                 </button>
                 <span className="text-emerald-500">|</span>
-                <h1 className="font-bold">Editar Usuario — @{username}</h1>
+                <h1 className="font-bold">Editar Usuario - @{username}</h1>
             </nav>
 
             <main className="p-6 max-w-lg mx-auto">
                 <form onSubmit={handleSubmit} className="space-y-6">
-
-                    {/* Datos personales */}
                     <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-800 text-lg">Datos personales</h2>
 
@@ -114,8 +128,7 @@ export default function EditUserPage() {
                                 type="text"
                                 value={form.fullName}
                                 onChange={e => setForm({ ...form, fullName: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 required
                             />
                         </div>
@@ -128,8 +141,7 @@ export default function EditUserPage() {
                                 type="email"
                                 value={form.email}
                                 onChange={e => setForm({ ...form, email: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 required
                             />
                         </div>
@@ -142,32 +154,45 @@ export default function EditUserPage() {
                                 type="password"
                                 value={form.password}
                                 onChange={e => setForm({ ...form, password: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Dejar vacío para no cambiar"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Dejar vacio para no cambiar"
                                 minLength={8}
                             />
                             <p className="text-xs text-gray-400 mt-1">
-                                Solo se actualizará si introduces una nueva contraseña (mín. 8 caracteres)
+                                Solo se actualizara si introduces una nueva contraseña.
                             </p>
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Código de servicio
+                                DNI profesional
+                            </label>
+                            <input
+                                type="text"
+                                value={form.dni}
+                                onChange={e => setForm({ ...form, dni: e.target.value.toUpperCase() })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Ej: 48581393B"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                                Se usa para recuperar sus citas del dia desde ApiKewan.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Codigo de servicio
                             </label>
                             <input
                                 type="text"
                                 value={form.serviceCode}
                                 onChange={e => setForm({ ...form, serviceCode: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Ej: CIR"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                placeholder="Ej: 138"
                             />
                         </div>
                     </div>
 
-                    {/* Roles */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
                         <h2 className="font-semibold text-gray-800 text-lg mb-4">
                             Roles asignados *
@@ -176,9 +201,7 @@ export default function EditUserPage() {
                             {ALL_ROLES.map(role => (
                                 <label
                                     key={role}
-                                    className="flex items-center gap-3 cursor-pointer p-3
-                             border border-gray-200 rounded-lg hover:bg-gray-50
-                             transition-colors"
+                                    className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     <input
                                         type="checkbox"
@@ -198,8 +221,7 @@ export default function EditUserPage() {
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700
-                            px-4 py-3 rounded-lg text-sm">
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                             {error}
                         </div>
                     )}
@@ -208,16 +230,14 @@ export default function EditUserPage() {
                         <button
                             type="button"
                             onClick={() => navigate('/users')}
-                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
-                         hover:bg-gray-50 transition-colors"
+                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
-                         hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                         >
                             {saving ? 'Guardando...' : 'Guardar cambios'}
                         </button>

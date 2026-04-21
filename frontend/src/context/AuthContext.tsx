@@ -7,6 +7,7 @@ interface AuthContextType {
     loading: boolean;
     loginUser: (userData: AuthUser) => void;
     logoutUser: () => void;
+    updateSessionUser: (partialUser: Partial<AuthUser>) => void;
     hasRole: (role: string) => boolean;
 }
 
@@ -39,6 +40,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
     };
 
+    const updateSessionUser = (partialUser: Partial<AuthUser>) => {
+        if (!user) return;
+        const updatedUser = { ...user, ...partialUser };
+        localStorage.setItem('auth', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+    };
+
     const hasRole = (role: string): boolean => {
         return user?.roles.includes(role) ?? false;
     };
@@ -50,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             loading,
             loginUser,
             logoutUser,
+            updateSessionUser,
             hasRole
         }}>
             {children}

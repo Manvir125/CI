@@ -8,23 +8,23 @@
     "net10.0": []
   },
   "packageFolders": {
-    "C:\\Users\\khals\\.nuget\\packages\\": {},
+    "C:\\Users\\Manvir\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\khals\\Documents\\CI\\xppen-bridge\\xppen-bridge.csproj",
+      "projectUniqueName": "C:\\Users\\Manvir\\Documents\\CI\\xppen-bridge\\xppen-bridge.csproj",
       "projectName": "xppen-bridge",
-      "projectPath": "C:\\Users\\khals\\Documents\\CI\\xppen-bridge\\xppen-bridge.csproj",
-      "packagesPath": "C:\\Users\\khals\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\khals\\Documents\\CI\\xppen-bridge\\obj\\",
+      "projectPath": "C:\\Users\\Manvir\\Documents\\CI\\xppen-bridge\\xppen-bridge.csproj",
+      "packagesPath": "C:\\Users\\Manvir\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Manvir\\Documents\\CI\\xppen-bridge\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\khals\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Manvir\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -51,7 +51,7 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.200"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net10.0": {
@@ -72,7 +72,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",

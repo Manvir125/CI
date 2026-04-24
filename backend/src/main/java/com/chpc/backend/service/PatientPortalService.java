@@ -17,8 +17,8 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -52,7 +52,6 @@ public class PatientPortalService {
     @Value("${app.pdf-path:./pdfs}")
     private String pdfPath;
 
-    // ── Carga el consentimiento por token ────────────────────────────────
     @Transactional
     public PortalConsentDto loadByToken(String rawToken, String ipAddress) {
 
@@ -102,17 +101,28 @@ public class PatientPortalService {
     public void sendVerificationCode(ConsentRequest request, String ipAddress) {
 
         if (request.getPatientPhone() == null || request.getPatientPhone().isBlank()) {
-            throw new RuntimeException("Esta solicitud no tiene teléfono asociado");
+            throw new RuntimeException("Esta solicitud no tiene telefono asociado");
         }
 
-        verificationCodeRepository
+        VerificationCode previousCode = verificationCodeRepository
                 .findTopByConsentRequestIdAndIsValidTrueOrderByCreatedAtDesc(request.getId())
-                .ifPresent(old -> {
-                    old.setIsValid(false);
-                    verificationCodeRepository.save(old);
-                });
+                .orElse(null);
 
         String code = generateCode();
+        String smsBody = String.format(
+                "CHPC - Su codigo de verificacion para el consentimiento " +
+                        "informado es: %s. Valido durante %d minutos.",
+                code, CODE_EXPIRY_MIN);
+
+        boolean sent = smsService.sendSms(request.getPatientPhone(), smsBody);
+        if (!sent) {
+            throw new RuntimeException("No se pudo enviar el codigo SMS. Intentalo de nuevo mas tarde.");
+        }
+
+        if (previousCode != null) {
+            previousCode.setIsValid(false);
+            verificationCodeRepository.save(previousCode);
+        }
 
         VerificationCode verificationCode = VerificationCode.builder()
                 .consentRequest(request)
@@ -122,17 +132,9 @@ public class PatientPortalService {
                 .isValid(true)
                 .attemptCount(0)
                 .build();
-
         verificationCodeRepository.save(verificationCode);
 
-        String smsBody = String.format(
-                "CHPC - Su código de verificación para el consentimiento " +
-                        "informado es: %s. Válido durante %d minutos.",
-                code, CODE_EXPIRY_MIN);
-
-        boolean sent = smsService.sendSms(request.getPatientPhone(), smsBody);
-        log.info("Código SMS {} enviado a {}: {}",
-                code, request.getPatientPhone(), sent ? "OK" : "ERROR");
+        log.info("Codigo SMS {} enviado a {}: {}", code, request.getPatientPhone(), "OK");
     }
 
     @Transactional
@@ -150,32 +152,34 @@ public class PatientPortalService {
         VerificationCode verCode = verificationCodeRepository
                 .findTopByConsentRequestIdAndIsValidTrueOrderByCreatedAtDesc(request.getId())
                 .orElseThrow(() -> new RuntimeException(
-                        "No hay código activo. Solicita uno nuevo."));
-
-        verCode.setAttemptCount(verCode.getAttemptCount() + 1);
-        verificationCodeRepository.save(verCode);
-
-        if (verCode.getAttemptCount() > MAX_ATTEMPTS) {
-            verCode.setIsValid(false);
-            token.setIsValid(false);
-            tokenRepository.save(token);
-            verificationCodeRepository.save(verCode);
-            throw new RuntimeException(
-                    "Demasiados intentos fallidos. El enlace ha sido bloqueado.");
-        }
+                        "No hay codigo activo. Solicita uno nuevo."));
 
         if (verCode.isExpired()) {
             verCode.setIsValid(false);
             verificationCodeRepository.save(verCode);
             throw new RuntimeException(
-                    "El código ha expirado. Solicita uno nuevo.");
+                    "El codigo ha expirado. Solicita uno nuevo.");
         }
 
-        boolean success = verCode.getCode().equals(code.trim());
+        String submittedCode = code == null ? "" : code.trim();
+        boolean success = verCode.getCode().equals(submittedCode);
 
         if (success) {
             verCode.setUsedAt(LocalDateTime.now());
             verCode.setIsValid(false);
+            verificationCodeRepository.save(verCode);
+        } else {
+            verCode.setAttemptCount(verCode.getAttemptCount() + 1);
+
+            if (verCode.getAttemptCount() >= MAX_ATTEMPTS) {
+                verCode.setIsValid(false);
+                token.setIsValid(false);
+                tokenRepository.save(token);
+                verificationCodeRepository.save(verCode);
+                throw new RuntimeException(
+                        "Demasiados intentos fallidos. El enlace ha sido bloqueado.");
+            }
+
             verificationCodeRepository.save(verCode);
         }
 
@@ -272,9 +276,8 @@ public class PatientPortalService {
                 eventRepository.saveAll(signatureEvents);
             }
 
-            // Genera el PDF sellado siempre, independientemente de si es firmado o rechazado
             try {
-                log.info("=== PDF: Iniciando generación para solicitud {}", request.getId());
+                log.info("=== PDF: Iniciando generacion para solicitud {}", request.getId());
                 log.info("=== PDF: Ruta de firmas: {}", signaturesPath);
                 log.info("=== PDF: Ruta de PDFs: {}", pdfPath);
                 log.info("=== PDF: Imagen de firma path: {}", capture.getSignatureImagePath());
@@ -296,7 +299,7 @@ public class PatientPortalService {
                 }
 
             } catch (Exception e) {
-                log.error("=== PDF: Error completo: ", e); // stack trace completo
+                log.error("=== PDF: Error completo: ", e);
             }
 
             request.setStatus(isSigning ? "SIGNED" : "REJECTED");
@@ -312,7 +315,7 @@ public class PatientPortalService {
 
     private SignToken findValidToken(String rawToken) {
         SignToken token = tokenRepository.findByTokenHashAndIsValidTrue(rawToken)
-                .orElseThrow(() -> new RuntimeException("Token inválido o expirado"));
+                .orElseThrow(() -> new RuntimeException("Token invalido o expirado"));
         if (token.isExpired()) {
             token.setIsValid(false);
             tokenRepository.save(token);
@@ -362,13 +365,14 @@ public class PatientPortalService {
 
     private String generateCode() {
         SecureRandom random = new SecureRandom();
-        int code = 100000 + random.nextInt(900000);
-        return String.valueOf(code);
+        int bound = (int) Math.pow(10, CODE_LENGTH);
+        return String.format("%0" + CODE_LENGTH + "d", random.nextInt(bound));
     }
 
     private String maskPhone(String phone) {
-        if (phone == null || phone.length() < 4)
+        if (phone == null || phone.length() < 4) {
             return "***";
+        }
         return "***" + phone.substring(phone.length() - 4);
     }
 

@@ -114,78 +114,97 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="dashboard-page page-shell">
 
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
-                <div>
-                    <h1 className="font-bold text-lg">CI Digital - CHPC</h1>
-                    <p className="text-emerald-300 text-xs">
-                        Gestion de Consentimientos Informados
-                    </p>
+            <nav className="app-topbar">
+                <div className="app-topbar__brand">
+                    <div className="app-topbar__mark">CI</div>
+                    <div>
+                        <p className="app-topbar__eyebrow">CHPC</p>
+                        <h1 className="app-topbar__title">CI Digital</h1>
+                        <p className="app-topbar__subtitle">
+                            Gestion de consentimientos con una vista clara y tranquila
+                        </p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-sm">
+                <div className="app-topbar__actions">
+                    <span className="app-pill">
                         {user?.fullName}
-                        <span className="ml-2 bg-emerald-600 text-xs px-2 py-0.5 rounded-full">
-                            {user?.roles[0]}
-                        </span>
+                        <span className="status-soft">{user?.roles[0]}</span>
                     </span>
                     <button
                         onClick={handleLogout}
-                        className="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-sm transition-colors"
+                        className="soft-button-secondary text-sm"
                     >
                         Cerrar sesion
                     </button>
                 </div>
             </nav>
 
-            <main className="p-6 max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-800">
-                            Panel principal
-                        </h2>
-                        {isProfessional && (
-                            <p className="text-sm text-gray-500 mt-1">
-                                Flujo rapido para profesionales: selecciona agenda, luego cita y crea el consentimiento.
+            <main className="page-main space-y-6">
+                <section className="dashboard-hero">
+                    <div className="flex items-start justify-between gap-6 flex-wrap">
+                        <div className="max-w-2xl">
+                            <p className="section-kicker">Panel principal</p>
+                            <h2 className="text-3xl font-semibold tracking-tight text-slate-800">
+                                Un panel mas limpio para iniciar consentimientos sin friccion
+                            </h2>
+                            <p className="mt-3 text-sm leading-6 text-slate-500">
+                                {isProfessional
+                                    ? 'Selecciona una agenda, revisa las citas del dia y entra al flujo de solicitud desde un entorno visual mas calmado.'
+                                    : 'Accede a las areas clave del sistema desde una interfaz mas ligera y ordenada.'}
                             </p>
+                        </div>
+                        {isProfessional && (
+                            <button
+                                onClick={() => navigate('/requests')}
+                                className="soft-button-secondary text-sm"
+                            >
+                                Ver todas las solicitudes
+                            </button>
                         )}
                     </div>
-                    {isProfessional && (
-                        <button
-                            onClick={() => navigate('/requests')}
-                            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-                        >
-                            Ver todas las solicitudes
-                        </button>
-                    )}
-                </div>
+                    <div className="dashboard-hero__stats">
+                        <div className="dashboard-hero__stat">
+                            <span className="dashboard-hero__value">{agendas.length}</span>
+                            <span className="dashboard-hero__label">Agendas detectadas</span>
+                        </div>
+                        <div className="dashboard-hero__stat">
+                            <span className="dashboard-hero__value">{appointments.length}</span>
+                            <span className="dashboard-hero__label">Citas en la vista</span>
+                        </div>
+                        <div className="dashboard-hero__stat">
+                            <span className="dashboard-hero__value">{currentSpecialtyLabel || 'Sin dato'}</span>
+                            <span className="dashboard-hero__label">Especialidad activa</span>
+                        </div>
+                    </div>
+                </section>
 
                 {isProfessional && (
                     <section className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6">
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white">
-                                <p className="text-xs uppercase tracking-[0.2em] text-emerald-100">Especialidad</p>
-                                <h3 className="text-lg font-semibold mt-1">
+                        <div className="pastel-panel overflow-hidden">
+                            <div className="px-5 py-4 border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50 to-white">
+                                <p className="section-kicker">Especialidad</p>
+                                <h3 className="text-lg font-semibold mt-1 text-slate-800">
                                     {currentSpecialtyLabel || 'Sin especialidad asignada'}
                                 </h3>
-                                <p className="text-sm text-emerald-100 mt-1">
+                                <p className="text-sm text-slate-500 mt-1">
                                     Agendas disponibles para iniciar consentimientos.
                                 </p>
                             </div>
                             <div className="p-4 space-y-3">
                                 {user?.serviceCode && !user?.dni && (
-                                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    <div className="surface-note surface-note--warn">
                                         Tu usuario no tiene DNI configurado y no puede consultar citas en ApiKewan.
                                     </div>
                                 )}
                                 {!user?.serviceName && user?.dni && (
-                                    <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                                    <div className="surface-note surface-note--info">
                                         La especialidad se actualizara automaticamente desde ApiKewan al cargar las agendas.
                                     </div>
                                 )}
                                 {agendaError && (
-                                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                    <div className="surface-note surface-note--danger">
                                         {agendaError}
                                     </div>
                                 )}
@@ -206,8 +225,8 @@ export default function DashboardPage() {
                                                 type="button"
                                                 onClick={() => setSelectedAgenda(agenda)}
                                                 className={`w-full text-left rounded-2xl border px-4 py-4 transition-all ${isSelected
-                                                    ? 'border-emerald-500 bg-emerald-50 shadow-sm'
-                                                    : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'
+                                                    ? 'border-emerald-300 bg-emerald-50/70 shadow-sm'
+                                                    : 'border-emerald-100/80 bg-white/70 hover:border-emerald-200 hover:bg-emerald-50/40'
                                                     }`}
                                             >
                                                 <div className="flex items-start justify-between gap-3">
@@ -219,7 +238,7 @@ export default function DashboardPage() {
                                                     </div>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${agenda.status === 'ACTIVE'
                                                         ? 'bg-emerald-100 text-emerald-700'
-                                                        : 'bg-gray-200 text-gray-600'
+                                                        : 'bg-slate-100 text-slate-500'
                                                         }`}>
                                                         {agenda.status || 'SIN ESTADO'}
                                                     </span>
@@ -236,10 +255,10 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
+                        <div className="pastel-panel overflow-hidden">
+                            <div className="px-5 py-4 border-b border-emerald-100/70 flex items-center justify-between gap-4 flex-wrap">
                                 <div>
-                                    <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Citas</p>
+                                    <p className="section-kicker">Citas</p>
                                     <h3 className="text-lg font-semibold text-gray-800 mt-1">
                                         {selectedAgenda ? selectedAgenda.name : 'Selecciona una agenda'}
                                     </h3>
@@ -275,7 +294,7 @@ export default function DashboardPage() {
                                         {appointments.map(appointment => (
                                             <div
                                                 key={appointment.episodeId}
-                                                className="rounded-2xl border border-gray-200 p-4 hover:border-emerald-300 transition-colors"
+                                                className="rounded-2xl border border-emerald-100/80 bg-white/75 p-4 hover:border-emerald-300 hover:bg-emerald-50/45 transition-colors"
                                             >
                                                 <div className="flex items-start justify-between gap-4 flex-wrap">
                                                     <div className="space-y-2">
@@ -301,7 +320,7 @@ export default function DashboardPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleCreateConsent(appointment)}
-                                                        className="bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors"
+                                                        className="soft-button text-sm"
                                                     >
                                                         Crear consentimiento
                                                     </button>
@@ -318,8 +337,8 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div
                         onClick={() => navigate('/profile')}
-                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all">
-                        <div className="text-3xl mb-3">Firma</div>
+                        className="dashboard-action-card">
+                        <div className="dashboard-action-card__icon mb-4">Firma</div>
                         <h3 className="font-semibold text-gray-800">Mi firma</h3>
                         <p className="text-gray-500 text-sm mt-1">
                             Gestionar mi firma para los consentimientos
@@ -328,8 +347,8 @@ export default function DashboardPage() {
 
                     <div
                         onClick={() => navigate('/requests')}
-                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all">
-                        <div className="text-3xl mb-3">Solicitudes</div>
+                        className="dashboard-action-card">
+                        <div className="dashboard-action-card__icon mb-4">Solic</div>
                         <h3 className="font-semibold text-gray-800">Solicitudes</h3>
                         <p className="text-gray-500 text-sm mt-1">
                             Gestionar consentimientos y envios
@@ -339,8 +358,8 @@ export default function DashboardPage() {
                     {(hasRole('ADMIN') || hasRole('ADMINISTRATIVE') || hasRole('SUPERVISOR')) && (
                         <div
                             onClick={() => navigate('/templates')}
-                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all">
-                            <div className="text-3xl mb-3">Plantillas</div>
+                            className="dashboard-action-card">
+                            <div className="dashboard-action-card__icon mb-4">Temp</div>
                             <h3 className="font-semibold text-gray-800">Plantillas</h3>
                             <p className="text-gray-500 text-sm mt-1">
                                 Gestionar plantillas de consentimiento
@@ -351,8 +370,8 @@ export default function DashboardPage() {
                     {hasRole('ADMIN') && (
                         <div
                             onClick={() => navigate('/users')}
-                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all">
-                            <div className="text-3xl mb-3">Usuarios</div>
+                            className="dashboard-action-card">
+                            <div className="dashboard-action-card__icon mb-4">Users</div>
                             <h3 className="font-semibold text-gray-800">Usuarios</h3>
                             <p className="text-gray-500 text-sm mt-1">
                                 Gestionar usuarios y roles
@@ -363,8 +382,8 @@ export default function DashboardPage() {
                     {(hasRole('ADMIN') || hasRole('PROFESSIONAL') || hasRole('ADMINISTRATIVE')) && (
                         <div
                             onClick={() => window.open('/kiosk', '_blank')}
-                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all">
-                            <div className="text-3xl mb-3">Kiosco</div>
+                            className="dashboard-action-card">
+                            <div className="dashboard-action-card__icon mb-4">Kiosk</div>
                             <h3 className="font-semibold text-gray-800">Firma presencial</h3>
                             <p className="text-gray-500 text-sm mt-1">
                                 Modo kiosco para firma en el centro
@@ -375,8 +394,8 @@ export default function DashboardPage() {
                     {(hasRole('ADMIN') || hasRole('SUPERVISOR')) && (
                         <div
                             onClick={() => navigate('/audit')}
-                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all">
-                            <div className="text-3xl mb-3">Auditoria</div>
+                            className="dashboard-action-card">
+                            <div className="dashboard-action-card__icon mb-4">Audit</div>
                             <h3 className="font-semibold text-gray-800">Auditoria</h3>
                             <p className="text-gray-500 text-sm mt-1">
                                 Registro de actividad del sistema
@@ -387,8 +406,8 @@ export default function DashboardPage() {
                     {hasRole('PROFESSIONAL') && (
                         <div
                             onClick={() => navigate('/pending-signatures')}
-                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all">
-                            <div className="text-3xl mb-3">Pendientes</div>
+                            className="dashboard-action-card">
+                            <div className="dashboard-action-card__icon mb-4">Pend</div>
                             <h3 className="font-semibold text-gray-800">Firmas pendientes</h3>
                             <p className="text-gray-500 text-sm mt-1">
                                 Firmar consentimientos pendientes

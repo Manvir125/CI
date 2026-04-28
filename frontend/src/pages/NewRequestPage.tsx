@@ -573,25 +573,58 @@ export default function NewRequestPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="new-request-page page-shell">
             {/* Navbar */}
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-3">
+            <nav className="app-topbar">
+                <div className="app-topbar__brand">
+                    <div className="app-topbar__mark">CI</div>
+                    <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(startedFromAgenda ? '/dashboard' : '/requests')}
-                        className="text-emerald-300 hover:text-white text-sm transition-colors"
+                        className="soft-button-ghost text-sm"
                     >
                         {startedFromAgenda ? 'Volver al dashboard' : 'Volver a solicitudes'}
                     </button>
-                    <span className="text-emerald-500">|</span>
-                    <h1 className="font-bold">Nueva Solicitud de Consentimiento</h1>
+                        <div>
+                            <p className="app-topbar__eyebrow">Solicitud</p>
+                            <h1 className="app-topbar__title">Nueva solicitud de consentimiento</h1>
+                        </div>
+                    </div>
                 </div>
             </nav>
 
-            <main className="p-6 max-w-3xl mx-auto">
+            <main className="page-main max-w-6xl">
+                <section className="request-hero mb-6">
+                    <div className="flex items-start justify-between gap-6 flex-wrap">
+                        <div className="max-w-2xl">
+                            <p className="section-kicker">Flujo guiado</p>
+                            <h2 className="text-3xl font-semibold tracking-tight text-slate-800">
+                                Crea la solicitud con una lectura mas limpia y pasos mejor marcados
+                            </h2>
+                            <p className="mt-3 text-sm leading-6 text-slate-500">
+                                Busca al paciente, confirma el episodio correcto y prepara el envio o la firma presencial
+                                sin alterar el comportamiento actual del formulario.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="request-hero__stats">
+                        <div className="request-hero__stat">
+                            <span className="request-hero__value">{patient ? '1' : '0'}</span>
+                            <span className="request-hero__label">Paciente seleccionado</span>
+                        </div>
+                        <div className="request-hero__stat">
+                            <span className="request-hero__value">{episodes.length}</span>
+                            <span className="request-hero__label">Episodios cargados</span>
+                        </div>
+                        <div className="request-hero__stat">
+                            <span className="request-hero__value">{templates.length}</span>
+                            <span className="request-hero__label">Plantillas disponibles</span>
+                        </div>
+                    </div>
+                </section>
 
                 {/* Indicador de pasos */}
-                <div className="flex items-center mb-8">
+                <div className="step-strip">
                     {(['search', 'episodes', 'configure'] as Step[]).map((s, i) => {
                         const labels = ['Buscar paciente', 'Seleccionar episodio', 'Configurar envio'];
                         const isActive = step === s;
@@ -599,16 +632,14 @@ export default function NewRequestPage() {
                             .indexOf(step) > i;
                         return (
                             <div key={s} className="flex items-center">
-                                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm
-                  ${isActive ? 'bg-emerald-700 text-white font-medium' :
-                                        isCompleted ? 'bg-green-100 text-green-700' :
-                                            'bg-gray-200 text-gray-500'}`}>
+                                <div className={`step-pill text-sm ${isActive ? 'step-pill--active font-medium' :
+                                        isCompleted ? 'step-pill--done' :
+                                            ''}`}>
                                     <span>{i + 1}</span>
                                     <span className="hidden sm:block">{labels[i]}</span>
                                 </div>
                                 {i < 2 && (
-                                    <div className={`h-0.5 w-8 mx-1
-                    ${isCompleted ? 'bg-green-400' : 'bg-gray-300'}`} />
+                                    <div className="step-link mx-2" />
                                 )}
                             </div>
                         );
@@ -616,8 +647,7 @@ export default function NewRequestPage() {
                 </div>
 
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700
-                          px-4 py-3 rounded-lg mb-4 text-sm flex justify-between">
+                    <div className="surface-note surface-note--danger mb-4 flex justify-between gap-3">
                         <span>{error}</span>
                         <button onClick={() => setError('')} className="font-bold">x</button>
                     </div>
@@ -625,7 +655,7 @@ export default function NewRequestPage() {
 
                 {/* PASO 1: Busqueda */}
                 {step === 'search' && (
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <div className="pastel-card p-6">
                         <h2 className="font-semibold text-gray-800 text-lg mb-6">
                             Buscar paciente
                         </h2>
@@ -672,8 +702,7 @@ export default function NewRequestPage() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="bg-emerald-900 text-white px-6 py-2 rounded-lg
-                               hover:bg-emerald-800 disabled:opacity-50 transition-colors"
+                                        className="soft-button disabled:opacity-50"
                                     >
                                         {loading ? '...' : 'Buscar'}
                                     </button>
@@ -688,8 +717,7 @@ export default function NewRequestPage() {
                     <div className="space-y-4">
 
                         {/* Ficha del paciente */}
-                        <div className="bg-white rounded-xl p-5 shadow-sm border-l-4
-                            border-emerald-700">
+                        <div className="pastel-card p-5 border-l-4 border-emerald-300">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="font-bold text-gray-800 text-lg">
@@ -715,7 +743,7 @@ export default function NewRequestPage() {
                                 </div>
                                 <button
                                     onClick={() => { setStep('search'); setPatient(null); }}
-                                    className="text-gray-400 hover:text-gray-600 text-sm"
+                                    className="text-gray-400 hover:text-emerald-700 text-sm"
                                 >
                                     Cambiar
                                 </button>
@@ -723,7 +751,7 @@ export default function NewRequestPage() {
                         </div>
 
                         {/* Episodios activos */}
-                        <div className="bg-white rounded-xl p-6 shadow-sm">
+                        <div className="pastel-card p-6">
                             <h2 className="font-semibold text-gray-800 text-lg mb-4">
                                 Episodios activos ({episodes.length})
                             </h2>
@@ -738,8 +766,8 @@ export default function NewRequestPage() {
                                         <div
                                             key={ep.episodeId}
                                             onClick={() => handleSelectEpisode(ep)}
-                                            className="border border-gray-200 rounded-lg p-4 cursor-pointer
-                                 hover:border-emerald-400 hover:bg-emerald-50 transition-all"
+                                            className="border border-emerald-100/80 bg-white/70 rounded-2xl p-4 cursor-pointer
+                                 hover:border-emerald-300 hover:bg-emerald-50/55 transition-all"
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -774,7 +802,7 @@ export default function NewRequestPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
 
                         {/* Resumen */}
-                        <div className="bg-white rounded-xl p-5 shadow-sm">
+                        <div className="pastel-card p-5">
                             <h2 className="font-semibold text-gray-800 text-lg mb-3">
                                 Resumen de la solicitud
                             </h2>
@@ -846,7 +874,7 @@ export default function NewRequestPage() {
                         </div>
 
                         {/* Plantilla Principal */}
-                        <div className="bg-white rounded-xl p-6 shadow-sm space-y-3">
+                        <div className="pastel-card p-6 space-y-3">
                             <h2 className="font-semibold text-gray-800 text-lg">
                                 Consentimiento Principal *
                             </h2>
@@ -894,7 +922,7 @@ export default function NewRequestPage() {
                                                     </div>
                                                     <div className="pt-2">
                                                         {editingTemplateId === t.id ? (
-                                                            <div className="border border-emerald-200 rounded-lg p-3 bg-slate-50 mt-2 shadow-sm">
+                                                            <div className="template-editor-shell border border-emerald-200 rounded-2xl p-3 mt-2 shadow-sm">
                                                                 <div className="flex justify-between items-center mb-2">
                                                                     <label className="block text-sm font-semibold text-gray-800">
                                                                         Editando plantilla...
@@ -923,7 +951,7 @@ export default function NewRequestPage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setEditingTemplateId(t.id)}
-                                                                className="mt-1 w-full bg-gray-50 border border-gray-300 border-dashed text-gray-600 py-3 rounded-lg text-sm hover:bg-gray-100 hover:text-gray-800 transition-colors flex items-center justify-center gap-2"
+                                                                className="soft-button-ghost mt-1 w-full text-sm flex items-center justify-center gap-2"
                                                             >
                                                                 <span>Editar</span>
                                                                 {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar texto de la plantilla"}
@@ -938,7 +966,7 @@ export default function NewRequestPage() {
                         </div>
 
                         {/* Plantillas Secundarias */}
-                        <div className="bg-white rounded-xl p-6 shadow-sm space-y-3">
+                        <div className="pastel-card p-6 space-y-3">
                             <h2 className="font-semibold text-gray-800 text-lg">
                                 Consentimientos Adicionales
                             </h2>
@@ -1014,7 +1042,7 @@ export default function NewRequestPage() {
                                                     </div>
                                                     <div className="pt-2">
                                                         {editingTemplateId === t.id ? (
-                                                            <div className="border border-emerald-200 rounded-lg p-3 bg-slate-50 mt-2 shadow-sm">
+                                                            <div className="template-editor-shell border border-emerald-200 rounded-2xl p-3 mt-2 shadow-sm">
                                                                 <div className="flex justify-between items-center mb-2">
                                                                     <label className="block text-sm font-semibold text-gray-800">
                                                                         Editando plantilla...
@@ -1043,7 +1071,7 @@ export default function NewRequestPage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setEditingTemplateId(t.id)}
-                                                                className="mt-1 w-full bg-gray-50 border border-gray-300 border-dashed text-gray-600 py-3 rounded-lg text-sm hover:bg-gray-100 hover:text-gray-800 transition-colors flex items-center justify-center gap-2"
+                                                                className="soft-button-ghost mt-1 w-full text-sm flex items-center justify-center gap-2"
                                                             >
                                                                 <span>Editar</span>
                                                                 {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar texto de la plantilla"}
@@ -1058,7 +1086,7 @@ export default function NewRequestPage() {
                         </div>
 
                         {/* Canal y datos de contacto */}
-                        <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
+                        <div className="pastel-card p-6 space-y-4">
                             <h2 className="font-semibold text-gray-800 text-lg">
                                 Canal de firma
                             </h2>
@@ -1157,16 +1185,14 @@ export default function NewRequestPage() {
                             <button
                                 type="button"
                                 onClick={() => startedFromAgenda ? navigate('/dashboard') : setStep('episodes')}
-                                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
-                           hover:bg-gray-50 transition-colors"
+                                className="soft-button-secondary"
                             >
                                 {startedFromAgenda ? 'Volver al dashboard' : 'Atras'}
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
-                           hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                                className="soft-button disabled:opacity-50"
                             >
                                 {loading ? 'Creando...' :
                                     channel === 'REMOTE' && sendNow

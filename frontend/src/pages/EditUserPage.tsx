@@ -100,28 +100,37 @@ export default function EditUserPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="page-loading">
                 <p className="text-gray-400">Cargando usuario...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex items-center gap-3">
+        <div className="page-shell">
+            <nav className="app-topbar">
                 <button
                     onClick={() => navigate('/users')}
-                    className="text-emerald-300 hover:text-white text-sm transition-colors"
+                    className="soft-button-ghost text-sm"
                 >
                     ← Usuarios
                 </button>
-                <span className="text-emerald-500">|</span>
+                <span className="text-emerald-200">|</span>
                 <h1 className="font-bold">Editar Usuario - @{username}</h1>
             </nav>
 
-            <main className="p-6 max-w-lg mx-auto">
+            <main className="page-main max-w-3xl space-y-6">
+                <section className="page-hero-lite">
+                    <div>
+                        <p className="section-kicker">Edición</p>
+                        <h2 className="page-hero-lite__title">Ajusta el perfil y conserva el contexto del usuario</h2>
+                        <p className="page-hero-lite__text">
+                            Modifica identidad, contraseña, servicio y permisos desde una composición más ordenada.
+                        </p>
+                    </div>
+                </section>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
+                    <div className="soft-form-card space-y-4">
                         <h2 className="font-semibold text-gray-800 text-lg">Datos personales</h2>
 
                         <div>
@@ -209,7 +218,7 @@ export default function EditUserPage() {
                         )}
                     </div>
 
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <div className="soft-form-card">
                         <h2 className="font-semibold text-gray-800 text-lg mb-4">
                             Roles asignados *
                         </h2>
@@ -237,7 +246,7 @@ export default function EditUserPage() {
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                        <div className="surface-note surface-note--danger text-sm">
                             {error}
                         </div>
                     )}
@@ -246,14 +255,14 @@ export default function EditUserPage() {
                         <button
                             type="button"
                             onClick={() => navigate('/users')}
-                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                            className="soft-button-secondary"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                            className="soft-button disabled:opacity-50"
                         >
                             {saving ? 'Guardando...' : 'Guardar cambios'}
                         </button>

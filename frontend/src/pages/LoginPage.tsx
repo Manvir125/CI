@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     if (authLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="page-loading">
                 <p className="text-gray-400">Cargando...</p>
             </div>
         );
@@ -52,13 +52,10 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-            <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+        <div className="login-shell">
+            <div className="login-card">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-emerald-700 rounded-full flex items-center
-                          justify-center mx-auto mb-4">
-                        <span className="text-white text-2xl font-bold">CI</span>
-                    </div>
+                    <div className="login-mark">CI</div>
                     <h1 className="text-2xl font-bold text-gray-800">
                         Consentimientos Informados
                     </h1>
@@ -99,8 +96,7 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700
-                            px-4 py-3 rounded-lg text-sm">
+                        <div className="surface-note surface-note--danger text-sm">
                             {error}
                         </div>
                     )}
@@ -108,9 +104,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-emerald-700 text-white py-2 rounded-lg font-medium
-                       hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed
-                       transition-colors"
+                        className="soft-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Accediendo...' : 'Iniciar sesión'}
                     </button>

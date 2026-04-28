@@ -26,22 +26,18 @@ export default function KioskSignPage() {
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    // Lectura
     const [hasScrolled, setHasScrolled] = useState(false);
     const [readConfirmed, setReadConfirmed] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
 
-    // Firma
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sigPadRef = useRef<SignaturePad | null>(null);
     const [isSigned, setIsSigned] = useState(false);
     const [penEvents, setPenEvents] = useState<PenEvent[]>([]);
 
-    // XP Pen tablet — last point for line drawing
     const lastPtRef = useRef<{ x: number; y: number } | null>(null);
     const penDownRef = useRef(false);
 
-    // Handler for pen events from the XP Pen bridge
     const handlePenEvent = useCallback((evt: PenEvent) => {
         setPenEvents(prev => [...prev, evt]);
         const canvas = canvasRef.current;
@@ -92,7 +88,6 @@ export default function KioskSignPage() {
         enabled: true,
     });
 
-    // Rechazo
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
 
@@ -103,7 +98,6 @@ export default function KioskSignPage() {
     const resolvedProcedureName = consent?.procedureName || selectedRequest?.templateName || 'Consentimiento';
     const resolvedProfessionalName = consent?.professionalName || selectedRequest?.professionalName || 'Profesional';
 
-    // ── Carga el token de kiosco y luego el consentimiento ─────────────────
     useEffect(() => {
         const load = async () => {
             try {
@@ -112,7 +106,6 @@ export default function KioskSignPage() {
                 const data = await loadConsent(rawToken);
                 setConsent(data);
 
-                // Verifica si el contenido necesita scroll
                 setTimeout(() => {
                     if (contentRef.current) {
                         const el = contentRef.current;
@@ -131,7 +124,6 @@ export default function KioskSignPage() {
         load();
     }, [requestId]);
 
-    // ── Inicializa SignaturePad ─────────────────────────────────────────────
     useEffect(() => {
         if (step === 'sign' && canvasRef.current) {
             sigPadRef.current = new SignaturePad(canvasRef.current, {
@@ -149,9 +141,8 @@ export default function KioskSignPage() {
                 sigPadRef.current.off();
             }
         }
-    }, [step]);
+    }, [step, xppenDevice.connected]);
 
-    // ── Toggle signature_pad on/off and block global gestures ──────────
     useEffect(() => {
         const preventGlobal = (e: TouchEvent) => {
             if (e.touches.length > 1 || (e.type === 'touchmove' && step === 'sign')) {
@@ -178,7 +169,6 @@ export default function KioskSignPage() {
         };
     }, [xppenDevice.connected, step]);
 
-    // ── Detecta scroll al cambiar al paso read ─────────────────────────────
     useEffect(() => {
         if (step === 'read' && contentRef.current) {
             const el = contentRef.current;
@@ -216,7 +206,7 @@ export default function KioskSignPage() {
             const imageBase64 = canvasRef.current.toDataURL('image/png');
             const confirmation = isRejecting ? 'REJECTED' : 'SIGNED';
             await submitSignature(token, imageBase64, readConfirmed, confirmation, isRejecting ? rejectReason : undefined, penEvents);
-            
+
             if (isRejecting) {
                 setStep('rejected');
             } else {
@@ -229,142 +219,130 @@ export default function KioskSignPage() {
         }
     };
 
-
-    // ── Pantallas de estado ────────────────────────────────────────────────
-    if (step === 'loading') return (
-        <div className="min-h-screen bg-emerald-950 flex items-center justify-center">
-            <div className="text-center">
-                <div className="w-12 h-12 border-4 border-white border-t-transparent
-                        rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-emerald-300">Cargando documento...</p>
-            </div>
-        </div>
-    );
-
-    if (step === 'error') return (
-        <div className="min-h-screen bg-emerald-950 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
-                <div className="text-5xl mb-4">❌</div>
-                <h1 className="text-xl font-bold text-gray-800 mb-3">Error</h1>
-                <p className="text-gray-500 text-sm mb-6">{error}</p>
-                <button
-                    onClick={() => navigate('/kiosk')}
-                    className="w-full bg-emerald-900 text-white py-3 rounded-xl font-medium"
-                >
-                    Volver al inicio
-                </button>
-            </div>
-        </div>
-    );
-
-    if (step === 'confirmed') return (
-        <div className="min-h-screen bg-emerald-950 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center
-                        justify-center mx-auto mb-4">
-                    <span className="text-3xl">✅</span>
+    if (step === 'loading') {
+        return (
+            <div className="page-loading">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-[var(--green-strong)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p>Cargando documento...</p>
                 </div>
-                <h1 className="text-xl font-bold text-gray-800 mb-2">
-                    Consentimiento firmado
-                </h1>
-                <p className="text-gray-500 text-sm mb-6">
-                    La firma ha sido registrada correctamente.
-                </p>
-                <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-2 mb-6">
-                    <p className="text-gray-600">
-                        <span className="font-medium">Procedimiento:</span>{' '}
-                        {resolvedProcedureName}
-                    </p>
-                    <p className="text-gray-600">
-                        <span className="font-medium">Profesional:</span>{' '}
-                        {resolvedProfessionalName}
-                    </p>
-                </div>
-                <button
-                    onClick={() => navigate('/kiosk')}
-                    className="w-full bg-emerald-900 text-white py-3 rounded-xl
-                     font-medium hover:bg-emerald-800 transition-colors"
-                >
-                    Finalizar
-                </button>
             </div>
-        </div>
-    );
+        );
+    }
 
-    if (step === 'rejected') return (
-        <div className="min-h-screen bg-emerald-950 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
-                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center
-                        justify-center mx-auto mb-4">
-                    <span className="text-3xl">⚠️</span>
+    if (step === 'error') {
+        return (
+            <div className="center-stage">
+                <div className="soft-modal-card max-w-md w-full text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-3xl">!</div>
+                    <h1 className="text-2xl font-semibold text-[var(--text-main)]">No se pudo abrir el consentimiento</h1>
+                    <p className="mt-3 text-sm text-[var(--text-soft)]">{error}</p>
+                    <button
+                        onClick={() => navigate('/kiosk')}
+                        className="soft-button mt-6 w-full"
+                    >
+                        Volver al inicio
+                    </button>
                 </div>
-                <h1 className="text-xl font-bold text-gray-800 mb-2">
-                    Consentimiento rechazado
-                </h1>
-                <p className="text-gray-500 text-sm mb-6">
-                    El rechazo ha sido registrado. El equipo médico ha sido notificado.
-                </p>
-                <button
-                    onClick={() => navigate('/kiosk')}
-                    className="w-full bg-emerald-900 text-white py-3 rounded-xl
-                     font-medium hover:bg-emerald-800 transition-colors"
-                >
-                    Finalizar
-                </button>
             </div>
-        </div>
-    );
+        );
+    }
+
+    if (step === 'confirmed') {
+        return (
+            <div className="center-stage">
+                <div className="soft-modal-card max-w-md w-full text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--green-soft)] text-3xl text-[var(--green-strong)]">OK</div>
+                    <h1 className="text-2xl font-semibold text-[var(--text-main)]">Consentimiento firmado</h1>
+                    <p className="mt-3 text-sm text-[var(--text-soft)]">La firma ha sido registrada correctamente.</p>
+                    <div className="soft-list-item mt-5 p-4 text-left text-sm text-[var(--text-soft)] space-y-2">
+                        <p><strong>Procedimiento:</strong> {resolvedProcedureName}</p>
+                        <p><strong>Profesional:</strong> {resolvedProfessionalName}</p>
+                    </div>
+                    <button
+                        onClick={() => navigate('/kiosk')}
+                        className="soft-button mt-6 w-full"
+                    >
+                        Finalizar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (step === 'rejected') {
+        return (
+            <div className="center-stage">
+                <div className="soft-modal-card max-w-md w-full text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-3xl text-amber-700">!</div>
+                    <h1 className="text-2xl font-semibold text-[var(--text-main)]">Consentimiento rechazado</h1>
+                    <p className="mt-3 text-sm text-[var(--text-soft)]">El rechazo ha sido registrado. El equipo medico ha sido notificado.</p>
+                    <button
+                        onClick={() => navigate('/kiosk')}
+                        className="soft-button mt-6 w-full"
+                    >
+                        Finalizar
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-emerald-950">
-
-            {/* Cabecera */}
-            <header className="bg-emerald-900 text-white px-4 py-4 sticky top-0 z-10
-                         flex items-center justify-between">
-                <div>
-                    <p className="text-emerald-300 text-xs">
-                        Consorci Hospitalari Provincial de Castelló
-                    </p>
-                    <h1 className="font-bold text-sm">
-                        Consentimiento Informado — Firma Presencial
-                    </h1>
+        <div className="page-shell">
+            <header className="app-topbar">
+                <div className="app-topbar__brand">
+                    <div className="app-topbar__mark">CH</div>
+                    <div>
+                        <p className="app-topbar__eyebrow">Kiosco Hospitalario</p>
+                        <h1 className="app-topbar__title">Firma presencial asistida</h1>
+                        <p className="app-topbar__subtitle">Lectura, aceptacion y firma del consentimiento</p>
+                    </div>
                 </div>
-                <button
-                    onClick={() => navigate('/kiosk')}
-                    className="text-emerald-300 hover:text-white text-sm transition-colors"
-                >
-                    ✕ Cancelar
-                </button>
+                <div className="app-topbar__actions">
+                    <span className="app-pill">{resolvedPatientName}</span>
+                    <button
+                        onClick={() => navigate('/kiosk')}
+                        className="soft-button-secondary"
+                    >
+                        Cancelar
+                    </button>
+                </div>
             </header>
 
-            <main className="max-w-2xl mx-auto p-4 pb-32">
-
-                {/* ── PASO: Lectura ── */}
+            <main className="page-main max-w-5xl">
                 {step === 'read' && consent && (
-                    <div className="mt-4 space-y-4">
-
-                        {/* Info del procedimiento */}
-                        <div className="bg-white rounded-2xl p-5 shadow-sm">
-                            <h2 className="font-bold text-gray-800 text-lg mb-3">
-                                {consent.templateName}
-                            </h2>
-                            <div className="space-y-1 text-sm text-gray-600">
-                                <p>👤 Paciente: <strong>{resolvedPatientName}</strong></p>
-                                <p>👨‍⚕️ Profesional: <strong>{resolvedProfessionalName}</strong></p>
-                                <p>🏥 Servicio: <strong>{consent.serviceName}</strong></p>
-                                <p>📅 Fecha: <strong>{consent.episodeDate}</strong></p>
-                                {selectedPatient?.nhc && (
-                                    <p>NHC: <strong>{selectedPatient.nhc}</strong></p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Documento */}
-                        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                            <div className="bg-emerald-50 px-5 py-3 border-b border-emerald-100">
-                                <p className="text-emerald-800 text-sm font-medium">
-                                    📄 Lea el documento completo antes de continuar
+                    <div className="space-y-5">
+                        <section className="page-hero-lite">
+                            <div>
+                                <p className="section-kicker">Documento preparado</p>
+                                <h2 className="page-hero-lite__title">{consent.templateName}</h2>
+                                <p className="page-hero-lite__text">
+                                    Revise toda la informacion antes de confirmar. El sistema habilitara la siguiente accion cuando se haya alcanzado el final del documento.
                                 </p>
+                            </div>
+                            <span className="soft-badge">Firma presencial</span>
+                        </section>
+
+                        <section className="soft-list-card">
+                            <div className="grid gap-3 md:grid-cols-2 text-sm text-[var(--text-soft)]">
+                                <div className="soft-list-item p-4">
+                                    <p><strong>Paciente:</strong> {resolvedPatientName}</p>
+                                    <p className="mt-1"><strong>Profesional:</strong> {resolvedProfessionalName}</p>
+                                    <p className="mt-1"><strong>Servicio:</strong> {consent.serviceName}</p>
+                                </div>
+                                <div className="soft-list-item p-4">
+                                    <p><strong>Procedimiento:</strong> {resolvedProcedureName}</p>
+                                    <p className="mt-1"><strong>Fecha:</strong> {consent.episodeDate}</p>
+                                    {selectedPatient?.nhc && <p className="mt-1"><strong>NHC:</strong> {selectedPatient.nhc}</p>}
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="soft-list-card overflow-hidden">
+                            <div className="flex items-center justify-between gap-3 border-b border-[var(--line-soft)] bg-[var(--green-pale)] px-5 py-3">
+                                <p className="font-medium text-[var(--green-strong)]">Lea el documento completo antes de continuar</p>
+                                {!hasScrolled && <span className="soft-badge">Desplazate hasta el final</span>}
                             </div>
 
                             {consent.isGroup && consent.groupDocuments && consent.groupDocuments.length > 0 ? (
@@ -376,12 +354,12 @@ export default function KioskSignPage() {
                                 >
                                     {consent.groupDocuments.map((doc, idx) => (
                                         <div key={idx}>
-                                            <div 
-                                                className="prose prose-sm max-w-none" 
-                                                dangerouslySetInnerHTML={{ __html: doc }} 
+                                            <div
+                                                className="prose prose-sm max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: doc }}
                                             />
-                                            {idx < consent.groupDocuments!.length - 1 && (
-                                                <hr className="my-8 border-t-2 border-emerald-200 border-dashed" />
+                                            {idx < (consent.groupDocuments?.length ?? 0) - 1 && (
+                                                <hr className="my-8 border-t-2 border-dashed border-[var(--line-strong)]" />
                                             )}
                                         </div>
                                     ))}
@@ -397,45 +375,35 @@ export default function KioskSignPage() {
                             )}
 
                             {!hasScrolled && (
-                                <div className="bg-amber-50 px-5 py-3 border-t border-amber-100
-                                text-center">
-                                    <p className="text-amber-700 text-xs">
-                                        ↓ Desplázate hasta el final para continuar
-                                    </p>
+                                <div className="surface-note surface-note--warn rounded-none border-x-0 border-b-0 text-center">
+                                    Desplazate hasta el final para continuar.
                                 </div>
                             )}
-                        </div>
+                        </section>
 
-                        {/* Checkbox */}
-                        <div className={`bg-white rounded-2xl p-5 shadow-sm transition-opacity
-                            ${hasScrolled ? 'opacity-100' : 'opacity-40'}`}>
-                            <label className="flex items-start gap-3 cursor-pointer">
+                        <section className={`soft-form-card transition-opacity ${hasScrolled ? 'opacity-100' : 'opacity-50'}`}>
+                            <label className="flex items-start gap-3 cursor-pointer text-sm text-[var(--text-soft)] leading-relaxed">
                                 <input
                                     type="checkbox"
                                     checked={readConfirmed}
                                     onChange={e => setReadConfirmed(e.target.checked)}
                                     disabled={!hasScrolled}
-                                    className="w-5 h-5 mt-0.5 rounded"
+                                    className="mt-1 h-5 w-5 rounded"
                                 />
-                                <span className="text-sm text-gray-700 leading-relaxed">
-                                    He leído y comprendido el contenido de este documento de
-                                    consentimiento informado y he tenido la oportunidad de
-                                    hacer preguntas sobre el procedimiento.
+                                <span>
+                                    He leido y comprendido el contenido de este documento de consentimiento informado y he tenido la oportunidad de hacer preguntas sobre el procedimiento.
                                 </span>
                             </label>
-                        </div>
+                        </section>
 
-                        <div className="space-y-3">
+                        <div className="grid gap-3 md:grid-cols-2">
                             <button
                                 onClick={() => {
                                     setIsRejecting(false);
                                     setStep('sign');
                                 }}
                                 disabled={!readConfirmed}
-                                className="w-full bg-emerald-900 text-white py-4 rounded-xl
-                           font-semibold text-base hover:bg-emerald-800
-                           disabled:opacity-40 disabled:cursor-not-allowed
-                           transition-colors"
+                                className="soft-button disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Continuar para firmar
                             </button>
@@ -444,9 +412,7 @@ export default function KioskSignPage() {
                                     setIsRejecting(true);
                                     setStep('sign');
                                 }}
-                                className="w-full bg-red-500 border border-red-500 text-white
-                           py-4 rounded-xl font-medium text-base hover:bg-red-600
-                           transition-colors"
+                                className="soft-button-secondary border-rose-200 text-rose-700"
                             >
                                 No deseo firmar este consentimiento
                             </button>
@@ -454,58 +420,49 @@ export default function KioskSignPage() {
                     </div>
                 )}
 
-                {/* ── PASO: Firma ── */}
                 {step === 'sign' && (
-                    <div className="mt-4 space-y-4">
-
-                        <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
-                            <h2 className={`font-bold text-xl mb-2 ${isRejecting ? 'text-red-600' : 'text-gray-800'}`}>
-                                {isRejecting ? 'Rechazo del documento' : 'Firma del documento'}
-                            </h2>
-                            <p className="text-gray-500 text-sm">
-                                {isRejecting 
-                                    ? 'Debe firmar para dejar constancia de que ha declinado este consentimiento.' 
-                                    : 'Dibuja tu firma en el recuadro inferior.'}
-                            </p>
-                        </div>
+                    <div className="space-y-5">
+                        <section className="page-hero-lite">
+                            <div>
+                                <p className="section-kicker">{isRejecting ? 'Rechazo' : 'Firma'}</p>
+                                <h2 className="page-hero-lite__title">
+                                    {isRejecting ? 'Registrar rechazo del documento' : 'Registrar firma del documento'}
+                                </h2>
+                                <p className="page-hero-lite__text">
+                                    {isRejecting
+                                        ? 'Debe firmar para dejar constancia de que ha declinado este consentimiento.'
+                                        : 'Dibuja la firma en el recuadro inferior usando la tableta, el dedo o el raton.'}
+                                </p>
+                            </div>
+                            <span className="soft-badge">{xppenDevice.connected ? 'Tableta conectada' : 'Modo tactil'}</span>
+                        </section>
 
                         {isRejecting && (
-                            <div className="bg-white rounded-2xl p-5 shadow-sm">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Motivo del rechazo (obligatorio):
+                            <section className="soft-form-card">
+                                <label className="block text-sm font-medium text-[var(--text-soft)] mb-2">
+                                    Motivo del rechazo
                                 </label>
                                 <textarea
                                     value={rejectReason}
                                     onChange={e => setRejectReason(e.target.value)}
                                     rows={3}
                                     placeholder="Explique el motivo del rechazo..."
-                                    className="w-full border border-gray-300 rounded-xl px-4 py-3
-                                         text-sm focus:outline-none focus:ring-2
-                                         focus:ring-red-500"
+                                    className="w-full px-4 py-3 text-sm"
                                 />
-                            </div>
+                            </section>
                         )}
 
-                        {/* Tablet status indicator */}
                         {xppenState === 'open' && (
-                            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm ${xppenDevice.connected
-                                ? 'bg-green-50 text-green-700 border border-green-200'
-                                : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                }`}>
-                                <span className={`w-2 h-2 rounded-full ${xppenDevice.connected ? 'bg-green-500' : 'bg-amber-500'
-                                    }`} />
+                            <div className={`surface-note ${xppenDevice.connected ? 'surface-note--success' : 'surface-note--warn'}`}>
                                 {xppenDevice.connected
-                                    ? `✏️ Tableta ${xppenDevice.product ?? 'XP Pen'} conectada — firma con el lápiz`
-                                    : '⚠️ Tableta desconectada — puedes firmar con el dedo o ratón'
-                                }
+                                    ? `Tableta ${xppenDevice.product ?? 'XP Pen'} conectada. Puede firmar con el lapiz.`
+                                    : 'Tableta desconectada. Puede firmar con el dedo o el raton.'}
                             </div>
                         )}
 
-                        {/* Canvas */}
-                        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200
-                              flex justify-between items-center">
-                                <span className="text-sm text-gray-500">Área de firma</span>
+                        <section className="soft-list-card overflow-hidden">
+                            <div className="flex items-center justify-between gap-3 border-b border-[var(--line-soft)] bg-[var(--green-pale)] px-4 py-3">
+                                <span className="text-sm font-medium text-[var(--text-soft)]">Area de firma</span>
                                 <button
                                     onClick={() => {
                                         sigPadRef.current?.clear();
@@ -520,55 +477,45 @@ export default function KioskSignPage() {
                                         setIsSigned(false);
                                         setPenEvents([]);
                                     }}
-                                    className="text-sm text-emerald-600 hover:text-emerald-800"
+                                    className="soft-subtle-button"
                                 >
                                     Borrar
                                 </button>
                             </div>
                             <canvas
                                 ref={canvasRef}
-                                className="w-full touch-none"
+                                className="w-full touch-none bg-white"
                                 style={{ height: '220px', cursor: 'crosshair' }}
                             />
                             {!isSigned && (
-                                <div className="bg-gray-50 px-4 py-2 border-t border-gray-200
-                                text-center">
-                                    <p className="text-gray-400 text-xs">
-                                        {xppenDevice.connected
-                                            ? 'Firma en la tableta con el lápiz'
-                                            : 'Firma aquí con el dedo, ratón o lápiz táctil'
-                                        }
-                                    </p>
+                                <div className="border-t border-[var(--line-soft)] bg-slate-50 px-4 py-3 text-center text-xs text-[var(--text-faint)]">
+                                    {xppenDevice.connected
+                                        ? 'Firma en la tableta con el lapiz.'
+                                        : 'Firma aqui con el dedo, raton o lapiz tactil.'}
                                 </div>
                             )}
-                        </div>
+                        </section>
 
                         {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-700
-                              px-4 py-3 rounded-xl text-sm text-center">
+                            <div className="surface-note surface-note--danger text-center">
                                 {error}
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="grid gap-3 md:grid-cols-2">
                             <button
                                 onClick={handleSign}
                                 disabled={!isSigned || submitting}
-                                className="w-full bg-green-600 text-white py-4 rounded-xl
-                           font-semibold text-base hover:bg-green-500
-                           disabled:opacity-40 disabled:cursor-not-allowed
-                           transition-colors"
+                                className="soft-button disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {submitting ? 'Registrando firma...' : '✅ Confirmar y firmar'}
+                                {submitting ? 'Registrando firma...' : 'Confirmar y firmar'}
                             </button>
                             <button
                                 onClick={() => setStep('read')}
                                 disabled={submitting}
-                                className="w-full bg-white border border-gray-300 text-gray-600
-                           py-3 rounded-xl text-sm hover:bg-gray-50
-                           transition-colors"
+                                className="soft-button-secondary"
                             >
-                                ← Volver al documento
+                                Volver al documento
                             </button>
                         </div>
                     </div>

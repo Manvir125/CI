@@ -83,40 +83,46 @@ export default function RequestsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="page-shell">
             {/* Navbar */}
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+            <nav className="app-topbar">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="text-emerald-300 hover:text-white text-sm transition-colors"
+                        className="soft-button-ghost text-sm"
                     >
                         ← Dashboard
                     </button>
-                    <span className="text-blue-500">|</span>
+                    <span className="text-emerald-200">|</span>
                     <h1 className="font-bold">Gestión de Solicitudes</h1>
                 </div>
                 <button
                     onClick={() => navigate(newRequestTarget)}
-                    className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg
-                       text-sm font-medium transition-colors"
+                    className="soft-button text-sm"
                 >
                     {hasRole('PROFESSIONAL') ? 'Ir a agendas' : '+ Nueva solicitud'}
                 </button>
             </nav>
 
-            <main className="p-6 max-w-6xl mx-auto">
+            <main className="page-main space-y-6">
+                <section className="page-hero-lite">
+                    <div>
+                        <p className="section-kicker">Seguimiento</p>
+                        <h2 className="page-hero-lite__title">Solicitudes activas y su estado</h2>
+                        <p className="page-hero-lite__text">
+                            Filtra, revisa envíos, descarga PDFs y resuelve cancelaciones desde una vista más clara.
+                        </p>
+                    </div>
+                </section>
                 {/* Filtros por estado */}
-                <div className="flex gap-2 mb-6 flex-wrap">
+                <div className="soft-filter-strip">
                     {STATUSES.map(s => (
                         <button
                             key={s.value}
                             onClick={() => { setStatusFilter(s.value); setPage(0); }}
-                            className={`px-4 py-1.5 rounded-full text-sm font-medium
-                          transition-colors border
-                ${statusFilter === s.value
-                                    ? 'bg-emerald-700 text-white border-emerald-700'
-                                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+                            className={`soft-pill-button text-sm ${statusFilter === s.value
+                                    ? 'soft-pill-button--active'
+                                    : ''}`}
                         >
                             {s.label}
                         </button>
@@ -124,8 +130,7 @@ export default function RequestsPage() {
                 </div>
 
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700
-                          px-4 py-3 rounded-lg mb-4 text-sm flex justify-between">
+                    <div className="surface-note surface-note--danger mb-4 text-sm flex justify-between">
                         <span>{error}</span>
                         <button onClick={() => setError('')} className="font-bold">✕</button>
                     </div>
@@ -136,15 +141,14 @@ export default function RequestsPage() {
                         Cargando solicitudes...
                     </div>
                 ) : requests.length === 0 ? (
-                    <div className="bg-white rounded-xl p-16 text-center shadow-sm">
+                    <div className="soft-empty">
                         <p className="text-gray-400 text-lg mb-4">
                             No hay solicitudes
                             {statusFilter ? ` con estado "${statusFilter}"` : ''}
                         </p>
                         <button
                             onClick={() => navigate(newRequestTarget)}
-                            className="bg-emerald-700 text-white px-6 py-2 rounded-lg
-                         hover:bg-emerald-600 transition-colors"
+                            className="soft-button"
                         >
                             {hasRole('PROFESSIONAL') ? 'Ir a agendas' : 'Crear primera solicitud'}
                         </button>
@@ -155,8 +159,7 @@ export default function RequestsPage() {
                             {requests.map(req => (
                                 <div
                                     key={req.id}
-                                    className="bg-white rounded-xl p-5 shadow-sm border border-gray-200
-                             hover:shadow-md transition-shadow"
+                                    className="soft-list-card soft-list-item p-5"
                                 >
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
@@ -215,8 +218,7 @@ export default function RequestsPage() {
                                             {req.status === 'PENDING' && req.channel === 'REMOTE' && (
                                                 <button
                                                     onClick={() => handleSend(req.id)}
-                                                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700
-                                                    px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                    className="soft-subtle-button text-xs"
                                                 >
                                                     Enviar enlace
                                                 </button>
@@ -224,8 +226,7 @@ export default function RequestsPage() {
                                             {req.status === 'SENT' && req.channel === 'REMOTE' && (
                                                 <button
                                                     onClick={() => handleSend(req.id)}
-                                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700
-                                                    px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                    className="soft-button-secondary text-xs px-3 py-1.5"
                                                 >
                                                     Reenviar
                                                 </button>
@@ -277,7 +278,7 @@ export default function RequestsPage() {
             {cancelId && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center
                         justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+                    <div className="soft-modal-card w-full max-w-md">
                         <h3 className="font-bold text-gray-800 text-lg mb-4">
                             Cancelar solicitud
                         </h3>

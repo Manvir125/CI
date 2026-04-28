@@ -50,54 +50,60 @@ export default function TemplatesPage() {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="page-loading">
             <p className="text-gray-500">Cargando plantillas...</p>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="page-shell">
 
             {/* Barra superior */}
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+            <nav className="app-topbar">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="text-emerald-300 hover:text-white text-sm transition-colors"
+                        className="soft-button-ghost text-sm"
                     >
                         ← Dashboard
                     </button>
-                    <span className="text-emerald-500">|</span>
+                    <span className="text-emerald-200">|</span>
                     <h1 className="font-bold">Plantillas de Consentimiento</h1>
                 </div>
                 {canManage && (
                     <button
                         onClick={() => navigate('/templates/new')}
-                        className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg 
-                       text-sm font-medium transition-colors"
+                        className="soft-button text-sm"
                     >
                         + Nueva plantilla
                     </button>
                 )}
             </nav>
 
-            <main className="p-6 max-w-6xl mx-auto">
+            <main className="page-main space-y-6">
+                <section className="page-hero-lite">
+                    <div>
+                        <p className="section-kicker">Biblioteca</p>
+                        <h2 className="page-hero-lite__title">Plantillas listas para reutilizar y versionar</h2>
+                        <p className="page-hero-lite__text">
+                            Mantén el catálogo ordenado, duplica contenido y evoluciona versiones con una presentación más clara.
+                        </p>
+                    </div>
+                </section>
 
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 
-                          px-4 py-3 rounded-lg mb-4 text-sm">
+                    <div className="surface-note surface-note--danger mb-4 text-sm">
                         {error}
                     </div>
                 )}
 
                 {templates.length === 0 ? (
-                    <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+                    <div className="soft-empty">
                         <p className="text-gray-400 text-lg">No hay plantillas activas</p>
                         {canManage && (
                             <button
                                 onClick={() => navigate('/templates/new')}
-                                className="mt-4 bg-emerald-700 text-white px-6 py-2 rounded-lg
-                           hover:bg-emerald-600 transition-colors"
+                                className="soft-button mt-4"
                             >
                                 Crear primera plantilla
                             </button>
@@ -108,8 +114,7 @@ export default function TemplatesPage() {
                         {templates.map(template => (
                             <div
                                 key={template.id}
-                                className="bg-white rounded-xl p-5 shadow-sm border border-gray-200
-                           hover:shadow-md transition-shadow"
+                                className="soft-list-card soft-list-item p-5"
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
@@ -141,15 +146,13 @@ export default function TemplatesPage() {
                                         <div className="flex gap-2 ml-4">
                                             <button
                                                 onClick={() => navigate(`/templates/${template.id}/edit`)}
-                                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700
-                                                px-3 py-1.5 rounded-lg text-sm transition-colors"
+                                                className="soft-subtle-button text-sm"
                                             >
                                                 Editar
                                             </button>
                                             <button
                                                 onClick={() => handleDuplicate(template.id)}
-                                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 
-                                   px-3 py-1.5 rounded-lg text-sm transition-colors"
+                                                className="soft-button-secondary text-sm px-3 py-1.5"
                                             >
                                                 Duplicar
                                             </button>

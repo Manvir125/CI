@@ -85,11 +85,11 @@ export default function AuditPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+        <div className="page-shell">
+            <nav className="app-topbar">
                 <button
                     onClick={() => navigate('/dashboard')}
-                    className="text-emerald-300 hover:text-white text-sm transition-colors"
+                    className="soft-button-ghost text-sm transition-colors"
                 >
                     ← Dashboard
                 </button>
@@ -111,12 +111,21 @@ export default function AuditPage() {
                 </div>
             </nav>
 
-            <main className="p-6 max-w-7xl mx-auto">
+            <main className="page-main space-y-6">
+                <section className="page-hero-lite">
+                    <div>
+                        <p className="section-kicker">Control</p>
+                        <h2 className="page-hero-lite__title">Actividad del sistema con filtros y detalle</h2>
+                        <p className="page-hero-lite__text">
+                            Navega por eventos, filtra actores y exporta evidencia con una lectura más ligera.
+                        </p>
+                    </div>
+                </section>
 
                 {/* Filtros */}
                 <form
                     onSubmit={handleSearch}
-                    className="bg-white rounded-xl p-5 shadow-sm mb-6"
+                    className="soft-form-card mb-6"
                 >
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
@@ -198,15 +207,13 @@ export default function AuditPage() {
                                     setFilterTo('');
                                     setPage(0);
                                 }}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm
-                           text-gray-600 hover:bg-gray-50 transition-colors"
+                                className="soft-button-secondary text-sm px-4 py-2"
                             >
                                 Limpiar
                             </button>
                             <button
                                 type="submit"
-                                className="px-4 py-2 bg-emerald-900 text-white rounded-lg text-sm
-                           hover:bg-emerald-800 transition-colors"
+                                className="soft-button text-sm px-4 py-2"
                             >
                                 Filtrar
                             </button>
@@ -215,18 +222,17 @@ export default function AuditPage() {
                 </form>
 
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700
-                          px-4 py-3 rounded-lg mb-4 text-sm flex justify-between">
+                    <div className="surface-note surface-note--danger mb-4 text-sm flex justify-between">
                         <span>{error}</span>
                         <button onClick={() => setError('')} className="font-bold">✕</button>
                     </div>
                 )}
 
                 {/* Tabla */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="soft-table-card overflow-hidden">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
+                            <tr>
                                 <th className="text-left px-4 py-3 font-semibold text-gray-600
                                text-xs">
                                     Timestamp

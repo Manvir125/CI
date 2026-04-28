@@ -206,40 +206,47 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="page-shell">
             {/* Navbar */}
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+            <nav className="app-topbar">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="text-emerald-300 hover:text-white text-sm transition-colors"
+                        className="soft-button-ghost text-sm"
                     >
                         ← Dashboard
                     </button>
-                    <span className="text-emerald-500">|</span>
+                    <span className="text-emerald-200">|</span>
                     <h1 className="font-bold">Mi perfil</h1>
                 </div>
             </nav>
 
-            <main className="p-6 max-w-2xl mx-auto space-y-6">
+            <main className="page-main max-w-3xl space-y-6">
+                <section className="page-hero-lite">
+                    <div>
+                        <p className="section-kicker">Perfil</p>
+                        <h2 className="page-hero-lite__title">Firma profesional y preferencias personales</h2>
+                        <p className="page-hero-lite__text">
+                            Ajusta tu método de firma y mantén tu trazo o certificado en un entorno más claro y menos denso.
+                        </p>
+                    </div>
+                </section>
 
                 {message && (
-                    <div className="bg-green-50 border border-green-200 text-green-700
-                          px-4 py-3 rounded-lg text-sm flex justify-between">
+                    <div className="surface-note surface-note--success text-sm flex justify-between">
                         <span>{message}</span>
                         <button onClick={() => setMessage('')} className="font-bold">✕</button>
                     </div>
                 )}
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700
-                          px-4 py-3 rounded-lg text-sm flex justify-between">
+                    <div className="surface-note surface-note--danger text-sm flex justify-between">
                         <span>{error}</span>
                         <button onClick={() => setError('')} className="font-bold">✕</button>
                     </div>
                 )}
 
                 {/* Sección: Método de Firma */}
-                <div className="bg-white rounded-xl p-6 shadow-sm">
+                <div className="soft-form-card">
                     <h2 className="font-bold text-gray-800 text-lg mb-1">
                         Preferencia de firma
                     </h2>
@@ -328,7 +335,7 @@ export default function ProfilePage() {
 
                 {/* Sección: Configuración del método seleccionado */}
                 {selectedMethod === 'TABLET' && (
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <div className="soft-form-card">
                         <h2 className="font-bold text-gray-800 text-lg mb-1">
                             Firma de Tableta
                         </h2>
@@ -459,7 +466,7 @@ export default function ProfilePage() {
                 )}
 
                 {selectedMethod === 'CERTIFICATE' && (
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-blue-100">
+                    <div className="soft-form-card border border-blue-100">
                         <div className="flex gap-4 items-start">
                             <div className="bg-blue-50 text-blue-600 p-3 rounded-full shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

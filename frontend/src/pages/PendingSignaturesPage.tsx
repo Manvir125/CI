@@ -72,41 +72,39 @@ export default function PendingSignaturesPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="page-shell">
             {/* Navbar */}
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+            <nav className="app-topbar">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="text-emerald-300 hover:text-white text-sm transition-colors"
+                        className="soft-button-ghost text-sm"
                     >
                         ← Dashboard
                     </button>
-                    <span className="text-emerald-500">|</span>
+                    <span className="text-emerald-200">|</span>
                     <h1 className="font-bold">Firmas pendientes</h1>
                 </div>
             </nav>
-            <main className="p-6 max-w-4xl mx-auto">
-                <div className="mb-6">
-                    <h2 className="text-xl font-bold text-gray-800">
-                        Firmas pendientes de mi servicio
-                    </h2>
-                    <p className="text-gray-500 text-sm mt-1">
-                        Consentimientos firmados por el paciente que requieren
-                        tu firma como responsable del servicio.
-                    </p>
-                </div>
+            <main className="page-main max-w-5xl space-y-6">
+                <section className="page-hero-lite">
+                    <div>
+                        <p className="section-kicker">Pendientes</p>
+                        <h2 className="page-hero-lite__title">Firmas pendientes de mi servicio</h2>
+                        <p className="page-hero-lite__text">
+                            Revisa los consentimientos ya firmados por el paciente y completa tu firma profesional desde una vista más reposada.
+                        </p>
+                    </div>
+                </section>
 
                 {success && (
-                    <div className="bg-green-50 border border-green-200 text-green-700
-                          px-4 py-3 rounded-lg mb-4 text-sm flex justify-between">
+                    <div className="surface-note surface-note--success mb-4 text-sm flex justify-between">
                         <span>{success}</span>
                         <button onClick={() => setSuccess('')} className="font-bold">✕</button>
                     </div>
                 )}
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700
-                          px-4 py-3 rounded-lg mb-4 text-sm flex justify-between">
+                    <div className="surface-note surface-note--danger mb-4 text-sm flex justify-between">
                         <span>{error}</span>
                         <button onClick={() => setError('')} className="font-bold">✕</button>
                     </div>
@@ -117,7 +115,7 @@ export default function PendingSignaturesPage() {
                         Cargando...
                     </div>
                 ) : requests.length === 0 ? (
-                    <div className="bg-white rounded-xl p-16 text-center shadow-sm">
+                    <div className="soft-empty">
                         <p className="text-4xl mb-4">✅</p>
                         <p className="text-gray-500">
                             No tienes consentimientos pendientes de firma
@@ -128,8 +126,7 @@ export default function PendingSignaturesPage() {
                         {requests.map(req => (
                             <div
                                 key={req.id}
-                                className="bg-white rounded-xl p-5 shadow-sm border
-                           border-gray-200"
+                                className="soft-list-card soft-list-item p-5"
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
@@ -179,10 +176,7 @@ export default function PendingSignaturesPage() {
                                         <button
                                             onClick={() => handleSign(req.id)}
                                             disabled={signing === req.id}
-                                            className="ml-4 bg-emerald-700 text-white px-5 py-2
-                                 rounded-lg text-sm font-medium
-                                 hover:bg-emerald-800 disabled:opacity-50
-                                 transition-colors flex gap-2 items-center"
+                                            className="ml-4 soft-button text-sm disabled:opacity-50 flex gap-2 items-center"
                                         >
                                             {signing === req.id ? 'Firmando...' : 
                                                 signatureMethod === 'CERTIFICATE' ? '📄 Firmar con Certificado' : '✍️ Firmar con Tableta'}

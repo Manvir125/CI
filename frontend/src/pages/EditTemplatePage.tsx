@@ -104,24 +104,24 @@ export default function EditTemplatePage() {
     // Pantalla de carga mientras obtiene los datos
     if (fetching) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="page-loading">
                 <p className="text-gray-400">Cargando plantilla...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="page-shell">
 
             {/* Barra superior */}
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex items-center gap-3">
+            <nav className="app-topbar">
                 <button
                     onClick={() => navigate('/templates')}
-                    className="text-emerald-300 hover:text-white text-sm transition-colors"
+                    className="soft-button-ghost text-sm"
                 >
                     ← Plantillas
                 </button>
-                <span className="text-emerald-500">|</span>
+                <span className="text-emerald-200">|</span>
                 <div>
                     <h1 className="font-bold">Editar Plantilla</h1>
                     <p className="text-emerald-300 text-xs">
@@ -130,10 +130,10 @@ export default function EditTemplatePage() {
                 </div>
             </nav>
 
-            <main className="p-6 max-w-5xl mx-auto">
+            <main className="page-main max-w-5xl space-y-6">
 
                 {/* Aviso de versionado */}
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6
+                <div className="surface-note surface-note--warn mb-6
                         flex items-start gap-3">
                     <span className="text-amber-500 text-xl">⚠️</span>
                     <div>
@@ -151,7 +151,7 @@ export default function EditTemplatePage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                     {/* Datos básicos */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
+                    <div className="soft-form-card space-y-4">
                         <h2 className="font-semibold text-gray-800 text-lg">
                             Datos básicos
                         </h2>
@@ -238,7 +238,7 @@ export default function EditTemplatePage() {
                     </div>
 
                     {/* Campos dinámicos */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <div className="soft-form-card">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="font-semibold text-gray-800 text-lg">
                                 Campos dinámicos
@@ -321,8 +321,7 @@ export default function EditTemplatePage() {
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700
-                            px-4 py-3 rounded-lg text-sm">
+                        <div className="surface-note surface-note--danger text-sm">
                             {error}
                         </div>
                     )}
@@ -331,16 +330,14 @@ export default function EditTemplatePage() {
                         <button
                             type="button"
                             onClick={() => navigate('/templates')}
-                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
-                         hover:bg-gray-50 transition-colors"
+                            className="soft-button-secondary"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
-                         hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                            className="soft-button disabled:opacity-50"
                         >
                             {loading ? 'Guardando...' : 'Guardar nueva versión'}
                         </button>

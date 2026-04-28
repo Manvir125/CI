@@ -89,49 +89,56 @@ export default function UsersPage() {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="page-loading">
             <p className="text-gray-400">Cargando usuarios...</p>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="page-shell">
 
             {/* Navbar */}
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+            <nav className="app-topbar">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="text-emerald-300 hover:text-white text-sm transition-colors"
+                        className="soft-button-ghost text-sm"
                     >
                         ← Dashboard
                     </button>
-                    <span className="text-emerald-500">|</span>
+                    <span className="text-emerald-200">|</span>
                     <h1 className="font-bold">Gestión de Usuarios</h1>
                 </div>
                 <button
                     onClick={() => navigate('/users/new')}
-                    className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg
-                     text-sm font-medium transition-colors"
+                    className="soft-button text-sm"
                 >
                     + Nuevo usuario
                 </button>
             </nav>
 
-            <main className="p-6 max-w-6xl mx-auto">
+            <main className="page-main space-y-6">
+                <section className="page-hero-lite">
+                    <div>
+                        <p className="section-kicker">Administración</p>
+                        <h2 className="page-hero-lite__title">Usuarios, roles y estado operativo</h2>
+                        <p className="page-hero-lite__text">
+                            Consulta el directorio interno, actualiza roles y controla accesos desde una tabla más suave y legible.
+                        </p>
+                    </div>
+                </section>
 
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700
-                          px-4 py-3 rounded-lg mb-4 text-sm flex justify-between">
+                    <div className="surface-note surface-note--danger mb-4 text-sm flex justify-between">
                         <span>{error}</span>
                         <button onClick={() => setError('')} className="font-bold">✕</button>
                     </div>
                 )}
 
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="soft-table-card overflow-hidden">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
+                            <tr>
                                 <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">
                                     Usuario
                                 </th>
@@ -152,7 +159,7 @@ export default function UsersPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {users.map(user => (
-                                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                                <tr key={user.id}>
 
                                     {/* Nombre y username */}
                                     <td className="px-4 py-3">

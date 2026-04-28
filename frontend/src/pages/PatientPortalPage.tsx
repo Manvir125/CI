@@ -16,22 +16,19 @@ export default function PatientPortalPage() {
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    // Verificación de identidad
     const [smsCode, setSmsCode] = useState('');
     const [verifyError, setVerifyError] = useState('');
     const [resending, setResending] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
-    // Lectura del documento
+
     const [hasScrolled, setHasScrolled] = useState(false);
     const [readConfirmed, setReadConfirmed] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
 
-    // Firma
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sigPadRef = useRef<SignaturePad | null>(null);
     const [isSigned, setIsSigned] = useState(false);
 
-    // Rechazo
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
 
@@ -41,7 +38,6 @@ export default function PatientPortalPage() {
         return () => clearTimeout(timer);
     }, [resendCooldown]);
 
-    // ── Carga el consentimiento al entrar ───────────────────────────────────
     useEffect(() => {
         if (!token) { setStep('error'); return; }
 
@@ -53,16 +49,14 @@ export default function PatientPortalPage() {
                 } else if (data.status === 'REJECTED') {
                     setStep('rejected');
                 } else {
-                    // Envía el SMS solo una vez tras cargar el documento
                     await sendCode(token);
                     setResendCooldown(60);
                     setStep('verify');
                 }
             })
             .catch(() => setStep('error'));
-    }, []); // ← dependencias vacías, solo se ejecuta una vez
+    }, [token]);
 
-    // ── Inicializa SignaturePad cuando el canvas está listo ─────────────────
     useEffect(() => {
         if (step === 'sign' && canvasRef.current) {
             sigPadRef.current = new SignaturePad(canvasRef.current, {
@@ -78,11 +72,9 @@ export default function PatientPortalPage() {
         }
     }, [step]);
 
-    // Detecta si el contenido necesita scroll o ya cabe entero
     useEffect(() => {
         if (step === 'read' && contentRef.current) {
             const el = contentRef.current;
-            // Si el contenido es más pequeño que el contenedor no hace falta scroll
             const needsScroll = el.scrollHeight > el.clientHeight + 10;
             if (!needsScroll) {
                 setHasScrolled(true);
@@ -90,7 +82,6 @@ export default function PatientPortalPage() {
         }
     }, [step, consent]);
 
-    // Redimensiona el canvas para que ocupe todo el ancho
     const resizeCanvas = () => {
         if (!canvasRef.current || !sigPadRef.current) return;
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -102,14 +93,12 @@ export default function PatientPortalPage() {
         setIsSigned(false);
     };
 
-    // Detecta cuando el paciente ha llegado al final del documento
     const handleContentScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const el = e.currentTarget;
         const atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
         if (atBottom) setHasScrolled(true);
     };
 
-    // ── Handlers ────────────────────────────────────────────────────────────
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
         setVerifyError('');
@@ -119,12 +108,12 @@ export default function PatientPortalPage() {
             if (result.success) {
                 setStep('read');
             } else {
-                setVerifyError('Código incorrecto. Comprueba el SMS e inténtalo de nuevo.');
+                setVerifyError('Codigo incorrecto. Comprueba el SMS e intentalo de nuevo.');
                 setSmsCode('');
             }
         } catch (err: any) {
             setStep('error');
-            setError(err?.response?.data?.message || 'Error al verificar el código');
+            setError(err?.response?.data?.message || 'Error al verificar el codigo');
         } finally {
             setSubmitting(false);
         }
@@ -134,11 +123,11 @@ export default function PatientPortalPage() {
         setResending(true);
         try {
             await resendCode(token!);
-            setResendCooldown(60); // 60 segundos hasta poder reenviar de nuevo
+            setResendCooldown(60);
             setVerifyError('');
             setSmsCode('');
         } catch {
-            setVerifyError('Error al reenviar el código');
+            setVerifyError('Error al reenviar el codigo');
         } finally {
             setResending(false);
         }
@@ -147,13 +136,13 @@ export default function PatientPortalPage() {
     const handleSign = async () => {
         if (!sigPadRef.current || sigPadRef.current.isEmpty()) return;
         if (isRejecting && !rejectReason.trim()) return;
-        
+
         setSubmitting(true);
         try {
             const imageBase64 = sigPadRef.current.toDataURL('image/png');
             const confirmation = isRejecting ? 'REJECTED' : 'SIGNED';
             await submitSignature(token!, imageBase64, readConfirmed, confirmation, isRejecting ? rejectReason : undefined);
-            
+
             if (isRejecting) {
                 setStep('rejected');
             } else {
@@ -166,226 +155,196 @@ export default function PatientPortalPage() {
         }
     };
 
-
-    // ── Renders por paso ─────────────────────────────────────────────────────
-
-    if (step === 'loading') return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-            <div className="text-center">
-                <div className="w-12 h-12 border-4 border-emerald-700 border-t-transparent
-                        rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-500">Cargando documento...</p>
-            </div>
-        </div>
-    );
-
-    if (step === 'error') return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-                <div className="text-5xl mb-4">❌</div>
-                <h1 className="text-xl font-bold text-gray-800 mb-3">
-                    Enlace no válido
-                </h1>
-                <p className="text-gray-500 text-sm">
-                    {error || 'Este enlace ha expirado o no es válido. Contacta con el hospital si crees que es un error.'}
-                </p>
-                <p className="text-gray-400 text-xs mt-6">
-                    CHPC · Tel. 964 25 94 00
-                </p>
-            </div>
-        </div>
-    );
-
-    if (step === 'confirmed') return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center
-                        justify-center mx-auto mb-4">
-                    <span className="text-3xl">✅</span>
+    if (step === 'loading') {
+        return (
+            <div className="page-loading">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-[var(--green-strong)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p>Cargando documento...</p>
                 </div>
-                <h1 className="text-xl font-bold text-gray-800 mb-2">
-                    Consentimiento firmado
-                </h1>
-                <p className="text-gray-500 text-sm mb-6">
-                    Tu firma ha sido registrada correctamente. Recibirás una copia
-                    del documento en tu email.
-                </p>
-                <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-2">
-                    <p className="text-gray-600">
-                        <span className="font-medium">Procedimiento:</span>{' '}
-                        {consent?.procedureName}
-                    </p>
-                    <p className="text-gray-600">
-                        <span className="font-medium">Profesional:</span>{' '}
-                        {consent?.professionalName}
-                    </p>
-                    <p className="text-gray-600">
-                        <span className="font-medium">Servicio:</span>{' '}
-                        {consent?.serviceName}
-                    </p>
-                </div>
-                <p className="text-gray-400 text-xs mt-6">
-                    Consorci Hospitalari Provincial de Castelló
-                </p>
             </div>
-        </div>
-    );
+        );
+    }
 
-    if (step === 'rejected') return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center
-                        justify-center mx-auto mb-4">
-                    <span className="text-3xl">⚠️</span>
+    if (step === 'error') {
+        return (
+            <div className="center-stage">
+                <div className="soft-modal-card max-w-md w-full text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-3xl">!</div>
+                    <h1 className="text-2xl font-semibold text-[var(--text-main)]">Enlace no valido</h1>
+                    <p className="mt-3 text-sm text-[var(--text-soft)]">
+                        {error || 'Este enlace ha expirado o no es valido. Contacta con el hospital si crees que es un error.'}
+                    </p>
+                    <p className="mt-6 text-xs text-[var(--text-faint)]">CHPC · Tel. 964 25 94 00</p>
                 </div>
-                <h1 className="text-xl font-bold text-gray-800 mb-2">
-                    Consentimiento rechazado
-                </h1>
-                <p className="text-gray-500 text-sm mb-4">
-                    Has rechazado firmar este consentimiento. El equipo médico
-                    ha sido notificado y contactará contigo para explicarte el procedimiento.
-                </p>
-                <p className="text-gray-400 text-xs mt-6">
-                    Si tienes dudas llama al <strong>964 25 94 00</strong>
-                </p>
             </div>
-        </div>
-    );
+        );
+    }
+
+    if (step === 'confirmed') {
+        return (
+            <div className="center-stage">
+                <div className="soft-modal-card max-w-md w-full text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--green-soft)] text-3xl text-[var(--green-strong)]">OK</div>
+                    <h1 className="text-2xl font-semibold text-[var(--text-main)]">Consentimiento firmado</h1>
+                    <p className="mt-3 text-sm text-[var(--text-soft)]">
+                        Tu firma ha sido registrada correctamente. Recibiras una copia del documento en tu email.
+                    </p>
+                    <div className="soft-list-item mt-5 p-4 text-left text-sm text-[var(--text-soft)] space-y-2">
+                        <p><strong>Procedimiento:</strong> {consent?.procedureName}</p>
+                        <p><strong>Profesional:</strong> {consent?.professionalName}</p>
+                        <p><strong>Servicio:</strong> {consent?.serviceName}</p>
+                    </div>
+                    <p className="mt-6 text-xs text-[var(--text-faint)]">Consorci Hospitalari Provincial de Castello</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (step === 'rejected') {
+        return (
+            <div className="center-stage">
+                <div className="soft-modal-card max-w-md w-full text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-3xl text-amber-700">!</div>
+                    <h1 className="text-2xl font-semibold text-[var(--text-main)]">Consentimiento rechazado</h1>
+                    <p className="mt-3 text-sm text-[var(--text-soft)]">
+                        Has rechazado firmar este consentimiento. El equipo medico ha sido notificado y contactara contigo para explicarte el procedimiento.
+                    </p>
+                    <p className="mt-6 text-xs text-[var(--text-faint)]">Si tienes dudas llama al 964 25 94 00</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-
-            {/* Cabecera del portal */}
-            <header className="bg-emerald-700 text-white px-4 py-4 sticky top-0 z-10">
-                <div className="max-w-2xl mx-auto">
-                    <p className="text-emerald-300 text-xs">
-                        Consorci Hospitalari Provincial de Castelló
-                    </p>
-                    <h1 className="font-bold text-sm mt-0.5">
-                        Consentimiento Informado Digital
-                    </h1>
+        <div className="page-shell">
+            <header className="app-topbar">
+                <div className="app-topbar__brand">
+                    <div className="app-topbar__mark">CH</div>
+                    <div>
+                        <p className="app-topbar__eyebrow">Portal del Paciente</p>
+                        <h1 className="app-topbar__title">Consentimiento informado digital</h1>
+                        <p className="app-topbar__subtitle">Validacion por SMS y firma remota segura</p>
+                    </div>
+                </div>
+                <div className="app-topbar__actions">
+                    {consent?.maskedPhone && <span className="app-pill">{consent.maskedPhone}</span>}
                 </div>
             </header>
 
-            <main className="max-w-2xl mx-auto p-4 pb-32">
-
-                {/* ── PASO: Verificación de identidad ── */}
+            <main className="page-main max-w-5xl">
                 {step === 'verify' && consent && (
-                    <div className="bg-white rounded-2xl shadow-sm p-6 mt-4">
-
-                        <div className="text-center mb-6">
-                            <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center
-                      justify-center mx-auto mb-3">
-                                <span className="text-2xl">📱</span>
+                    <section className="max-w-3xl mx-auto space-y-5">
+                        <div className="request-hero">
+                            <p className="section-kicker">Verificacion previa</p>
+                            <h2 className="page-hero-lite__title">Confirma tu identidad antes de acceder al documento</h2>
+                            <p className="page-hero-lite__text">
+                                Hemos enviado un codigo de 6 digitos al telefono asociado al paciente. Introducelo para continuar con la lectura y firma.
+                            </p>
+                            <div className="request-hero__stats">
+                                <div className="request-hero__stat">
+                                    <span className="request-hero__value">{consent.maskedPhone}</span>
+                                    <span className="request-hero__label">Telefono de verificacion</span>
+                                </div>
+                                <div className="request-hero__stat">
+                                    <span className="request-hero__value">{resendCooldown > 0 ? `${resendCooldown}s` : 'Listo'}</span>
+                                    <span className="request-hero__label">Estado de reenvio</span>
+                                </div>
                             </div>
-                            <h2 className="font-bold text-gray-800 text-xl">
-                                Verificación por SMS
-                            </h2>
-                            <p className="text-gray-500 text-sm mt-2">
-                                Hemos enviado un código de 6 dígitos al número
-                            </p>
-                            <p className="font-bold text-gray-800 text-lg mt-1">
-                                {consent.maskedPhone}
-                            </p>
                         </div>
 
-                        <form onSubmit={handleVerify} className="space-y-4">
-
-                            {/* Input del código */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700
-                          mb-2 text-center">
-                                    Introduce el código recibido
-                                </label>
-                                <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    maxLength={6}
-                                    value={smsCode}
-                                    onChange={e => setSmsCode(e.target.value.replace(/\D/g, ''))}
-                                    placeholder="_ _ _ _ _ _"
-                                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-4
-                     text-3xl text-center tracking-[0.5em] font-bold
-                     focus:outline-none focus:border-blue-500 transition-colors"
-                                    required
-                                    autoFocus
-                                />
-                            </div>
-
-                            {verifyError && (
-                                <div className="bg-red-50 border border-red-200 text-red-700
-                        px-4 py-3 rounded-xl text-sm text-center">
-                                    {verifyError}
+                        <div className="soft-form-card">
+                            <form onSubmit={handleVerify} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--text-soft)] mb-2 text-center">
+                                        Introduce el codigo recibido
+                                    </label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        maxLength={6}
+                                        value={smsCode}
+                                        onChange={e => setSmsCode(e.target.value.replace(/\D/g, ''))}
+                                        placeholder="_ _ _ _ _ _"
+                                        className="w-full px-4 py-4 text-3xl text-center tracking-[0.5em] font-bold"
+                                        required
+                                        autoFocus
+                                    />
                                 </div>
-                            )}
 
-                            <button
-                                type="submit"
-                                disabled={submitting || smsCode.length !== 6}
-                                className="w-full bg-emerald-700 text-white py-4 rounded-xl
-                   font-semibold text-base hover:bg-emerald-800
-                   disabled:opacity-50 transition-colors"
-                            >
-                                {submitting ? 'Verificando...' : 'Verificar código'}
-                            </button>
-
-                            {/* Reenviar código */}
-                            <div className="text-center pt-2">
-                                <p className="text-gray-500 text-sm mb-2">
-                                    ¿No has recibido el SMS?
-                                </p>
-                                {resendCooldown > 0 ? (
-                                    <p className="text-gray-400 text-sm">
-                                        Puedes reenviar en {resendCooldown}s
-                                    </p>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={handleResend}
-                                        disabled={resending}
-                                        className="text-emerald-600 hover:text-emerald-800 text-sm
-                       font-medium underline disabled:opacity-50"
-                                    >
-                                        {resending ? 'Enviando...' : 'Reenviar código'}
-                                    </button>
+                                {verifyError && (
+                                    <div className="surface-note surface-note--danger text-center">
+                                        {verifyError}
+                                    </div>
                                 )}
-                            </div>
 
-                        </form>
+                                <button
+                                    type="submit"
+                                    disabled={submitting || smsCode.length !== 6}
+                                    className="soft-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {submitting ? 'Verificando...' : 'Verificar codigo'}
+                                </button>
 
-                        {/* Aviso de validez */}
-                        <p className="text-gray-400 text-xs text-center mt-6">
-                            El código es válido durante 10 minutos.
-                            Si tienes problemas llama al <strong>964 25 94 00</strong>
-                        </p>
-                    </div>
+                                <div className="text-center">
+                                    <p className="text-sm text-[var(--text-soft)] mb-2">No has recibido el SMS?</p>
+                                    {resendCooldown > 0 ? (
+                                        <p className="text-sm text-[var(--text-faint)]">
+                                            Puedes reenviar en {resendCooldown}s
+                                        </p>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleResend}
+                                            disabled={resending}
+                                            className="soft-subtle-button disabled:opacity-50"
+                                        >
+                                            {resending ? 'Enviando...' : 'Reenviar codigo'}
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+
+                            <p className="mt-6 text-center text-xs text-[var(--text-faint)]">
+                                El codigo es valido durante 10 minutos. Si tienes problemas llama al 964 25 94 00.
+                            </p>
+                        </div>
+                    </section>
                 )}
 
-                {/* ── PASO: Lectura del documento ── */}
                 {step === 'read' && consent && (
-                    <div className="mt-4 space-y-4">
-
-                        {/* Info del paciente y procedimiento */}
-                        <div className="bg-white rounded-2xl p-5 shadow-sm">
-                            <h2 className="font-bold text-gray-800 text-lg mb-3">
-                                {consent.templateName}
-                            </h2>
-                            <div className="space-y-1 text-sm text-gray-600">
-                                <p>👤 Paciente: <strong>{consent.patientName}</strong></p>
-                                <p>NHC: <strong>{consent.nhc}</strong></p>
-                                <p>👨‍⚕️ Profesional: <strong>{consent.professionalName}</strong></p>
-                                <p>🏥 Servicio: <strong>{consent.serviceName}</strong></p>
-                                <p>📅 Fecha: <strong>{consent.episodeDate}</strong></p>
-                            </div>
-                        </div>
-
-                        {/* Contenido del documento */}
-                        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                            <div className="bg-emerald-50 px-5 py-3 border-b border-emerald-100">
-                                <p className="text-emerald-800 text-sm font-medium">
-                                    📄 Lea el documento completo antes de continuar
+                    <div className="space-y-5">
+                        <section className="page-hero-lite">
+                            <div>
+                                <p className="section-kicker">Documento disponible</p>
+                                <h2 className="page-hero-lite__title">{consent.templateName}</h2>
+                                <p className="page-hero-lite__text">
+                                    Lea la informacion completa antes de tomar una decision. Al llegar al final podra confirmar la lectura y avanzar a la firma.
                                 </p>
+                            </div>
+                            <span className="soft-badge">Acceso remoto</span>
+                        </section>
+
+                        <section className="soft-list-card">
+                            <div className="grid gap-3 md:grid-cols-2 text-sm text-[var(--text-soft)]">
+                                <div className="soft-list-item p-4">
+                                    <p><strong>Paciente:</strong> {consent.patientName}</p>
+                                    <p className="mt-1"><strong>NHC:</strong> {consent.nhc}</p>
+                                    <p className="mt-1"><strong>Profesional:</strong> {consent.professionalName}</p>
+                                </div>
+                                <div className="soft-list-item p-4">
+                                    <p><strong>Servicio:</strong> {consent.serviceName}</p>
+                                    <p className="mt-1"><strong>Fecha:</strong> {consent.episodeDate}</p>
+                                    <p className="mt-1"><strong>Telefono:</strong> {consent.maskedPhone}</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="soft-list-card overflow-hidden">
+                            <div className="flex items-center justify-between gap-3 border-b border-[var(--line-soft)] bg-[var(--green-pale)] px-5 py-3">
+                                <p className="font-medium text-[var(--green-strong)]">Lea el documento completo antes de continuar</p>
+                                {!hasScrolled && <span className="soft-badge">Pendiente de lectura</span>}
                             </div>
 
                             {consent.isGroup && consent.groupDocuments && consent.groupDocuments.length > 0 ? (
@@ -397,12 +356,12 @@ export default function PatientPortalPage() {
                                 >
                                     {consent.groupDocuments.map((doc, idx) => (
                                         <div key={idx}>
-                                            <div 
-                                                className="prose prose-sm max-w-none" 
-                                                dangerouslySetInnerHTML={{ __html: doc }} 
+                                            <div
+                                                className="prose prose-sm max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: doc }}
                                             />
-                                            {idx < consent.groupDocuments!.length - 1 && (
-                                                <hr className="my-8 border-t-2 border-emerald-200 border-dashed" />
+                                            {idx < (consent.groupDocuments?.length ?? 0) - 1 && (
+                                                <hr className="my-8 border-t-2 border-dashed border-[var(--line-strong)]" />
                                             )}
                                         </div>
                                     ))}
@@ -418,46 +377,35 @@ export default function PatientPortalPage() {
                             )}
 
                             {!hasScrolled && (
-                                <div className="bg-amber-50 px-5 py-3 border-t border-amber-100
-                                text-center">
-                                    <p className="text-amber-700 text-xs">
-                                        ↓ Desplázate hasta el final para continuar
-                                    </p>
+                                <div className="surface-note surface-note--warn rounded-none border-x-0 border-b-0 text-center">
+                                    Desplazate hasta el final para continuar.
                                 </div>
                             )}
-                        </div>
+                        </section>
 
-                        {/* Checkbox de confirmación */}
-                        <div className={`bg-white rounded-2xl p-5 shadow-sm transition-opacity
-                            ${hasScrolled ? 'opacity-100' : 'opacity-40'}`}>
-                            <label className="flex items-start gap-3 cursor-pointer">
+                        <section className={`soft-form-card transition-opacity ${hasScrolled ? 'opacity-100' : 'opacity-50'}`}>
+                            <label className="flex items-start gap-3 cursor-pointer text-sm text-[var(--text-soft)] leading-relaxed">
                                 <input
                                     type="checkbox"
                                     checked={readConfirmed}
                                     onChange={e => setReadConfirmed(e.target.checked)}
                                     disabled={!hasScrolled}
-                                    className="w-5 h-5 mt-0.5 rounded"
+                                    className="mt-1 h-5 w-5 rounded"
                                 />
-                                <span className="text-sm text-gray-700 leading-relaxed">
-                                    He leído y comprendido el contenido de este documento de
-                                    consentimiento informado y he tenido la oportunidad de
-                                    hacer preguntas sobre el procedimiento.
+                                <span>
+                                    He leido y comprendido el contenido de este documento de consentimiento informado y he tenido la oportunidad de hacer preguntas sobre el procedimiento.
                                 </span>
                             </label>
-                        </div>
+                        </section>
 
-                        {/* Botones de acción */}
-                        <div className="space-y-3">
+                        <div className="grid gap-3 md:grid-cols-2">
                             <button
                                 onClick={() => {
                                     setIsRejecting(false);
                                     setStep('sign');
                                 }}
                                 disabled={!readConfirmed}
-                                className="w-full bg-emerald-700 text-white py-4 rounded-xl
-                           font-semibold text-base hover:bg-emerald-800
-                           disabled:opacity-40 disabled:cursor-not-allowed
-                           transition-colors"
+                                className="soft-button disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Continuar para firmar
                             </button>
@@ -466,9 +414,7 @@ export default function PatientPortalPage() {
                                     setIsRejecting(true);
                                     setStep('sign');
                                 }}
-                                className="w-full bg-white border border-red-300 text-red-600
-                           py-4 rounded-xl font-medium text-base
-                           hover:bg-red-50 transition-colors"
+                                className="soft-button-secondary border-rose-200 text-rose-700"
                             >
                                 No deseo firmar este consentimiento
                             </button>
@@ -476,94 +422,83 @@ export default function PatientPortalPage() {
                     </div>
                 )}
 
-                {/* ── PASO: Firma ── */}
                 {step === 'sign' && (
-                    <div className="mt-4 space-y-4">
-
-                        <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
-                            <h2 className={`font-bold text-xl mb-2 ${isRejecting ? 'text-red-600' : 'text-gray-800'}`}>
-                                {isRejecting ? 'Rechazo del documento' : 'Firma del documento'}
-                            </h2>
-                            <p className="text-gray-500 text-sm">
-                                {isRejecting 
-                                    ? 'Debe firmar para dejar constancia de que ha declinado este consentimiento.' 
-                                    : 'Dibuja tu firma en el recuadro inferior usando el dedo o un lápiz táctil.'}
-                            </p>
-                        </div>
+                    <div className="space-y-5">
+                        <section className="page-hero-lite">
+                            <div>
+                                <p className="section-kicker">{isRejecting ? 'Rechazo' : 'Firma'}</p>
+                                <h2 className="page-hero-lite__title">
+                                    {isRejecting ? 'Registrar rechazo del consentimiento' : 'Firmar el documento'}
+                                </h2>
+                                <p className="page-hero-lite__text">
+                                    {isRejecting
+                                        ? 'Si no desea continuar, puede dejar constancia del rechazo con una explicacion breve y su firma.'
+                                        : 'Dibuja tu firma en el recuadro inferior usando el dedo o un lapiz tactil.'}
+                                </p>
+                            </div>
+                            <span className="soft-badge">{consent?.patientName}</span>
+                        </section>
 
                         {isRejecting && (
-                            <div className="bg-white rounded-2xl p-5 shadow-sm">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Explica brevemente el motivo del rechazo:
+                            <section className="soft-form-card">
+                                <label className="block text-sm font-medium text-[var(--text-soft)] mb-2">
+                                    Explica brevemente el motivo del rechazo
                                 </label>
                                 <textarea
                                     value={rejectReason}
                                     onChange={e => setRejectReason(e.target.value)}
                                     rows={3}
                                     placeholder="Ej: No estoy de acuerdo con los riesgos expuestos..."
-                                    className="w-full border border-gray-300 rounded-xl px-4 py-3
-                                         text-sm focus:outline-none focus:ring-2
-                                         focus:ring-red-500"
+                                    className="w-full px-4 py-3 text-sm"
                                 />
-                            </div>
+                            </section>
                         )}
 
-                        {/* Canvas de firma */}
-                        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200
-                              flex justify-between items-center">
-                                <span className="text-sm text-gray-500">Área de firma</span>
+                        <section className="soft-list-card overflow-hidden">
+                            <div className="flex items-center justify-between gap-3 border-b border-[var(--line-soft)] bg-[var(--green-pale)] px-4 py-3">
+                                <span className="text-sm font-medium text-[var(--text-soft)]">Area de firma</span>
                                 <button
                                     onClick={() => {
                                         sigPadRef.current?.clear();
                                         setIsSigned(false);
                                     }}
-                                    className="text-sm text-emerald-600 hover:text-emerald-800"
+                                    className="soft-subtle-button"
                                 >
                                     Borrar
                                 </button>
                             </div>
                             <canvas
                                 ref={canvasRef}
-                                className="w-full touch-none"
+                                className="w-full touch-none bg-white"
                                 style={{ height: '200px', cursor: 'crosshair' }}
                             />
                             {!isSigned && (
-                                <div className="bg-gray-50 px-4 py-2 border-t border-gray-200
-                                text-center">
-                                    <p className="text-gray-400 text-xs">
-                                        Firma aquí con el dedo o lápiz
-                                    </p>
+                                <div className="border-t border-[var(--line-soft)] bg-slate-50 px-4 py-3 text-center text-xs text-[var(--text-faint)]">
+                                    Firma aqui con el dedo o lapiz tactil.
                                 </div>
                             )}
-                        </div>
+                        </section>
 
                         {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-700
-                              px-4 py-3 rounded-xl text-sm text-center">
+                            <div className="surface-note surface-note--danger text-center">
                                 {error}
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="grid gap-3 md:grid-cols-2">
                             <button
                                 onClick={handleSign}
                                 disabled={!isSigned || submitting}
-                                className="w-full bg-green-600 text-white py-4 rounded-xl
-                           font-semibold text-base hover:bg-green-500
-                           disabled:opacity-40 disabled:cursor-not-allowed
-                           transition-colors"
+                                className="soft-button disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {submitting ? 'Enviando firma...' : '✅ Confirmar y firmar'}
+                                {submitting ? 'Enviando firma...' : 'Confirmar y firmar'}
                             </button>
                             <button
                                 onClick={() => setStep('read')}
                                 disabled={submitting}
-                                className="w-full bg-white border border-gray-300 text-gray-600
-                           py-3 rounded-xl text-sm hover:bg-gray-50
-                           transition-colors"
+                                className="soft-button-secondary"
                             >
-                                ← Volver al documento
+                                Volver al documento
                             </button>
                         </div>
                     </div>

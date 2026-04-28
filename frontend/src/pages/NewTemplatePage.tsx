@@ -74,23 +74,32 @@ export default function NewTemplatePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="bg-emerald-700 text-white px-6 py-4 flex items-center gap-3">
+        <div className="page-shell">
+            <nav className="app-topbar">
                 <button
                     onClick={() => navigate('/templates')}
-                    className="text-emerald-300 hover:text-white text-sm transition-colors"
+                    className="soft-button-ghost text-sm"
                 >
                     ← Plantillas
                 </button>
-                <span className="text-emerald-500">|</span>
+                <span className="text-emerald-200">|</span>
                 <h1 className="font-bold">Nueva Plantilla</h1>
             </nav>
 
-            <main className="p-6 max-w-5xl mx-auto">
+            <main className="page-main max-w-5xl space-y-6">
+                <section className="page-hero-lite">
+                    <div>
+                        <p className="section-kicker">Nueva plantilla</p>
+                        <h2 className="page-hero-lite__title">Diseña el consentimiento base con mejor legibilidad</h2>
+                        <p className="page-hero-lite__text">
+                            Organiza contenido, campos dinámicos e importación desde PDF dentro de un lienzo más limpio.
+                        </p>
+                    </div>
+                </section>
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                     {/* Datos básicos */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
+                    <div className="soft-form-card space-y-4">
                         <h2 className="font-semibold text-gray-800 text-lg">Datos básicos</h2>
 
                         <div>
@@ -175,7 +184,7 @@ export default function NewTemplatePage() {
                     </div>
 
                     {/* Campos dinámicos */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <div className="soft-form-card">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="font-semibold text-gray-800 text-lg">
                                 Campos dinámicos
@@ -256,8 +265,7 @@ export default function NewTemplatePage() {
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 
-                            px-4 py-3 rounded-lg text-sm">
+                        <div className="surface-note surface-note--danger text-sm">
                             {error}
                         </div>
                     )}
@@ -266,16 +274,14 @@ export default function NewTemplatePage() {
                         <button
                             type="button"
                             onClick={() => navigate('/templates')}
-                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
-                         hover:bg-gray-50 transition-colors"
+                            className="soft-button-secondary"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-medium
-                         hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                            className="soft-button disabled:opacity-50"
                         >
                             {loading ? 'Guardando...' : 'Crear plantilla'}
                         </button>

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPatientByNhc, getPatientByDni, type PatientDto } from '../api/his';
-import { getKioskRequestsByNhc, type ConsentRequestResponse } from '../api/consentRequests';
+import type { PatientDto } from '../api/his';
+import { searchKioskRequests, type ConsentRequestResponse } from '../api/consentRequests';
 
 export default function KioskPage() {
     const navigate = useNavigate();
 
-    const [step, setStep] = useState<'search' | 'select' | 'sign'>('search');
-    const [searchType, setSearchType] = useState<'nhc' | 'dni'>('nhc');
+    const [step, setStep] = useState<'search' | 'select'>('search');
+    const [searchType, setSearchType] = useState<'sip' | 'dni'>('sip');
     const [searchValue, setSearchValue] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -20,40 +20,28 @@ export default function KioskPage() {
         setLoading(true);
 
         try {
-            let resolvedPatient: PatientDto | null = null;
-            let resolvedNhc = searchValue.trim();
+            const normalizedSearchValue = searchType === 'dni'
+                ? searchValue.trim().toUpperCase()
+                : searchValue.trim();
 
-            if (searchType === 'dni') {
-                resolvedPatient = await getPatientByDni(resolvedNhc);
-                resolvedNhc = resolvedPatient.nhc;
-            } else {
-                try {
-                    resolvedPatient = await getPatientByNhc(resolvedNhc);
-                } catch (patientError: any) {
-                    if (patientError?.response?.status !== 404) {
-                        throw patientError;
-                    }
-                }
-            }
-
+            const result = await searchKioskRequests({
+                sip: searchType === 'sip' ? normalizedSearchValue : undefined,
+                dni: searchType === 'dni' ? normalizedSearchValue : undefined,
+            });
+            const resolvedPatient = result.patient ?? null;
+            const patientRequests = result.requests ?? [];
             setPatient(resolvedPatient);
-
-            const patientRequests = await getKioskRequestsByNhc(resolvedNhc);
 
             if (patientRequests.length === 0) {
                 setRequests([]);
-                setError('No hay consentimientos pendientes de firma presencial para este paciente.');
+                setError(`No hay consentimientos pendientes de firma presencial para ese ${searchType.toUpperCase()}.`);
                 return;
             }
 
             setRequests(patientRequests);
             setStep('select');
         } catch (err: any) {
-            if (err?.response?.status === 404 && searchType === 'dni') {
-                setError('Paciente no encontrado');
-            } else {
-                setError('Error al buscar el paciente o sus solicitudes');
-            }
+            setError(err?.response?.data?.message || 'Error al buscar el paciente o sus solicitudes');
         } finally {
             setLoading(false);
         }
@@ -96,12 +84,12 @@ export default function KioskPage() {
                             <div className="flex gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => setSearchType('nhc')}
-                                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${searchType === 'nhc'
+                                    onClick={() => setSearchType('sip')}
+                                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${searchType === 'sip'
                                         ? 'bg-emerald-900 text-white'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                 >
-                                    NHC
+                                    SIP
                                 </button>
                                 <button
                                     type="button"
@@ -118,8 +106,8 @@ export default function KioskPage() {
                                 type="text"
                                 value={searchValue}
                                 onChange={e => setSearchValue(e.target.value)}
-                                placeholder={searchType === 'nhc'
-                                    ? 'Numero de historia clinica'
+                                placeholder={searchType === 'sip'
+                                    ? 'Numero SIP'
                                     : 'Numero de DNI'}
                                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-4 text-xl text-center focus:outline-none focus:border-emerald-500 transition-colors"
                                 autoFocus
@@ -154,6 +142,7 @@ export default function KioskPage() {
                                     </h2>
                                     <div className="mt-2 space-y-1 text-sm text-gray-400">
                                         <p>NHC: {patient.nhc}</p>
+                                        {patient.sip && <p>SIP: {patient.sip}</p>}
                                         <p>DNI: {patient.dni}</p>
                                         {patient.birthDate && <p>Nacimiento: {patient.birthDate}</p>}
                                         {patient.phone && <p>Telefono: {patient.phone}</p>}
@@ -162,8 +151,8 @@ export default function KioskPage() {
                                 </>
                             ) : (
                                 <div className="mt-2 space-y-1 text-sm text-gray-400">
-                                    <p>NHC: {searchValue.trim()}</p>
-                                    <p>No se han podido recuperar los datos demograficos del paciente desde HIS.</p>
+                                    <p>Identificador: {searchValue.trim()}</p>
+                                    <p>No se han podido recuperar los datos demograficos del paciente desde las solicitudes guardadas.</p>
                                 </div>
                             )}
                         </div>

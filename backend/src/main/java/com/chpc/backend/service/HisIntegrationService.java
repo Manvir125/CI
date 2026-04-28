@@ -41,6 +41,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -105,6 +106,23 @@ public class HisIntegrationService {
     }
 
     @Transactional
+    public Optional<PatientDto> findPatientBySip(String sip) {
+        try {
+            String url = hisBaseUrl + "/his/api/patients/sip/" + sip;
+            log.debug("HIS: Buscando paciente SIP {}", sip);
+            ResponseEntity<PatientDto> response = restTemplate.getForEntity(url, PatientDto.class);
+            PatientDto patient = response.getBody();
+            syncPatientSnapshot(patient);
+            return Optional.ofNullable(patient);
+        } catch (HttpClientErrorException.NotFound e) {
+            return searchPatientBySip(sip);
+        } catch (Exception e) {
+            log.warn("HIS: No se pudo obtener el paciente SIP {} por endpoint directo: {}", sip, e.getMessage());
+            return searchPatientBySip(sip);
+        }
+    }
+
+    @Transactional
     public List<PatientDto> searchPatients(String query) {
         try {
             String url = UriComponentsBuilder.fromUriString(hisBaseUrl)
@@ -122,6 +140,17 @@ public class HisIntegrationService {
             log.error("HIS: Error en busqueda de pacientes: {}", e.getMessage());
             throw new RuntimeException("Error comunicando con el HIS: " + e.getMessage());
         }
+    }
+
+    private Optional<PatientDto> searchPatientBySip(String sip) {
+        String normalizedSip = firstNonBlank(sip);
+        if (isBlank(normalizedSip)) {
+            return Optional.empty();
+        }
+
+        return searchPatients(normalizedSip).stream()
+                .filter(patient -> normalizedSip.equalsIgnoreCase(firstNonBlank(patient.getSip())))
+                .findFirst();
     }
 
     @Transactional
@@ -211,11 +240,11 @@ public class HisIntegrationService {
     @Transactional
     public List<AgendaAppointmentDto> getAgendaAppointments(String agendaId) {
         if (apiKewanProperties.isEnabled()) {
-            return fetchApiKewanAppointments(resolveCurrentProfessionalDni()).stream()
+            return sortAgendaAppointments(fetchApiKewanAppointments(resolveCurrentProfessionalDni()).stream()
                     .filter(appointment -> agendaId.equalsIgnoreCase(firstNonBlank(
                             appointment.getAgendaId(),
                             appointment.getAgenda() != null ? appointment.getAgenda().getAgendaId() : null)))
-                    .toList();
+                    .toList());
         }
 
         try {
@@ -226,7 +255,7 @@ public class HisIntegrationService {
                     ? Arrays.asList(response.getBody())
                     : List.of();
             appointments.forEach(this::syncAgendaAppointmentSnapshot);
-            return appointments;
+            return sortAgendaAppointments(appointments);
         } catch (Exception e) {
             log.error("HIS: Error obteniendo citas de agenda {}: {}", agendaId, e.getMessage());
             throw new RuntimeException("Error comunicando con el HIS: " + e.getMessage());
@@ -240,6 +269,7 @@ public class HisIntegrationService {
 
         try {
             ApiKewanProfessionalAppointmentsResponse response = apiKewanClient.getTodayAppointments(professionalDni);
+            syncAuthenticatedUserSpecialty(professionalDni, response != null ? response.getProfesional() : null);
             List<AgendaAppointmentDto> appointments = mapApiKewanAppointments(response, professionalDni);
             appointments.forEach(this::syncAgendaAppointmentSnapshot);
             return appointments;
@@ -345,6 +375,36 @@ public class HisIntegrationService {
                 .orElseThrow(() -> new IllegalStateException("Tu usuario no tiene DNI configurado"));
     }
 
+    private void syncAuthenticatedUserSpecialty(String professionalDni, ApiKewanProfessionalDto professional) {
+        if (professional == null || isBlank(professional.getSpecialtyCode())) {
+            return;
+        }
+
+        String username = SecurityContextHolder.getContext().getAuthentication() != null
+                ? SecurityContextHolder.getContext().getAuthentication().getName()
+                : null;
+        if (isBlank(username)) {
+            return;
+        }
+
+        userRepository.findByUsername(username)
+                .filter(user -> professionalDni.equalsIgnoreCase(user.getDni()))
+                .ifPresent(user -> {
+                    String newServiceCode = professional.getSpecialtyCode().trim();
+                    String newServiceName = isBlank(professional.getSpecialtyName()) ? null : professional.getSpecialtyName().trim();
+                    boolean codeChanged = !newServiceCode.equals(user.getServiceCode());
+                    boolean nameChanged = !java.util.Objects.equals(newServiceName, user.getServiceName());
+
+                    if (codeChanged || nameChanged) {
+                        log.info("ApiKewan: actualizando especialidad del usuario autenticado {} de '{} - {}' a '{} - {}' por coincidencia de DNI",
+                                user.getUsername(), user.getServiceCode(), user.getServiceName(), newServiceCode, newServiceName);
+                        user.setServiceCode(newServiceCode);
+                        user.setServiceName(newServiceName);
+                        userRepository.save(user);
+                    }
+                });
+    }
+
     private String resolveProfessionalName(String dni) {
         return userRepository.findByDni(dni)
                 .map(User::getFullName)
@@ -372,6 +432,24 @@ public class HisIntegrationService {
             }
         }
         return new ArrayList<>(agendasById.values());
+    }
+
+    private List<AgendaAppointmentDto> sortAgendaAppointments(List<AgendaAppointmentDto> appointments) {
+        return appointments.stream()
+                .sorted(Comparator
+                        .comparing(
+                                (AgendaAppointmentDto appointment) -> safeParseDate(appointment.getAppointmentDate()),
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(
+                                appointment -> safeParseTime(appointment.getStartTime()),
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(
+                                appointment -> safeParseTime(appointment.getEndTime()),
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(
+                                appointment -> firstNonBlank(appointment.getEpisodeId(), ""),
+                                String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     private void syncPatientSnapshot(PatientDto dto) {
@@ -737,6 +815,22 @@ public class HisIntegrationService {
             return null;
         }
         return LocalTime.parse(value.length() == 5 ? value + ":00" : value);
+    }
+
+    private LocalDate safeParseDate(String value) {
+        try {
+            return parseDate(value);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private LocalTime safeParseTime(String value) {
+        try {
+            return parseTime(value);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private String joinNames(String firstName, String lastName) {

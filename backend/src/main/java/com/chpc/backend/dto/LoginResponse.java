@@ -5,6 +5,8 @@ import java.util.Set;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LoginResponse {
     private Long id;
     private String token;
@@ -15,5 +17,6 @@ public class LoginResponse {
     private Set<String> roles;
     private long expiresInMs;
     private String serviceCode;
+    private String serviceName;
     private String signatureMethod;
 }

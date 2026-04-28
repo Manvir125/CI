@@ -2,6 +2,7 @@ package com.chpc.backend.controller;
 
 import com.chpc.backend.dto.ConsentRequestDto;
 import com.chpc.backend.dto.ConsentRequestResponse;
+import com.chpc.backend.dto.KioskPatientSearchResponse;
 import com.chpc.backend.entity.ConsentRequest;
 import com.chpc.backend.entity.SignToken;
 import com.chpc.backend.repository.ConsentRequestRepository;
@@ -82,11 +83,12 @@ public class ConsentRequestController {
                 requestService.getMyRequests(status, page, size));
     }
 
-    @GetMapping("/kiosk/patient/{nhc}")
+    @GetMapping("/kiosk/search")
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
-    public ResponseEntity<java.util.List<ConsentRequestResponse>> getKioskRequestsByNhc(
-            @PathVariable String nhc) {
-        return ResponseEntity.ok(requestService.getKioskRequestsByNhc(nhc));
+    public ResponseEntity<KioskPatientSearchResponse> searchKioskRequests(
+            @RequestParam(required = false) String sip,
+            @RequestParam(required = false) String dni) {
+        return ResponseEntity.ok(requestService.searchKioskRequests(sip, dni));
     }
 
     @GetMapping("/{id}/pdf")

@@ -21,6 +21,8 @@ public class ConsentRequestDto {
 
     private String patientEmail;
     private String patientPhone;
+    private String patientDni;
+    private String patientSip;
     private String observations;
     private java.util.Map<String, String> dynamicFields;
 }

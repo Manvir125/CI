@@ -9,6 +9,7 @@ export interface LoginResponse {
     roles: string[];
     expiresInMs: number;
     serviceCode?: string;
+    serviceName?: string;
     signatureMethod?: 'TABLET' | 'CERTIFICATE';
 }
 
@@ -22,6 +23,7 @@ export interface AuthUser {
     dni?: string;
     roles: string[];
     serviceCode?: string;
+    serviceName?: string;
     signatureMethod?: 'TABLET' | 'CERTIFICATE';
 }
 

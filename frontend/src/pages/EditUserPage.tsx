@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUser, updateUser } from '../api/user';
 import { useAuth } from '../context/AuthContext';
+import { getServiceDisplayName } from '../utils/serviceDisplay';
 
 const ALL_ROLES = ['ADMIN', 'PROFESSIONAL', 'ADMINISTRATIVE', 'SUPERVISOR'];
 
@@ -25,6 +26,7 @@ export default function EditUserPage() {
         email: '',
         password: '',
         serviceCode: '',
+        serviceName: '',
         dni: '',
     });
 
@@ -40,6 +42,7 @@ export default function EditUserPage() {
                     email: user.email,
                     password: '',
                     serviceCode: user.serviceCode || '',
+                    serviceName: user.serviceName || '',
                     dni: user.dni || '',
                 });
                 setSelectedRoles([...user.roles]);
@@ -81,7 +84,8 @@ export default function EditUserPage() {
                 updateSessionUser({
                     fullName: form.fullName,
                     email: form.email,
-                    serviceCode: form.serviceCode || undefined,
+                    serviceCode: form.dni ? undefined : form.serviceCode || undefined,
+                    serviceName: form.dni ? undefined : form.serviceName || undefined,
                     dni: form.dni || undefined,
                 });
             }
@@ -179,18 +183,30 @@ export default function EditUserPage() {
                             </p>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Codigo de servicio
-                            </label>
-                            <input
-                                type="text"
-                                value={form.serviceCode}
-                                onChange={e => setForm({ ...form, serviceCode: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Ej: 138"
-                            />
-                        </div>
+                        {form.dni ? (
+                            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4">
+                                <p className="text-sm font-medium text-blue-900">Especialidad sincronizada con ApiKewan</p>
+                                <p className="text-sm text-blue-800 mt-2">
+                                    {getServiceDisplayName(form.serviceName, form.serviceCode) || 'Se actualizara automaticamente al cargar el dashboard'}
+                                </p>
+                                <p className="text-xs text-blue-700 mt-2">
+                                    Con DNI informado, este campo deja de editarse manualmente y se refresca desde ApiKewan.
+                                </p>
+                            </div>
+                        ) : (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Codigo interno del servicio
+                                </label>
+                                <input
+                                    type="text"
+                                    value={form.serviceCode}
+                                    onChange={e => setForm({ ...form, serviceCode: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    placeholder="Ej: 138"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="bg-white rounded-xl p-6 shadow-sm">

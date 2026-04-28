@@ -12,11 +12,30 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConsentGroupService {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final Set<String> GENERIC_EMAIL_LOCAL_PARTS = Set.of(
+            "noemail",
+            "sinemail",
+            "sincorreo",
+            "correo",
+            "email",
+            "test",
+            "noreply");
+    private static final Set<String> GENERIC_EMAIL_DOMAIN_MARKERS = Set.of(
+            "email.com",
+            "example.",
+            "noemail",
+            "nomail",
+            "mail.local",
+            "correo.local",
+            "invalid");
 
     private final ConsentGroupRepository groupRepository;
     private final ConsentRequestRepository requestRepository;
@@ -35,14 +54,17 @@ public class ConsentGroupService {
         User creator = userRepository.findByUsername(creatorUsername)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-
+        boolean hasRemoteItems = dto.getItems() != null && dto.getItems().stream()
+                .anyMatch(item -> item == null || item.getChannel() == null || "REMOTE".equalsIgnoreCase(item.getChannel()));
+        String normalizedPatientEmail = hasRemoteItems ? normalizePatientEmail(dto.getPatientEmail()) : null;
+        String normalizedPatientPhone = normalizeBlank(dto.getPatientPhone());
 
         ConsentGroup group = ConsentGroup.builder()
                 .episodeId(dto.getEpisodeId())
                 .nhc(dto.getNhc())
                 .createdBy(creator)
-                .patientEmail(dto.getPatientEmail())
-                .patientPhone(dto.getPatientPhone())
+                .patientEmail(normalizedPatientEmail)
+                .patientPhone(normalizedPatientPhone)
                 .status("PENDING")
                 .build();
         groupRepository.save(group);
@@ -55,6 +77,9 @@ public class ConsentGroupService {
             User assignedProfessional = resolveAssignedProfessional(item.getAssignedProfessionalId());
             String respService = item.getResponsibleService();
             String creatorService = creator.getServiceCode();
+            ConsentRequest.SignChannel signChannel = ConsentRequest.SignChannel.valueOf(
+                    item.getChannel() != null ? item.getChannel() : "REMOTE");
+            String requestPatientEmail = signChannel == ConsentRequest.SignChannel.REMOTE ? normalizedPatientEmail : null;
             boolean autoSign = (assignedProfessional != null && assignedProfessional.getId().equals(creator.getId()))
                     || (assignedProfessional == null && creatorService != null
                             && creatorService.equalsIgnoreCase(respService));
@@ -67,11 +92,12 @@ public class ConsentGroupService {
                     .episodeId(dto.getEpisodeId())
                     .template(template)
                     .professional(creator)
-                    .channel(ConsentRequest.SignChannel.valueOf(
-                            item.getChannel() != null ? item.getChannel() : "REMOTE"))
+                    .channel(signChannel)
                     .status("PENDING")
-                    .patientEmail(dto.getPatientEmail())
-                    .patientPhone(dto.getPatientPhone())
+                    .patientEmail(requestPatientEmail)
+                    .patientPhone(normalizedPatientPhone)
+                    .patientDni(normalizeBlank(dto.getPatientDni()))
+                    .patientSip(normalizeBlank(dto.getPatientSip()))
                     .group(group)
                     .responsibleService(item.getResponsibleService())
                     .assignedProfessional(assignedProfessional)
@@ -102,6 +128,37 @@ public class ConsentGroupService {
                 group.getId(), null, true, null);
 
         return toResponse(group);
+    }
+
+    private String normalizeBlank(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private String normalizePatientEmail(String value) {
+        String normalized = normalizeBlank(value);
+        if (normalized == null) {
+            return null;
+        }
+
+        String loweredEmail = normalized.toLowerCase();
+        if (!EMAIL_PATTERN.matcher(loweredEmail).matches()) {
+            return null;
+        }
+
+        String[] parts = loweredEmail.split("@", 2);
+        String localPart = parts.length > 0 ? parts[0] : "";
+        String domain = parts.length > 1 ? parts[1] : "";
+        if (GENERIC_EMAIL_LOCAL_PARTS.contains(localPart)) {
+            return null;
+        }
+        if (GENERIC_EMAIL_DOMAIN_MARKERS.stream().anyMatch(domain::contains)) {
+            return null;
+        }
+
+        return normalized;
     }
 
     // ── Devuelve las solicitudes pendientes de firma por servicio ─────────

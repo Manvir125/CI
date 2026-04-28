@@ -35,6 +35,14 @@ public class HisController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/patients/sip/{sip}")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<PatientDto> getBySip(@PathVariable String sip) {
+        return hisService.findPatientBySip(sip)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/patients/search")
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
     public ResponseEntity<List<PatientDto>> search(@RequestParam String q) {

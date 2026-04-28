@@ -41,6 +41,7 @@ export default function LoginPage() {
                 dni: data.dni,
                 roles: data.roles,
                 serviceCode: data.serviceCode,
+                serviceName: data.serviceName,
                 signatureMethod: data.signatureMethod,
             });
         } catch {

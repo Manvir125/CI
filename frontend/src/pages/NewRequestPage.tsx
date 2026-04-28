@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -12,12 +12,70 @@ import { getSignatureStatus } from '../api/professionalSignature';
 import { getActiveProfessionals, type UserResponse } from '../api/user';
 import type { Template } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { useEffect } from 'react';
+import { getServiceDisplayName } from '../utils/serviceDisplay';
 
 type Step = 'search' | 'episodes' | 'configure';
 
 const firstNonEmpty = (...values: Array<string | null | undefined>) =>
     values.find(value => typeof value === 'string' && value.trim().length > 0)?.trim() ?? '';
+
+const normalizeIdentifier = (value?: string | null) => firstNonEmpty(value).toLowerCase();
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const GENERIC_EMAIL_LOCAL_PARTS = new Set([
+    'noemail',
+    'sinemail',
+    'sincorreo',
+    'correo',
+    'email',
+    'test',
+    'noreply'
+]);
+const GENERIC_EMAIL_DOMAIN_MARKERS = [
+    'email.com',
+    'example.',
+    'noemail',
+    'nomail',
+    'mail.local',
+    'correo.local',
+    'invalid'
+];
+
+const normalizePatientEmail = (value?: string | null) => {
+    const normalized = firstNonEmpty(value);
+    if (!normalized) {
+        return '';
+    }
+
+    const loweredEmail = normalized.toLowerCase();
+    if (!EMAIL_PATTERN.test(loweredEmail)) {
+        return '';
+    }
+
+    const [localPart = '', domain = ''] = loweredEmail.split('@');
+    if (GENERIC_EMAIL_LOCAL_PARTS.has(localPart)) {
+        return '';
+    }
+    if (GENERIC_EMAIL_DOMAIN_MARKERS.some(marker => domain.includes(marker))) {
+        return '';
+    }
+
+    return normalized;
+};
+
+const matchesServiceIdentifier = (
+    templateServiceIdentifier?: string | null,
+    serviceCode?: string | null,
+    serviceName?: string | null
+) => {
+    const templateValue = normalizeIdentifier(templateServiceIdentifier);
+    if (!templateValue) {
+        return false;
+    }
+
+    return templateValue === normalizeIdentifier(serviceCode)
+        || templateValue === normalizeIdentifier(serviceName);
+};
 
 const mergePatientData = (
     base: PatientDto | null | undefined,
@@ -158,6 +216,87 @@ export default function NewRequestPage() {
     const [patientPhone, setPatientPhone] = useState('');
     const [sendNow, setSendNow] = useState(true);
     const [hasSignature, setHasSignature] = useState(false);
+    const currentUserServiceLabel = getServiceDisplayName(user?.serviceName, user?.serviceCode);
+    const selectedEpisodeServiceLabel = getServiceDisplayName(
+        selectedEpisode?.serviceName,
+        selectedEpisode?.agenda?.serviceName || selectedEpisode?.serviceCode
+    );
+    const episodeServiceCode = firstNonEmpty(
+        selectedEpisode?.serviceCode,
+        selectedEpisode?.agenda?.serviceCode
+    );
+    const episodeServiceName = firstNonEmpty(
+        selectedEpisode?.serviceName,
+        selectedEpisode?.agenda?.serviceName
+    );
+    const userServiceCode = firstNonEmpty(user?.serviceCode);
+    const userServiceName = firstNonEmpty(user?.serviceName);
+
+    const resolveServiceLabel = (serviceCode?: string | null, preferredName?: string | null) => {
+        const directLabel = getServiceDisplayName(preferredName, undefined);
+        if (directLabel) {
+            return directLabel;
+        }
+
+        const normalizedCode = firstNonEmpty(serviceCode);
+        if (!normalizedCode) {
+            return '';
+        }
+
+        if (selectedEpisode?.serviceCode?.toLowerCase() === normalizedCode.toLowerCase()) {
+            return getServiceDisplayName(selectedEpisode?.serviceName, normalizedCode);
+        }
+
+        if (user?.serviceCode?.toLowerCase() === normalizedCode.toLowerCase()) {
+            return getServiceDisplayName(user?.serviceName, normalizedCode);
+        }
+
+        const professionalMatch = activeProfessionals.find(professional =>
+            professional.serviceCode?.toLowerCase() === normalizedCode.toLowerCase()
+            && professional.serviceName
+        );
+
+        return getServiceDisplayName(professionalMatch?.serviceName, normalizedCode);
+    };
+
+    const matchesSelectedEpisodeService = (templateServiceIdentifier?: string | null) =>
+        matchesServiceIdentifier(templateServiceIdentifier, episodeServiceCode, episodeServiceName);
+
+    const matchesCurrentUserService = (templateServiceIdentifier?: string | null) =>
+        matchesServiceIdentifier(templateServiceIdentifier, userServiceCode, userServiceName);
+
+    const templateMatchesPrimaryFilter = (template: Template) => {
+        if (!firstNonEmpty(template.serviceCode)) {
+            return true;
+        }
+
+        if (episodeServiceCode || episodeServiceName) {
+            return matchesSelectedEpisodeService(template.serviceCode);
+        }
+
+        if (userServiceCode || userServiceName) {
+            return matchesCurrentUserService(template.serviceCode);
+        }
+
+        return true;
+    };
+
+    const resolveResponsibleService = (template?: Template | null) => {
+        const templateServiceIdentifier = firstNonEmpty(template?.serviceCode);
+
+        if (matchesSelectedEpisodeService(templateServiceIdentifier)) {
+            return episodeServiceCode || templateServiceIdentifier;
+        }
+
+        if (matchesCurrentUserService(templateServiceIdentifier)) {
+            return userServiceCode || templateServiceIdentifier;
+        }
+
+        return templateServiceIdentifier || episodeServiceCode;
+    };
+
+    const patientDni = firstNonEmpty(selectedEpisode?.patient?.dni, patient?.dni);
+    const patientSip = firstNonEmpty(selectedEpisode?.patient?.sip, patient?.sip);
 
     const resetConfiguration = () => {
         setMainTemplateId(null);
@@ -184,6 +323,12 @@ export default function NewRequestPage() {
             .then(setActiveProfessionals)
             .catch(err => console.error('Error fetching active professionals', err));
     }, []);
+
+    useEffect(() => {
+        if (channel === 'ONSITE') {
+            setSendNow(false);
+        }
+    }, [channel]);
 
     useEffect(() => {
         if (!preselectedEpisodeId) {
@@ -247,7 +392,7 @@ export default function NewRequestPage() {
 
                 setPatient(resolvedPatient);
                 setSelectedEpisode(episode);
-                setPatientEmail(resolvedPatient?.email ?? '');
+                setPatientEmail(normalizePatientEmail(resolvedPatient?.email));
                 setPatientPhone(resolvedPatient?.phone ?? '');
                 resetConfiguration();
                 await loadTemplatesForConfiguration();
@@ -270,7 +415,7 @@ export default function NewRequestPage() {
         };
     }, [preselectedEpisodeId]);
 
-    // ── Paso 1: Buscar paciente ──────────────────────────────────────────────
+    // Paso 1: Buscar paciente
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -282,7 +427,7 @@ export default function NewRequestPage() {
 
             const resolvedPatient = mergePatientData(found, found);
             setPatient(resolvedPatient);
-            setPatientEmail(resolvedPatient?.email ?? '');
+            setPatientEmail(normalizePatientEmail(resolvedPatient?.email));
             setPatientPhone(resolvedPatient?.phone ?? '');
 
             const eps = await getActiveEpisodes(found.nhc);
@@ -291,16 +436,16 @@ export default function NewRequestPage() {
 
         } catch (err: any) {
             if (err?.response?.status === 404) {
-                setError('Paciente no encontrado. Verifica el número introducido.');
+                setError('Paciente no encontrado. Verifica el numero introducido.');
             } else {
-                setError('Error al conectar con el HIS. Inténtalo de nuevo.');
+                setError('Error al conectar con el HIS. Intentalo de nuevo.');
             }
         } finally {
             setLoading(false);
         }
     };
 
-    // ── Paso 2: Seleccionar episodio ─────────────────────────────────────────
+    // Paso 2: Seleccionar episodio
     const handleSelectEpisode = async (episode: EpisodeDto) => {
         setLoading(true);
         setError('');
@@ -308,7 +453,7 @@ export default function NewRequestPage() {
             const detailedEpisode = normalizeEpisode(await getEpisode(episode.episodeId), patient);
             setSelectedEpisode(detailedEpisode);
             setPatient(prev => mergePatientData(prev, detailedEpisode.patient));
-            setPatientEmail(current => current || detailedEpisode.patient?.email || '');
+            setPatientEmail(current => current || normalizePatientEmail(detailedEpisode.patient?.email));
             setPatientPhone(current => current || detailedEpisode.patient?.phone || '');
             resetConfiguration();
             await loadTemplatesForConfiguration();
@@ -327,7 +472,7 @@ export default function NewRequestPage() {
         );
     };
 
-    // ── Paso 3: Crear y enviar solicitud ─────────────────────────────────────
+    // Paso 3: Crear y enviar solicitud
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!mainTemplateId) {
@@ -342,17 +487,28 @@ export default function NewRequestPage() {
                 mainTemplateId,
                 ...secondaryTemplateIds.filter(id => id !== mainTemplateId)
             ];
+            const normalizedPatientEmail = channel === 'REMOTE'
+                ? normalizePatientEmail(patientEmail)
+                : '';
+
+            if (channel === 'REMOTE' && !normalizedPatientEmail) {
+                setError('Introduce un email real del paciente para la firma remota.');
+                setLoading(false);
+                return;
+            }
 
             const groupData = {
                 nhc: selectedEpisode!.nhc || patient!.nhc,
                 episodeId: selectedEpisode!.episodeId,
-                patientEmail,
+                patientEmail: normalizedPatientEmail,
                 patientPhone,
+                patientDni,
+                patientSip,
                 items: allSelectedIds.map(id => {
                     const t = templates.find(temp => temp.id === id);
                     return {
                         templateId: id,
-                        responsibleService: t?.serviceCode || selectedEpisode!.serviceCode,
+                        responsibleService: resolveResponsibleService(t),
                         assignedProfessionalId: assignedProfessionalMap[id] ?? null,
                         channel,
                         observations: observationsMap[id] || '',
@@ -361,7 +517,7 @@ export default function NewRequestPage() {
                 })
             };
 
-            // Determinar si el médico principal o secundario auto-firmaría alguno de los consentimientos
+            // Determinar si el medico principal o secundario auto-firmaria alguno de los consentimientos
             const willAutoSign = allSelectedIds.some(id => {
                 const assignedProfessionalId = assignedProfessionalMap[id];
                 if (assignedProfessionalId) {
@@ -373,8 +529,8 @@ export default function NewRequestPage() {
                 }
 
                 const t = templates.find(temp => temp.id === id);
-                const respService = t?.serviceCode || selectedEpisode!.serviceCode;
-                return user?.serviceCode && user.serviceCode.toLowerCase() === respService.toLowerCase();
+                const respService = resolveResponsibleService(t);
+                return matchesCurrentUserService(respService);
             });
 
             if (willAutoSign && user?.signatureMethod !== 'CERTIFICATE' && !hasSignature) {
@@ -383,13 +539,13 @@ export default function NewRequestPage() {
                 return;
             }
 
-            // Si auto-firma y su método es certificado, obligamos al request mTLS
+            // Si auto-firma y su metodo es certificado, obligamos al request mTLS
             const useMtls = willAutoSign && user?.signatureMethod === 'CERTIFICATE';
 
             const createdGroup = await createGroup(groupData, useMtls);
 
             if (sendNow && channel === 'REMOTE' && createdGroup.requests?.length > 0) {
-                // Se envía el primer consentimiento del grupo para que el acceso al portal
+                // Se envia el primer consentimiento del grupo para que el acceso al portal
                 // muestre todos los consentimientos vinculados.
                 await sendRequest(createdGroup.requests[0].id);
             }
@@ -411,6 +567,7 @@ export default function NewRequestPage() {
         return activeProfessionals.filter(professional =>
             professional.fullName.toLowerCase().includes(search) ||
             professional.username.toLowerCase().includes(search) ||
+            (professional.serviceName || '').toLowerCase().includes(search) ||
             (professional.serviceCode || '').toLowerCase().includes(search)
         );
     };
@@ -424,7 +581,7 @@ export default function NewRequestPage() {
                         onClick={() => navigate(startedFromAgenda ? '/dashboard' : '/requests')}
                         className="text-emerald-300 hover:text-white text-sm transition-colors"
                     >
-                        {startedFromAgenda ? '← Dashboard' : '← Solicitudes'}
+                        {startedFromAgenda ? 'Volver al dashboard' : 'Volver a solicitudes'}
                     </button>
                     <span className="text-emerald-500">|</span>
                     <h1 className="font-bold">Nueva Solicitud de Consentimiento</h1>
@@ -436,7 +593,7 @@ export default function NewRequestPage() {
                 {/* Indicador de pasos */}
                 <div className="flex items-center mb-8">
                     {(['search', 'episodes', 'configure'] as Step[]).map((s, i) => {
-                        const labels = ['Buscar paciente', 'Seleccionar episodio', 'Configurar envío'];
+                        const labels = ['Buscar paciente', 'Seleccionar episodio', 'Configurar envio'];
                         const isActive = step === s;
                         const isCompleted = ['search', 'episodes', 'configure']
                             .indexOf(step) > i;
@@ -462,11 +619,11 @@ export default function NewRequestPage() {
                     <div className="bg-red-50 border border-red-200 text-red-700
                           px-4 py-3 rounded-lg mb-4 text-sm flex justify-between">
                         <span>{error}</span>
-                        <button onClick={() => setError('')} className="font-bold">✕</button>
+                        <button onClick={() => setError('')} className="font-bold">x</button>
                     </div>
                 )}
 
-                {/* ── PASO 1: Búsqueda ── */}
+                {/* PASO 1: Busqueda */}
                 {step === 'search' && (
                     <div className="bg-white rounded-xl p-6 shadow-sm">
                         <h2 className="font-semibold text-gray-800 text-lg mb-6">
@@ -500,7 +657,7 @@ export default function NewRequestPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    {searchType === 'nhc' ? 'Número de Historia Clínica' : 'DNI del paciente'}
+                                    {searchType === 'nhc' ? 'Numero de Historia Clinica' : 'DNI del paciente'}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -526,7 +683,7 @@ export default function NewRequestPage() {
                     </div>
                 )}
 
-                {/* ── PASO 2: Episodios ── */}
+                {/* PASO 2: Episodios */}
                 {step === 'episodes' && patient && (
                     <div className="space-y-4">
 
@@ -540,6 +697,7 @@ export default function NewRequestPage() {
                                     </h3>
                                     <div className="flex gap-4 text-sm text-gray-500 mt-1">
                                         <span>NHC: <strong>{patient.nhc}</strong></span>
+                                        {patient.sip && <span>SIP: <strong>{patient.sip}</strong></span>}
                                         <span>DNI: <strong>{patient.dni}</strong></span>
                                         <span>Nacimiento: <strong>{patient.birthDate}</strong></span>
                                     </div>
@@ -549,7 +707,7 @@ export default function NewRequestPage() {
                                                 <span key={a}
                                                     className="bg-red-100 text-red-700 text-xs px-2 py-0.5
                                      rounded-full">
-                                                    ⚠️ {a}
+                                                    Alerta: {a}
                                                 </span>
                                             ))}
                                         </div>
@@ -589,9 +747,9 @@ export default function NewRequestPage() {
                                                         {ep.procedureName || 'Procedimiento no informado'}
                                                     </p>
                                                     <div className="flex gap-3 text-sm text-gray-500 mt-1">
-                                                        <span>🏥 {ep.serviceName}</span>
-                                                        <span>📅 {ep.episodeDate}</span>
-                                                        {ep.ward && <span>🛏️ {ep.ward}</span>}
+                                                        <span>Servicio: {ep.serviceName}</span>
+                                                        <span>Fecha: {ep.episodeDate}</span>
+                                                        {ep.ward && <span>Sala: {ep.ward}</span>}
                                                         {ep.bed && <span>Cama: {ep.bed}</span>}
                                                     </div>
                                                     <p className="text-xs text-gray-400 mt-1">
@@ -611,7 +769,7 @@ export default function NewRequestPage() {
                     </div>
                 )}
 
-                {/* ── PASO 3: Configurar envío ── */}
+                {/* PASO 3: Configurar envio */}
                 {step === 'configure' && patient && selectedEpisode && (
                     <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -631,13 +789,25 @@ export default function NewRequestPage() {
                                     <p className="text-gray-500">NHC</p>
                                     <p className="font-medium">{patient.nhc}</p>
                                 </div>
+                                {patientSip && (
+                                    <div>
+                                        <p className="text-gray-500">SIP</p>
+                                        <p className="font-medium">{patientSip}</p>
+                                    </div>
+                                )}
+                                {patientDni && (
+                                    <div>
+                                        <p className="text-gray-500">DNI</p>
+                                        <p className="font-medium">{patientDni}</p>
+                                    </div>
+                                )}
                                 <div>
                                     <p className="text-gray-500">Procedimiento</p>
                                     <p className="font-medium">{selectedEpisode.procedureName || 'No informado'}</p>
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Servicio</p>
-                                    <p className="font-medium">{selectedEpisode.serviceName || selectedEpisode.agenda?.serviceName || 'No informado'}</p>
+                                    <p className="font-medium">{selectedEpisodeServiceLabel || 'No informado'}</p>
                                 </div>
                                 {(selectedEpisode.attendingPhysician || selectedEpisode.professional?.fullName) && (
                                     <div>
@@ -681,20 +851,15 @@ export default function NewRequestPage() {
                                 Consentimiento Principal *
                             </h2>
                             <p className="text-sm text-gray-500 mb-2">
-                                {user?.serviceCode ? (
-                                    <>Solo se muestran plantillas de tu especialidad: <strong>{user.serviceCode}</strong></>
+                                {currentUserServiceLabel ? (
+                                    <>Solo se muestran plantillas de tu especialidad: <strong>{currentUserServiceLabel}</strong></>
                                 ) : (
-                                    <>Solo se muestran plantillas del servicio {selectedEpisode.serviceName}</>
+                                    <>Solo se muestran plantillas del servicio {selectedEpisodeServiceLabel || 'seleccionado'}</>
                                 )}
                             </p>
                             <div className="space-y-2">
                                 {templates
-                                    .filter(t => {
-                                        if (user?.serviceCode && t.serviceCode) {
-                                            return t.serviceCode === user.serviceCode;
-                                        }
-                                        return !t.serviceCode || t.serviceCode === selectedEpisode.serviceCode;
-                                    })
+                                    .filter(templateMatchesPrimaryFilter)
                                     .map(t => (
                                         <div key={t.id} className={`border rounded-lg overflow-hidden transition-all ${mainTemplateId === t.id ? 'border-emerald-500' : 'border-gray-200'}`}>
                                             <label
@@ -711,18 +876,18 @@ export default function NewRequestPage() {
                                                     <p className="font-medium text-gray-800 text-sm">{t.name}</p>
                                                     <p className="text-gray-400 text-xs mt-0.5">
                                                         v{t.version}
-                                                        {t.serviceCode && ` · ${t.serviceCode}`}
+                                                        {t.serviceCode && ` · ${resolveServiceLabel(t.serviceCode)}`}
                                                     </p>
                                                 </div>
                                             </label>
                                             {mainTemplateId === t.id && (
                                                 <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
                                                     <div>
-                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (Añadidas al final del PDF)</label>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (anadidas al final del PDF)</label>
                                                         <textarea
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                             rows={2}
-                                                            placeholder="Escribe aquí observaciones o detalles adicionales..."
+                                                            placeholder="Escribe aqui observaciones o detalles adicionales..."
                                                             value={observationsMap[t.id] || ''}
                                                             onChange={e => setObservationsMap(prev => ({ ...prev, [t.id]: e.target.value }))}
                                                         />
@@ -739,7 +904,7 @@ export default function NewRequestPage() {
                                                                         onClick={() => setEditingTemplateId(null)}
                                                                         className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md hover:bg-emerald-200 font-medium transition-colors"
                                                                     >
-                                                                        Terminar edición
+                                                                        Terminar edicion
                                                                     </button>
                                                                 </div>
                                                                 <div className="bg-white border border-gray-300 rounded overflow-hidden">
@@ -760,7 +925,7 @@ export default function NewRequestPage() {
                                                                 onClick={() => setEditingTemplateId(t.id)}
                                                                 className="mt-1 w-full bg-gray-50 border border-gray-300 border-dashed text-gray-600 py-3 rounded-lg text-sm hover:bg-gray-100 hover:text-gray-800 transition-colors flex items-center justify-center gap-2"
                                                             >
-                                                                <span>✏️</span>
+                                                                <span>Editar</span>
                                                                 {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar texto de la plantilla"}
                                                             </button>
                                                         )}
@@ -778,7 +943,7 @@ export default function NewRequestPage() {
                                 Consentimientos Adicionales
                             </h2>
                             <p className="text-sm text-gray-500 mb-2">
-                                Puedes añadir otros consentimientos de cualquier servicio
+                                Puedes anadir otros consentimientos de cualquier servicio
                             </p>
                             <div className="space-y-2">
                                 {templates
@@ -798,7 +963,7 @@ export default function NewRequestPage() {
                                                     <p className="font-medium text-gray-800 text-sm">{t.name}</p>
                                                     <p className="text-gray-400 text-xs mt-0.5">
                                                         v{t.version}
-                                                        {t.serviceCode && ` · ${t.serviceCode}`}
+                                                        {t.serviceCode && ` · ${resolveServiceLabel(t.serviceCode)}`}
                                                     </p>
                                                 </div>
                                             </label>
@@ -809,13 +974,13 @@ export default function NewRequestPage() {
                                                             Profesional asignado
                                                         </label>
                                                         <p className="text-xs text-gray-500 mb-2">
-                                                            Si eliges un profesional, esta solicitud pendiente solo le aparecerá a esa persona. Si no eliges ninguno, se asignará por código de servicio.
+                                                            Si eliges un profesional, esta solicitud pendiente solo le aparecera a esa persona. Si no eliges ninguno, se asignara por especialidad.
                                                         </p>
                                                         <input
                                                             type="text"
                                                             value={professionalSearchMap[t.id] || ''}
                                                             onChange={e => setProfessionalSearchMap(prev => ({ ...prev, [t.id]: e.target.value }))}
-                                                            placeholder="Buscar profesional activo por nombre, usuario o servicio"
+                                                            placeholder="Buscar profesional activo por nombre, usuario o especialidad"
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                         />
                                                         <select
@@ -826,21 +991,23 @@ export default function NewRequestPage() {
                                                             }))}
                                                             className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                         >
-                                                            <option value="">Sin asignación específica (usar servicio)</option>
+                                                            <option value="">Sin asignacion especifica (usar especialidad)</option>
                                                             {getFilteredProfessionals(t.id).map(professional => (
                                                                 <option key={professional.id} value={professional.id}>
                                                                     {professional.fullName}
-                                                                    {professional.serviceCode ? ` · ${professional.serviceCode}` : ''}
+                                                                    {resolveServiceLabel(professional.serviceCode, professional.serviceName)
+                                                                        ? ` · ${resolveServiceLabel(professional.serviceCode, professional.serviceName)}`
+                                                                        : ''}
                                                                 </option>
                                                             ))}
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (Añadidas al final del PDF)</label>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (anadidas al final del PDF)</label>
                                                         <textarea
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                             rows={2}
-                                                            placeholder="Escribe aquí observaciones o detalles adicionales..."
+                                                            placeholder="Escribe aqui observaciones o detalles adicionales..."
                                                             value={observationsMap[t.id] || ''}
                                                             onChange={e => setObservationsMap(prev => ({ ...prev, [t.id]: e.target.value }))}
                                                         />
@@ -857,7 +1024,7 @@ export default function NewRequestPage() {
                                                                         onClick={() => setEditingTemplateId(null)}
                                                                         className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md hover:bg-emerald-200 font-medium transition-colors"
                                                                     >
-                                                                        Terminar edición
+                                                                        Terminar edicion
                                                                     </button>
                                                                 </div>
                                                                 <div className="bg-white border border-gray-300 rounded overflow-hidden">
@@ -878,7 +1045,7 @@ export default function NewRequestPage() {
                                                                 onClick={() => setEditingTemplateId(t.id)}
                                                                 className="mt-1 w-full bg-gray-50 border border-gray-300 border-dashed text-gray-600 py-3 rounded-lg text-sm hover:bg-gray-100 hover:text-gray-800 transition-colors flex items-center justify-center gap-2"
                                                             >
-                                                                <span>✏️</span>
+                                                                <span>Editar</span>
                                                                 {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar texto de la plantilla"}
                                                             </button>
                                                         )}
@@ -912,7 +1079,7 @@ export default function NewRequestPage() {
                                         onChange={() => setChannel('REMOTE')}
                                     />
                                     <div>
-                                        <p className="font-medium text-sm">📱 Firma remota</p>
+                                        <p className="font-medium text-sm">Firma remota</p>
                                         <p className="text-xs text-gray-500">
                                             El paciente firma desde su dispositivo
                                         </p>
@@ -933,7 +1100,7 @@ export default function NewRequestPage() {
                                         onChange={() => setChannel('ONSITE')}
                                     />
                                     <div>
-                                        <p className="font-medium text-sm">🖊️ Firma presencial</p>
+                                        <p className="font-medium text-sm">Firma presencial</p>
                                         <p className="text-xs text-gray-500">
                                             El paciente firma en el centro
                                         </p>
@@ -958,7 +1125,7 @@ export default function NewRequestPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Teléfono (opcional, para SMS)
+                                            Telefono (opcional, para SMS)
                                         </label>
                                         <input
                                             type="tel"
@@ -993,7 +1160,7 @@ export default function NewRequestPage() {
                                 className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
                            hover:bg-gray-50 transition-colors"
                             >
-                                {startedFromAgenda ? 'Volver al dashboard' : 'Atrás'}
+                                {startedFromAgenda ? 'Volver al dashboard' : 'Atras'}
                             </button>
                             <button
                                 type="submit"
@@ -1013,3 +1180,4 @@ export default function NewRequestPage() {
         </div>
     );
 }
+

@@ -15,6 +15,8 @@ public class ConsentGroupDto {
 
     private String patientEmail;
     private String patientPhone;
+    private String patientDni;
+    private String patientSip;
 
     @NotEmpty
     private List<GroupItemDto> items;

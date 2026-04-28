@@ -4,6 +4,7 @@ import {
     getUsers, updateUserRoles, activateUser,
     deactivateUser, deleteUser, type UserResponse
 } from '../api/user';
+import { getServiceDisplayName } from '../utils/serviceDisplay';
 
 const ALL_ROLES = ['ADMIN', 'PROFESSIONAL', 'ADMINISTRATIVE', 'SUPERVISOR'];
 
@@ -163,7 +164,11 @@ export default function UsersPage() {
                                     <td className="px-4 py-3 text-sm text-gray-600">
                                         <p>{user.email}</p>
                                         {user.dni && <p className="text-xs text-gray-400 mt-1">DNI: {user.dni}</p>}
-                                        {user.serviceCode && <p className="text-xs text-gray-400 mt-1">Servicio: {user.serviceCode}</p>}
+                                        {getServiceDisplayName(user.serviceName, user.serviceCode) && (
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                Especialidad: {getServiceDisplayName(user.serviceName, user.serviceCode)}
+                                            </p>
+                                        )}
                                     </td>
 
                                     {/* Roles — modo edición o modo visualización */}

@@ -147,18 +147,27 @@ export default function NewUserPage() {
                             </p>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Codigo de servicio
-                            </label>
-                            <input
-                                type="text"
-                                value={form.serviceCode}
-                                onChange={e => setForm({ ...form, serviceCode: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="Ej: 138"
-                            />
-                        </div>
+                        {form.dni ? (
+                            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4">
+                                <p className="text-sm font-medium text-blue-900">Especialidad sincronizada con ApiKewan</p>
+                                <p className="text-xs text-blue-700 mt-2">
+                                    Si el DNI existe en ApiKewan, la especialidad se completara automaticamente al entrar en el dashboard.
+                                </p>
+                            </div>
+                        ) : (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Codigo interno del servicio
+                                </label>
+                                <input
+                                    type="text"
+                                    value={form.serviceCode}
+                                    onChange={e => setForm({ ...form, serviceCode: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    placeholder="Ej: 138"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="bg-white rounded-xl p-6 shadow-sm">

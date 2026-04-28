@@ -48,6 +48,12 @@ public class ConsentRequest {
     @Column(name = "patient_phone")
     private String patientPhone;
 
+    @Column(name = "patient_dni", length = 32)
+    private String patientDni;
+
+    @Column(name = "patient_sip", length = 64)
+    private String patientSip;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

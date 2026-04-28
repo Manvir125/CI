@@ -30,20 +30,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    useEffect(() => {
+        if (loading) {
+            return;
+        }
+
+        if (user) {
+            localStorage.setItem('auth', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('auth');
+        }
+    }, [loading, user]);
+
     const loginUser = (userData: AuthUser) => {
-        localStorage.setItem('auth', JSON.stringify(userData));
         setUser(userData);
     };
 
     const logoutUser = () => {
-        localStorage.removeItem('auth');
         setUser(null);
     };
 
     const updateSessionUser = (partialUser: Partial<AuthUser>) => {
         if (!user) return;
         const updatedUser = { ...user, ...partialUser };
-        localStorage.setItem('auth', JSON.stringify(updatedUser));
         setUser(updatedUser);
     };
 

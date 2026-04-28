@@ -3,9 +3,27 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAgendaAppointments, getServiceAgendas, type AgendaAppointmentDto, type AgendaDto } from '../api/his';
 import { getApiErrorMessage } from '../api/client';
+import { getServiceDisplayName } from '../utils/serviceDisplay';
+
+const sortAppointmentsByTime = (items: AgendaAppointmentDto[]) =>
+    [...items].sort((left, right) => {
+        const leftKey = [
+            left.appointmentDate || '9999-12-31',
+            left.startTime || '23:59:59',
+            left.endTime || '23:59:59',
+            left.episodeId || ''
+        ].join('|');
+        const rightKey = [
+            right.appointmentDate || '9999-12-31',
+            right.startTime || '23:59:59',
+            right.endTime || '23:59:59',
+            right.episodeId || ''
+        ].join('|');
+        return leftKey.localeCompare(rightKey);
+    });
 
 export default function DashboardPage() {
-    const { user, logoutUser, hasRole } = useAuth();
+    const { user, logoutUser, hasRole, updateSessionUser } = useAuth();
     const navigate = useNavigate();
 
     const [agendas, setAgendas] = useState<AgendaDto[]>([]);
@@ -16,9 +34,10 @@ export default function DashboardPage() {
     const [agendaError, setAgendaError] = useState('');
 
     const isProfessional = hasRole('PROFESSIONAL');
+    const currentSpecialtyLabel = getServiceDisplayName(user?.serviceName, user?.serviceCode);
 
     useEffect(() => {
-        if (!isProfessional || !user?.serviceCode || !user?.dni) {
+        if (!isProfessional || !user?.dni) {
             return;
         }
 
@@ -26,13 +45,25 @@ export default function DashboardPage() {
             setLoadingAgendas(true);
             setAgendaError('');
             try {
-                const data = await getServiceAgendas(user.serviceCode!);
+                const data = await getServiceAgendas(user.serviceCode || 'self');
                 setAgendas(data);
                 setSelectedAgenda(data[0] ?? null);
+
+                const specialtyCode = data[0]?.professional?.specialtyCode;
+                const specialtyName = data[0]?.professional?.specialtyName;
+                if (
+                    (specialtyCode && specialtyCode !== user.serviceCode) ||
+                    (specialtyName && specialtyName !== user.serviceName)
+                ) {
+                    updateSessionUser({
+                        serviceCode: specialtyCode || user.serviceCode,
+                        serviceName: specialtyName || user.serviceName,
+                    });
+                }
             } catch (error) {
                 setAgendaError(getApiErrorMessage(
                     error,
-                    'No se han podido cargar las agendas de tu especialidad.'
+                    'No se han podido cargar las agendas del profesional.'
                 ));
                 setAgendas([]);
                 setSelectedAgenda(null);
@@ -42,7 +73,7 @@ export default function DashboardPage() {
         };
 
         loadAgendas();
-    }, [isProfessional, user?.serviceCode, user?.dni]);
+    }, [isProfessional, updateSessionUser, user?.dni, user?.serviceCode]);
 
     useEffect(() => {
         if (!selectedAgenda) {
@@ -55,7 +86,7 @@ export default function DashboardPage() {
             setAgendaError('');
             try {
                 const data = await getAgendaAppointments(selectedAgenda.agendaId);
-                setAppointments(data);
+                setAppointments(sortAppointmentsByTime(data));
             } catch (error) {
                 setAgendaError(getApiErrorMessage(
                     error,
@@ -114,7 +145,7 @@ export default function DashboardPage() {
                         <h2 className="text-xl font-bold text-gray-800">
                             Panel principal
                         </h2>
-                        {isProfessional && user?.serviceCode && (
+                        {isProfessional && (
                             <p className="text-sm text-gray-500 mt-1">
                                 Flujo rapido para profesionales: selecciona agenda, luego cita y crea el consentimiento.
                             </p>
@@ -136,21 +167,21 @@ export default function DashboardPage() {
                             <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white">
                                 <p className="text-xs uppercase tracking-[0.2em] text-emerald-100">Especialidad</p>
                                 <h3 className="text-lg font-semibold mt-1">
-                                    {user?.serviceCode || 'Sin servicio asignado'}
+                                    {currentSpecialtyLabel || 'Sin especialidad asignada'}
                                 </h3>
                                 <p className="text-sm text-emerald-100 mt-1">
                                     Agendas disponibles para iniciar consentimientos.
                                 </p>
                             </div>
                             <div className="p-4 space-y-3">
-                                {!user?.serviceCode && (
-                                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                                        Tu usuario no tiene especialidad o servicio asignado.
-                                    </div>
-                                )}
                                 {user?.serviceCode && !user?.dni && (
                                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                                         Tu usuario no tiene DNI configurado y no puede consultar citas en ApiKewan.
+                                    </div>
+                                )}
+                                {!user?.serviceName && user?.dni && (
+                                    <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                                        La especialidad se actualizara automaticamente desde ApiKewan al cargar las agendas.
                                     </div>
                                 )}
                                 {agendaError && (
@@ -193,10 +224,11 @@ export default function DashboardPage() {
                                                         {agenda.status || 'SIN ESTADO'}
                                                     </span>
                                                 </div>
-                                                <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
-                                                    {agenda.serviceCode && <span>Codigo: {agenda.serviceCode}</span>}
-                                                    {agenda.serviceName && <span>Servicio: {agenda.serviceName}</span>}
-                                                </div>
+                                                {getServiceDisplayName(agenda.serviceName, agenda.serviceCode) && (
+                                                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+                                                        <span>Servicio: {getServiceDisplayName(agenda.serviceName, agenda.serviceCode)}</span>
+                                                    </div>
+                                                )}
                                             </button>
                                         );
                                     })
@@ -217,7 +249,10 @@ export default function DashboardPage() {
                                 </div>
                                 {selectedAgenda && (
                                     <div className="text-sm text-gray-500">
-                                        {selectedAgenda.professional?.specialtyName || selectedAgenda.serviceName}
+                                        {getServiceDisplayName(
+                                            selectedAgenda.professional?.specialtyName,
+                                            selectedAgenda.serviceName || selectedAgenda.serviceCode
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -283,7 +318,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div
                         onClick={() => navigate('/profile')}
-                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all">
+                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all">
                         <div className="text-3xl mb-3">Firma</div>
                         <h3 className="font-semibold text-gray-800">Mi firma</h3>
                         <p className="text-gray-500 text-sm mt-1">

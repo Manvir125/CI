@@ -10,6 +10,7 @@ export interface UserResponse {
     lastLogin: string;
     createdAt: string;
     serviceCode?: string;
+    serviceName?: string;
     dni?: string;
 }
 

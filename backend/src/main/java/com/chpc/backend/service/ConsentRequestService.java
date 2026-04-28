@@ -4,6 +4,8 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -16,12 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.chpc.backend.dto.ConsentRequestDto;
 import com.chpc.backend.dto.ConsentRequestResponse;
+import com.chpc.backend.dto.KioskPatientSearchResponse;
+import com.chpc.backend.dto.PatientDto;
 import com.chpc.backend.entity.ConsentRequest;
 import com.chpc.backend.entity.ConsentTemplate;
+import com.chpc.backend.entity.HisPatient;
 import com.chpc.backend.entity.SignToken;
 import com.chpc.backend.entity.User;
 import com.chpc.backend.repository.ConsentRequestRepository;
 import com.chpc.backend.repository.ConsentTemplateRepository;
+import com.chpc.backend.repository.HisPatientRepository;
 import com.chpc.backend.repository.SignTokenRepository;
 import com.chpc.backend.repository.UserRepository;
 
@@ -33,6 +39,24 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ConsentRequestService {
 
+        private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+        private static final Set<String> GENERIC_EMAIL_LOCAL_PARTS = Set.of(
+                        "noemail",
+                        "sinemail",
+                        "sincorreo",
+                        "correo",
+                        "email",
+                        "test",
+                        "noreply");
+        private static final Set<String> GENERIC_EMAIL_DOMAIN_MARKERS = Set.of(
+                        "email.com",
+                        "example.",
+                        "noemail",
+                        "nomail",
+                        "mail.local",
+                        "correo.local",
+                        "invalid");
+
         private final ConsentRequestRepository requestRepository;
         private final SignTokenRepository tokenRepository;
         private final ConsentTemplateRepository templateRepository;
@@ -40,6 +64,7 @@ public class ConsentRequestService {
         private final AuditService auditService;
         private final NotificationService notificationService;
         private final HisIntegrationService hisService;
+        private final HisPatientRepository hisPatientRepository;
 
         @Value("${app.token-expiry-hours:72}")
         private int tokenExpiryHours;
@@ -60,15 +85,22 @@ public class ConsentRequestService {
                         throw new RuntimeException("La plantilla está desactivada");
                 }
 
+                ConsentRequest.SignChannel signChannel = ConsentRequest.SignChannel.valueOf(dto.getChannel());
+                String normalizedPatientEmail = signChannel == ConsentRequest.SignChannel.REMOTE
+                                ? normalizePatientEmail(dto.getPatientEmail())
+                                : null;
+
                 ConsentRequest request = ConsentRequest.builder()
                                 .nhc(dto.getNhc())
                                 .episodeId(dto.getEpisodeId())
                                 .template(template)
                                 .professional(professional)
-                                .channel(ConsentRequest.SignChannel.valueOf(dto.getChannel()))
+                                .channel(signChannel)
                                 .status("PENDING")
-                                .patientEmail(dto.getPatientEmail())
-                                .patientPhone(dto.getPatientPhone())
+                                .patientEmail(normalizedPatientEmail)
+                                .patientPhone(normalizeBlank(dto.getPatientPhone()))
+                                .patientDni(normalizeBlank(dto.getPatientDni()))
+                                .patientSip(normalizeBlank(dto.getPatientSip()))
                                 .observations(dto.getObservations())
                                 .dynamicFields(dto.getDynamicFields())
                                 .build();
@@ -92,6 +124,10 @@ public class ConsentRequestService {
                                 !"SENT".equals(request.getStatus())) {
                         throw new RuntimeException(
                                         "Solo se puede enviar una solicitud en estado PENDING o SENT");
+                }
+
+                if (request.getChannel() != ConsentRequest.SignChannel.REMOTE) {
+                        throw new RuntimeException("Solo se puede enviar email en solicitudes de firma remota");
                 }
 
                 if (request.getPatientEmail() == null || request.getPatientEmail().isBlank()) {
@@ -192,17 +228,31 @@ public class ConsentRequestService {
         }
 
         @Transactional(readOnly = true)
-        public List<ConsentRequestResponse> getKioskRequestsByNhc(String nhc) {
+        public KioskPatientSearchResponse searchKioskRequests(String sip, String dni) {
                 User professional = getCurrentUser();
+                List<String> statuses = List.of("PENDING", "SENT");
 
-                return requestRepository.findByNhcAndProfessionalIdAndChannelAndStatusInOrderByCreatedAtDesc(
-                                nhc,
-                                professional.getId(),
-                                ConsentRequest.SignChannel.ONSITE,
-                                List.of("PENDING", "SENT"))
-                                .stream()
-                                .map(this::toResponse)
-                                .toList();
+                List<ConsentRequest> requests;
+                if (normalizeBlank(sip) != null) {
+                        requests = requestRepository.findByPatientSipIgnoreCaseAndProfessionalIdAndChannelAndStatusInOrderByCreatedAtDesc(
+                                        normalizeBlank(sip),
+                                        professional.getId(),
+                                        ConsentRequest.SignChannel.ONSITE,
+                                        statuses);
+                } else if (normalizeBlank(dni) != null) {
+                        requests = requestRepository.findByPatientDniIgnoreCaseAndProfessionalIdAndChannelAndStatusInOrderByCreatedAtDesc(
+                                        normalizeBlank(dni),
+                                        professional.getId(),
+                                        ConsentRequest.SignChannel.ONSITE,
+                                        statuses);
+                } else {
+                        throw new RuntimeException("Debes indicar SIP o DNI");
+                }
+
+                return KioskPatientSearchResponse.builder()
+                                .patient(resolveKioskPatient(requests, sip, dni))
+                                .requests(requests.stream().map(this::toResponse).toList())
+                                .build();
         }
 
         @Transactional(readOnly = true)
@@ -247,6 +297,49 @@ public class ConsentRequestService {
                 return userRepository.findByUsername(username).orElseThrow();
         }
 
+        private PatientDto resolveKioskPatient(List<ConsentRequest> requests, String sip, String dni) {
+                if (requests == null || requests.isEmpty()) {
+                        return null;
+                }
+
+                ConsentRequest firstRequest = requests.get(0);
+                if (normalizeBlank(firstRequest.getNhc()) != null) {
+                        return hisPatientRepository.findById(firstRequest.getNhc())
+                                        .map(this::mapHisPatientToDto)
+                                        .orElseGet(() -> buildMinimalPatient(firstRequest, sip, dni));
+                }
+
+                return buildMinimalPatient(firstRequest, sip, dni);
+        }
+
+        private PatientDto buildMinimalPatient(ConsentRequest request, String sip, String dni) {
+                PatientDto patient = new PatientDto();
+                patient.setNhc(request.getNhc());
+                patient.setSip(normalizeBlank(request.getPatientSip()) != null ? normalizeBlank(request.getPatientSip()) : normalizeBlank(sip));
+                patient.setDni(normalizeBlank(request.getPatientDni()) != null ? normalizeBlank(request.getPatientDni()) : normalizeBlank(dni));
+                patient.setFullName("Paciente");
+                return patient;
+        }
+
+        private PatientDto mapHisPatientToDto(HisPatient patient) {
+                PatientDto dto = new PatientDto();
+                dto.setNhc(patient.getNhc());
+                dto.setSip(patient.getSip());
+                dto.setDni(patient.getDni());
+                dto.setFullName(patient.getFullName());
+                dto.setFirstName(patient.getFirstName());
+                dto.setLastName(patient.getLastName());
+                dto.setBirthDate(patient.getBirthDate() != null ? patient.getBirthDate().toString() : null);
+                dto.setGender(patient.getGender());
+                dto.setEmail(patient.getEmail());
+                dto.setPhone(patient.getPhone());
+                dto.setAddress(patient.getAddress());
+                dto.setBloodType(patient.getBloodType());
+                dto.setAllergies(patient.getAllergies() != null ? new java.util.ArrayList<>(patient.getAllergies()) : java.util.List.of());
+                dto.setActive(patient.getActive());
+                return dto;
+        }
+
         public ConsentRequestResponse toResponse(ConsentRequest r) {
                 return ConsentRequestResponse.builder()
                                 .id(r.getId())
@@ -280,5 +373,36 @@ public class ConsentRequestService {
                                 .observations(r.getObservations())
                                 .dynamicFields(r.getDynamicFields())
                                 .build();
+        }
+
+        private String normalizeBlank(String value) {
+                if (value == null || value.isBlank()) {
+                        return null;
+                }
+                return value.trim();
+        }
+
+        private String normalizePatientEmail(String value) {
+                String normalized = normalizeBlank(value);
+                if (normalized == null) {
+                        return null;
+                }
+
+                String loweredEmail = normalized.toLowerCase();
+                if (!EMAIL_PATTERN.matcher(loweredEmail).matches()) {
+                        return null;
+                }
+
+                String[] parts = loweredEmail.split("@", 2);
+                String localPart = parts.length > 0 ? parts[0] : "";
+                String domain = parts.length > 1 ? parts[1] : "";
+                if (GENERIC_EMAIL_LOCAL_PARTS.contains(localPart)) {
+                        return null;
+                }
+                if (GENERIC_EMAIL_DOMAIN_MARKERS.stream().anyMatch(domain::contains)) {
+                        return null;
+                }
+
+                return normalized;
         }
 }

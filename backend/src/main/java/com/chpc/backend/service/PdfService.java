@@ -198,6 +198,10 @@ public class PdfService {
                                 + request.getProfessional().getFullName() + "</td></tr>"
                                 + "<tr><td>NHC Paciente:</td><td>"
                                 + request.getNhc() + "</td></tr>"
+                                + "<tr><td>SIP Paciente:</td><td>"
+                                + safeText(request.getPatientSip()) + "</td></tr>"
+                                + "<tr><td>DNI Paciente:</td><td>"
+                                + safeText(request.getPatientDni()) + "</td></tr>"
                                 + "<tr><td>Episodio:</td><td>"
                                 + request.getEpisodeId() + "</td></tr>"
                                 + "<tr><td>Fecha solicitud:</td><td>"
@@ -235,6 +239,10 @@ public class PdfService {
                                 + "</p></div>"
 
                                 + "</body></html>";
+        }
+
+        private String safeText(String value) {
+                return value == null || value.isBlank() ? "No informado" : value;
         }
 
         private byte[] addAuditStamp(byte[] inputPdf, ConsentRequest request,

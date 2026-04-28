@@ -70,19 +70,20 @@ public class AuthService {
         String token = jwtUtils.generateToken(user.getUsername());
         auditService.log(user.getUsername(), "USER_LOGIN", ipAddress, true);
 
-        return LoginResponse.builder()
-                .id(user.getId())
-                .token(token)
-                .username(user.getUsername())
-                .fullName(user.getFullName())
-                .email(user.getEmail())
-                .dni(user.getDni())
-                .roles(user.getRoles().stream()
-                        .map(r -> r.getType().name())
-                        .collect(Collectors.toSet()))
-                .expiresInMs(28800000L)
-                .serviceCode(user.getServiceCode())
-                .signatureMethod(user.getSignatureMethod() != null ? user.getSignatureMethod().name() : null)
-                .build();
+        LoginResponse response = new LoginResponse();
+        response.setId(user.getId());
+        response.setToken(token);
+        response.setUsername(user.getUsername());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        response.setDni(user.getDni());
+        response.setRoles(user.getRoles().stream()
+                .map(r -> r.getType().name())
+                .collect(Collectors.toSet()));
+        response.setExpiresInMs(28800000L);
+        response.setServiceCode(user.getServiceCode());
+        response.setServiceName(user.getServiceName());
+        response.setSignatureMethod(user.getSignatureMethod() != null ? user.getSignatureMethod().name() : null);
+        return response;
     }
 }

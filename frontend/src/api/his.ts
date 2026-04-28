@@ -91,6 +91,11 @@ export const getPatientByDni = async (dni: string): Promise<PatientDto> => {
     return data;
 };
 
+export const getPatientBySip = async (sip: string): Promise<PatientDto> => {
+    const { data } = await client.get(`/api/his/patients/sip/${sip}`);
+    return data;
+};
+
 export const searchPatients = async (q: string): Promise<PatientDto[]> => {
     const { data } = await client.get(`/api/his/patients/search?q=${q}`);
     return data;

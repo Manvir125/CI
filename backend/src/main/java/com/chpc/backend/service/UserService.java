@@ -62,7 +62,8 @@ public class UserService {
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .isActive(true)
                                 .roles(roles)
-                                .serviceCode(request.getServiceCode())
+                                .serviceCode(resolveManagedServiceCode(request.getDni(), request.getServiceCode()))
+                                .serviceName(null)
                                 .dni(normalizeBlank(request.getDni()))
                                 .build();
 
@@ -94,7 +95,10 @@ public class UserService {
 
                 user.setFullName(request.getFullName());
                 user.setEmail(request.getEmail());
-                user.setServiceCode(request.getServiceCode());
+                user.setServiceCode(resolveManagedServiceCode(request.getDni(), request.getServiceCode()));
+                if (hasText(request.getDni())) {
+                        user.setServiceName(null);
+                }
                 user.setDni(normalizeBlank(request.getDni()));
                 user.setRoles(resolveRoles(request.getRoles()));
 
@@ -216,6 +220,7 @@ public class UserService {
                                 .lastLogin(user.getLastLogin())
                                 .createdAt(user.getCreatedAt())
                                 .serviceCode(user.getServiceCode())
+                                .serviceName(user.getServiceName())
                                 .dni(user.getDni())
                                 .build();
         }
@@ -226,5 +231,12 @@ public class UserService {
 
         private String normalizeBlank(String value) {
                 return hasText(value) ? value.trim() : null;
+        }
+
+        private String resolveManagedServiceCode(String dni, String serviceCode) {
+                if (hasText(dni)) {
+                        return null;
+                }
+                return normalizeBlank(serviceCode);
         }
 }

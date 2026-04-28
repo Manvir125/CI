@@ -325,13 +325,13 @@ public class PatientPortalService {
     }
 
     private String resolvePatientName(String nhc) {
-        return hisService.findPatientByNhc(nhc)
-                .map(this::buildPatientName)
-                .or(() -> hisPatientRepository.findById(nhc)
-                        .map(patient -> firstNonBlank(
-                                patient.getFullName(),
-                                joinNames(patient.getFirstName(), patient.getLastName()),
-                                patient.getNhc())))
+        return hisPatientRepository.findById(nhc)
+                .map(patient -> firstNonBlank(
+                        patient.getFullName(),
+                        joinNames(patient.getFirstName(), patient.getLastName()),
+                        patient.getNhc()))
+                .or(() -> hisService.findPatientByNhc(nhc)
+                        .map(this::buildPatientName))
                 .orElse(firstNonBlank(nhc, "Paciente"));
     }
 

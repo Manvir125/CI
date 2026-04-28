@@ -43,14 +43,15 @@ public interface ConsentRequestRepository extends JpaRepository<ConsentRequest, 
 
         List<ConsentRequest> findByGroupIdOrderById(Long groupId);
 
-        List<ConsentRequest> findByNhcAndProfessionalIdAndChannelAndStatusInOrderByCreatedAtDesc(
-                        String nhc,
+        List<ConsentRequest> findByPatientDniIgnoreCaseAndProfessionalIdAndChannelAndStatusInOrderByCreatedAtDesc(
+                        String patientDni,
                         Long professionalId,
                         ConsentRequest.SignChannel channel,
                         List<String> statuses);
 
-        List<ConsentRequest> findByNhcAndChannelAndStatusInOrderByCreatedAtDesc(
-                        String nhc,
+        List<ConsentRequest> findByPatientSipIgnoreCaseAndProfessionalIdAndChannelAndStatusInOrderByCreatedAtDesc(
+                        String patientSip,
+                        Long professionalId,
                         ConsentRequest.SignChannel channel,
                         List<String> statuses);
 }

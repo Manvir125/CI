@@ -1,4 +1,5 @@
 import client from './client';
+import type { PatientDto } from './his';
 
 export interface ConsentRequestResponse {
     id: number;
@@ -33,6 +34,8 @@ export interface ConsentRequestDto {
     channel: string;
     patientEmail: string;
     patientPhone: string;
+    patientDni?: string;
+    patientSip?: string;
     observations?: string;
     dynamicFields?: Record<string, string>;
     customTemplateHtml?: string;
@@ -83,13 +86,6 @@ export const getMyRequests = async (
     return data;
 };
 
-export const getKioskRequestsByNhc = async (
-    nhc: string
-): Promise<ConsentRequestResponse[]> => {
-    const { data } = await client.get(`/api/consent-requests/kiosk/patient/${nhc}`);
-    return data;
-};
-
 export const downloadPdf = async (id: number): Promise<void> => {
     const response = await client.get(`/api/consent-requests/${id}/pdf`, {
         responseType: 'blob',
@@ -114,6 +110,8 @@ export interface ConsentGroupDto {
     episodeId: string;
     patientEmail: string;
     patientPhone: string;
+    patientDni?: string;
+    patientSip?: string;
     items: {
         templateId: number;
         responsibleService: string;
@@ -123,6 +121,11 @@ export interface ConsentGroupDto {
         dynamicFields?: Record<string, string>;
         customTemplateHtml?: string;
     }[];
+}
+
+export interface KioskPatientSearchResponse {
+    patient: PatientDto | null;
+    requests: ConsentRequestResponse[];
 }
 
 export const createGroup = async (
@@ -165,6 +168,17 @@ export const createGroup = async (
 
 export const getPendingMySignature = async (): Promise<ConsentRequestResponse[]> => {
     const { data } = await client.get('/api/consent-groups/pending-my-signature');
+    return data;
+};
+
+export const searchKioskRequests = async (params: {
+    sip?: string;
+    dni?: string;
+}): Promise<KioskPatientSearchResponse> => {
+    const query = new URLSearchParams();
+    if (params.sip) query.append('sip', params.sip);
+    if (params.dni) query.append('dni', params.dni);
+    const { data } = await client.get(`/api/consent-requests/kiosk/search?${query.toString()}`);
     return data;
 };
 

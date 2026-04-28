@@ -20,4 +20,7 @@ public class ApiKewanProperties {
     private String privateKey;
     private String privateKeyPath;
     private int timeoutMs = 5000;
+    private String truststorePath = "certs/truststore.p12";
+    private String truststorePassword = "changeit";
+    private String truststoreType = "PKCS12";
 }

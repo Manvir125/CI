@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAgendaAppointments, getServiceAgendas, type AgendaAppointmentDto, type AgendaDto } from '../api/his';
+import { getApiErrorMessage } from '../api/client';
 
 export default function DashboardPage() {
     const { user, logoutUser, hasRole } = useAuth();
@@ -28,8 +29,13 @@ export default function DashboardPage() {
                 const data = await getServiceAgendas(user.serviceCode!);
                 setAgendas(data);
                 setSelectedAgenda(data[0] ?? null);
-            } catch {
-                setAgendaError('No se han podido cargar las agendas de tu especialidad.');
+            } catch (error) {
+                setAgendaError(getApiErrorMessage(
+                    error,
+                    'No se han podido cargar las agendas de tu especialidad.'
+                ));
+                setAgendas([]);
+                setSelectedAgenda(null);
             } finally {
                 setLoadingAgendas(false);
             }
@@ -50,8 +56,12 @@ export default function DashboardPage() {
             try {
                 const data = await getAgendaAppointments(selectedAgenda.agendaId);
                 setAppointments(data);
-            } catch {
-                setAgendaError('No se han podido cargar las citas de la agenda seleccionada.');
+            } catch (error) {
+                setAgendaError(getApiErrorMessage(
+                    error,
+                    'No se han podido cargar las citas de la agenda seleccionada.'
+                ));
+                setAppointments([]);
             } finally {
                 setLoadingAppointments(false);
             }
@@ -154,7 +164,7 @@ export default function DashboardPage() {
                                     </div>
                                 ) : agendas.length === 0 ? (
                                     <div className="text-sm text-gray-400 py-6 text-center">
-                                        No hay agendas disponibles.
+                                        No hay agendas disponibles para este profesional hoy.
                                     </div>
                                 ) : (
                                     agendas.map(agenda => {
@@ -223,7 +233,7 @@ export default function DashboardPage() {
                                     </div>
                                 ) : appointments.length === 0 ? (
                                     <div className="text-sm text-gray-400 py-12 text-center">
-                                        No hay citas disponibles en esta agenda.
+                                        No hay citas para esta agenda hoy.
                                     </div>
                                 ) : (
                                     <div className="space-y-3">

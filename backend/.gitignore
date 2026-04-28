@@ -2,6 +2,7 @@ HELP.md
 target/
 /pdfs
 /signatures
+/secrets
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

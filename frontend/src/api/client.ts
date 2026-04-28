@@ -34,14 +34,27 @@ client.interceptors.response.use(
     },
     (error) => {
         console.error('Error Axios:', error.response?.status, error.config?.url);
-        // Solo redirige al login si NO estamos ya en el login
-        if (error.response?.status === 401 &&
-            !window.location.pathname.includes('/login')) {
-            localStorage.removeItem('auth');
-            window.location.href = '/login';
-        }
         return Promise.reject(error);
     }
 );
+
+export const getApiErrorMessage = (error: unknown, fallback: string): string => {
+    if (axios.isAxiosError(error)) {
+        const data = error.response?.data;
+        if (typeof data === 'string' && data.trim()) {
+            return data;
+        }
+        if (data && typeof data.message === 'string' && data.message.trim()) {
+            return data.message;
+        }
+        if (typeof error.message === 'string' && error.message.trim()) {
+            return error.message;
+        }
+    }
+    if (error instanceof Error && error.message.trim()) {
+        return error.message;
+    }
+    return fallback;
+};
 
 export default client;

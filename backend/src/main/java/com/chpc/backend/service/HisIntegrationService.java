@@ -189,15 +189,7 @@ public class HisIntegrationService {
     public List<AgendaDto> getAgendasByService(String serviceCode) {
         if (apiKewanProperties.isEnabled()) {
             List<AgendaDto> agendas = extractDistinctAgendas(fetchApiKewanAppointments(resolveCurrentProfessionalDni()));
-            List<AgendaDto> filtered = agendas.stream()
-                    .filter(agenda -> matchesService(agenda, serviceCode))
-                    .toList();
-
-            if (!filtered.isEmpty() || isBlank(serviceCode)) {
-                return filtered;
-            }
-
-            log.warn("ApiKewan: No se encontraron agendas que casen con el servicio '{}', devolviendo todas las agendas del profesional autenticado", serviceCode);
+            log.info("ApiKewan: devolviendo {} agenda(s) del profesional autenticado sin filtrar por servicio '{}'", agendas.size(), serviceCode);
             return agendas;
         }
 
@@ -253,6 +245,13 @@ public class HisIntegrationService {
             return appointments;
         } catch (HttpClientErrorException.NotFound e) {
             return List.of();
+        } catch (ApiKewanHttpException e) {
+            if (e.getStatusCode() == 404) {
+                log.info("ApiKewan: sin citas/agendas para el profesional {} hoy (HTTP 404)", professionalDni);
+                return List.of();
+            }
+            log.error("ApiKewan: HTTP {} obteniendo citas del profesional {}: {}", e.getStatusCode(), professionalDni, e.getResponseBody());
+            throw new RuntimeException("Error comunicando con ApiKewan: " + e.getMessage());
         } catch (Exception e) {
             log.error("ApiKewan: Error obteniendo citas del profesional {}: {}", professionalDni, e.getMessage());
             throw new RuntimeException("Error comunicando con ApiKewan: " + e.getMessage());
@@ -373,21 +372,6 @@ public class HisIntegrationService {
             }
         }
         return new ArrayList<>(agendasById.values());
-    }
-
-    private boolean matchesService(AgendaDto agenda, String serviceCode) {
-        if (agenda == null || isBlank(serviceCode)) {
-            return true;
-        }
-
-        String normalizedFilter = normalizeText(serviceCode);
-        return normalizedFilter.equals(normalizeText(agenda.getServiceCode()))
-                || normalizedFilter.equals(normalizeText(agenda.getServiceName()))
-                || normalizeText(agenda.getServiceName()).contains(normalizedFilter);
-    }
-
-    private String normalizeText(String value) {
-        return value == null ? "" : value.trim().toLowerCase();
     }
 
     private void syncPatientSnapshot(PatientDto dto) {

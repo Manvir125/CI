@@ -68,16 +68,19 @@ his:
   timeout-ms: 5000
 
 apikewan:
-  enabled: ${APIKEWAN_ENABLED:false}
-  base-url: ${APIKEWAN_BASE_URL:http://127.0.0.1:5298}
-  server-id: ${APIKEWAN_SERVER_ID:}
-  issuer: ${APIKEWAN_ISSUER:}
-  kid: ${APIKEWAN_KID:}
+  enabled: ${APIKEWAN_ENABLED:true}
+  base-url: ${APIKEWAN_BASE_URL:https://apikewan.chpcs.local}
+  server-id: ${APIKEWAN_SERVER_ID:serverjavacidigital}
+  issuer: ${APIKEWAN_ISSUER:serverjavacidigital}
+  kid: ${APIKEWAN_KID:HoalAdios123.}
   audience: ${APIKEWAN_AUDIENCE:api-hospital}
   scope: ${APIKEWAN_SCOPE:citas.read}
   private-key: ${APIKEWAN_PRIVATE_KEY:}
-  private-key-path: ${APIKEWAN_PRIVATE_KEY_PATH:}
+  private-key-path: ${APIKEWAN_PRIVATE_KEY_PATH:secrets/apikewan-private-key.pem}
   timeout-ms: ${APIKEWAN_TIMEOUT_MS:5000}
+  truststore-path: ${APIKEWAN_TRUSTSTORE_PATH:certs/truststore.p12}
+  truststore-password: ${APIKEWAN_TRUSTSTORE_PASSWORD:changeit}
+  truststore-type: ${APIKEWAN_TRUSTSTORE_TYPE:PKCS12}
 
 logging:
   level:

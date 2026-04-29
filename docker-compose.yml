@@ -1,14 +1,15 @@
+name: ci-project
 services:
-
   postgres:
     image: postgres:15-alpine
     container_name: ci_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ci_hospital
       POSTGRES_USER: ci_user
       POSTGRES_PASSWORD: ci_pass
     ports:
-      - "5434:5432"
+      - "${POSTGRES_PORT:-5434}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -20,34 +21,96 @@ services:
   his-mock:
     image: wiremock/wiremock:3.3.1
     container_name: ci_his_mock
+    restart: unless-stopped
     ports:
-      - "9090:8080"
+      - "${HIS_MOCK_PORT:-9090}:8080"
     volumes:
       - ./his-mock:/home/wiremock
     command: --global-response-templating --verbose
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
     container_name: ci_backend
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      his-mock:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ci_hospital
       SPRING_DATASOURCE_USERNAME: ci_user
       SPRING_DATASOURCE_PASSWORD: ci_pass
-      JWT_SECRET: cambia_esto_por_un_secreto_seguro_de_al_menos_32_caracteres
-      JWT_EXPIRATION_MS: 28800000
+      HIS_BASE_URL: http://his-mock:8080
+      HIS_DOCUMENT_EXPORT_ENABLED: ${HIS_DOCUMENT_EXPORT_ENABLED:-true}
+      HIS_DOCUMENT_EXPORT_PATH: ${HIS_DOCUMENT_EXPORT_PATH:-/app/his-export}
+      HIS_DOCUMENT_TYPE_CODE: ${HIS_DOCUMENT_TYPE_CODE:-001}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:5173}
+      SIGNATURES_PATH: /app/data/signatures
+      PDF_PATH: /app/data/pdfs
+      JWT_SECRET: ${JWT_SECRET:-cambia_esto_por_un_secreto_seguro_de_al_menos_32_caracteres}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-28800000}
+      APIKEWAN_ENABLED: ${APIKEWAN_ENABLED:-true}
+      APIKEWAN_BASE_URL: ${APIKEWAN_BASE_URL:-https://apikewan.chpcs.local}
+      APIKEWAN_SERVER_ID: ${APIKEWAN_SERVER_ID:-serverjavacidigital}
+      APIKEWAN_ISSUER: ${APIKEWAN_ISSUER:-serverjavacidigital}
+      APIKEWAN_KID: ${APIKEWAN_KID:-HoalAdios123.}
+      APIKEWAN_AUDIENCE: ${APIKEWAN_AUDIENCE:-api-hospital}
+      APIKEWAN_SCOPE: ${APIKEWAN_SCOPE:-citas.read}
+      APIKEWAN_PRIVATE_KEY: ${APIKEWAN_PRIVATE_KEY:-}
+      APIKEWAN_PRIVATE_KEY_PATH: ${APIKEWAN_PRIVATE_KEY_PATH:-/app/secrets/apikewan-private-key.pem}
+      APIKEWAN_TRUSTSTORE_PATH: ${APIKEWAN_TRUSTSTORE_PATH:-certs/truststore.p12}
+      APIKEWAN_TRUSTSTORE_PASSWORD: ${APIKEWAN_TRUSTSTORE_PASSWORD:-changeit}
+      APIKEWAN_TRUSTSTORE_TYPE: ${APIKEWAN_TRUSTSTORE_TYPE:-PKCS12}
+      APIKEWAN_TIMEOUT_MS: ${APIKEWAN_TIMEOUT_MS:-10000}
+      APIKEWAN_RETRY_ATTEMPTS: ${APIKEWAN_RETRY_ATTEMPTS:-3}
+      APIKEWAN_RETRY_BACKOFF_MS: ${APIKEWAN_RETRY_BACKOFF_MS:-500}
+      LDAP_ENABLED: ${LDAP_ENABLED:-true}
+      LDAP_URL: ${LDAP_URL:-ldap://dc01.chpcs.local:389}
+      LDAP_BASE: ${LDAP_BASE:-dc=chpcs,dc=local}
+      LDAP_DOMAIN: ${LDAP_DOMAIN:-chpcs.local}
+      LDAP_SERVICE_ACCOUNT: ${LDAP_SERVICE_ACCOUNT:-chpcs\AppConsentimiento}
+      LDAP_SERVICE_PASSWORD: ${LDAP_SERVICE_PASSWORD:-AppPwd123#}
+      LDAP_REQUIRED_GROUP: ${LDAP_REQUIRED_GROUP:-CN=DEP02_1536_ACCESO_CIDIGITAL,OU=Hospital,OU=Usuarios,OU=CAS_PROVINCIAL,DC=chpcs,DC=local}
+      LDAP_USER_SEARCH_FILTER: ${LDAP_USER_SEARCH_FILTER:-(sAMAccountName={0})}
+      LDAP_CONNECT_TIMEOUT_MS: ${LDAP_CONNECT_TIMEOUT_MS:-10000}
+      LDAP_READ_TIMEOUT_MS: ${LDAP_READ_TIMEOUT_MS:-10000}
+      MAIL_USERNAME: ${MAIL_USERNAME:-no-reply@hospitalprovincial.es}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-Zan50068}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-ACb7951f4cada5f3a765c7a5f84b652349}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-56c70065f292b0463bdbc54d6eb23822}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-+15206857458}
+    extra_hosts:
+      - "apikewan.chpcs.local:${APIKEWAN_IP:-172.30.100.191}"
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
+      - "${BACKEND_MTLS_PORT:-8444}:8444"
+    volumes:
+      - backend_signatures:/app/data/signatures
+      - backend_pdfs:/app/data/pdfs
+      - Z:/autoasociar:/app/his-export
+      - ./backend/secrets:/app/secrets:ro
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
     container_name: ci_frontend
+    restart: unless-stopped
     depends_on:
       - backend
     ports:
-      - "5173:80"
+      - "${FRONTEND_PORT:-5173}:80"
 
 volumes:
   postgres_data:
+  backend_signatures:
+  backend_pdfs:
+  his_export:
+
+networks:
+  default:
+    name: ci_network
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET:-10.53.0.0/24}

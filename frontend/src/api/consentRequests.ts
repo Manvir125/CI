@@ -117,6 +117,7 @@ export interface ConsentGroupDto {
         responsibleService: string;
         assignedProfessionalId?: number | null;
         channel: string;
+        autoSign?: boolean;
         observations?: string;
         dynamicFields?: Record<string, string>;
         customTemplateHtml?: string;

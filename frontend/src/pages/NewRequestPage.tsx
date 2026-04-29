@@ -492,7 +492,7 @@ export default function NewRequestPage() {
                 : '';
 
             if (channel === 'REMOTE' && !normalizedPatientEmail) {
-                setError('Introduce un email real del paciente para la firma remota.');
+                setError('Introduzca un correo electrónico válido para la firma remota.');
                 setLoading(false);
                 return;
             }
@@ -511,14 +511,19 @@ export default function NewRequestPage() {
                         responsibleService: resolveResponsibleService(t),
                         assignedProfessionalId: assignedProfessionalMap[id] ?? null,
                         channel,
+                        autoSign: id === mainTemplateId,
                         observations: observationsMap[id] || '',
                         customTemplateHtml: customTemplateMap[id] || t?.contentHtml || ''
                     };
                 })
             };
 
-            // Determinar si el medico principal o secundario auto-firmaria alguno de los consentimientos
+            // La plantilla principal se firma siempre por el profesional que crea la solicitud.
             const willAutoSign = allSelectedIds.some(id => {
+                if (id === mainTemplateId) {
+                    return true;
+                }
+
                 const assignedProfessionalId = assignedProfessionalMap[id];
                 if (assignedProfessionalId) {
                     const assignedProfessional = activeProfessionals.find(
@@ -579,12 +584,12 @@ export default function NewRequestPage() {
                 <div className="app-topbar__brand">
                     <div className="app-topbar__mark">CI</div>
                     <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(startedFromAgenda ? '/dashboard' : '/requests')}
-                        className="soft-button-ghost text-sm"
-                    >
-                        {startedFromAgenda ? 'Volver al dashboard' : 'Volver a solicitudes'}
-                    </button>
+                        <button
+                            onClick={() => navigate(startedFromAgenda ? '/dashboard' : '/requests')}
+                            className="soft-button-ghost text-sm"
+                        >
+                            {startedFromAgenda ? 'Volver al dashboard' : 'Volver a solicitudes'}
+                        </button>
                         <div>
                             <p className="app-topbar__eyebrow">Solicitud</p>
                             <h1 className="app-topbar__title">Nueva solicitud de consentimiento</h1>
@@ -597,13 +602,12 @@ export default function NewRequestPage() {
                 <section className="request-hero mb-6">
                     <div className="flex items-start justify-between gap-6 flex-wrap">
                         <div className="max-w-2xl">
-                            <p className="section-kicker">Flujo guiado</p>
+                            <p className="section-kicker">Solicitud guiada</p>
                             <h2 className="text-3xl font-semibold tracking-tight text-slate-800">
-                                Crea la solicitud con una lectura mas limpia y pasos mejor marcados
+                                Prepare el consentimiento del paciente
                             </h2>
                             <p className="mt-3 text-sm leading-6 text-slate-500">
-                                Busca al paciente, confirma el episodio correcto y prepara el envio o la firma presencial
-                                sin alterar el comportamiento actual del formulario.
+                                Busque al paciente, seleccione el episodio y configure la firma.
                             </p>
                         </div>
                     </div>
@@ -626,15 +630,15 @@ export default function NewRequestPage() {
                 {/* Indicador de pasos */}
                 <div className="step-strip">
                     {(['search', 'episodes', 'configure'] as Step[]).map((s, i) => {
-                        const labels = ['Buscar paciente', 'Seleccionar episodio', 'Configurar envio'];
+                        const labels = ['Buscar paciente', 'Seleccionar episodio', 'Configurar envío'];
                         const isActive = step === s;
                         const isCompleted = ['search', 'episodes', 'configure']
                             .indexOf(step) > i;
                         return (
                             <div key={s} className="flex items-center">
                                 <div className={`step-pill text-sm ${isActive ? 'step-pill--active font-medium' :
-                                        isCompleted ? 'step-pill--done' :
-                                            ''}`}>
+                                    isCompleted ? 'step-pill--done' :
+                                        ''}`}>
                                     <span>{i + 1}</span>
                                     <span className="hidden sm:block">{labels[i]}</span>
                                 </div>
@@ -687,7 +691,7 @@ export default function NewRequestPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    {searchType === 'nhc' ? 'Numero de Historia Clinica' : 'DNI del paciente'}
+                                    {searchType === 'nhc' ? 'Número de historia clínica' : 'DNI del paciente'}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -758,7 +762,7 @@ export default function NewRequestPage() {
 
                             {episodes.length === 0 ? (
                                 <p className="text-gray-400 text-center py-8">
-                                    No hay episodios activos para este paciente
+                                    No hay episodios activos para este paciente.
                                 </p>
                             ) : (
                                 <div className="space-y-3">
@@ -797,7 +801,7 @@ export default function NewRequestPage() {
                     </div>
                 )}
 
-                {/* PASO 3: Configurar envio */}
+                {/* PASO 3: Configurar envío */}
                 {step === 'configure' && patient && selectedEpisode && (
                     <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -876,13 +880,13 @@ export default function NewRequestPage() {
                         {/* Plantilla Principal */}
                         <div className="pastel-card p-6 space-y-3">
                             <h2 className="font-semibold text-gray-800 text-lg">
-                                Consentimiento Principal *
+                                Consentimiento principal *
                             </h2>
                             <p className="text-sm text-gray-500 mb-2">
                                 {currentUserServiceLabel ? (
-                                    <>Solo se muestran plantillas de tu especialidad: <strong>{currentUserServiceLabel}</strong></>
+                                    <>Se muestran las plantillas de su especialidad.</>
                                 ) : (
-                                    <>Solo se muestran plantillas del servicio {selectedEpisodeServiceLabel || 'seleccionado'}</>
+                                    <>Se muestran las plantillas del servicio {selectedEpisodeServiceLabel || 'seleccionado'}.</>
                                 )}
                             </p>
                             <div className="space-y-2">
@@ -911,11 +915,11 @@ export default function NewRequestPage() {
                                             {mainTemplateId === t.id && (
                                                 <div className="mt-2 pl-10 pr-3 space-y-3 pb-4">
                                                     <div>
-                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (anadidas al final del PDF)</label>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones para el PDF</label>
                                                         <textarea
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                             rows={2}
-                                                            placeholder="Escribe aqui observaciones o detalles adicionales..."
+                                                            placeholder="Añada observaciones si es necesario."
                                                             value={observationsMap[t.id] || ''}
                                                             onChange={e => setObservationsMap(prev => ({ ...prev, [t.id]: e.target.value }))}
                                                         />
@@ -925,14 +929,14 @@ export default function NewRequestPage() {
                                                             <div className="template-editor-shell border border-emerald-200 rounded-2xl p-3 mt-2 shadow-sm">
                                                                 <div className="flex justify-between items-center mb-2">
                                                                     <label className="block text-sm font-semibold text-gray-800">
-                                                                        Editando plantilla...
+                                                                        Editando plantilla
                                                                     </label>
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => setEditingTemplateId(null)}
                                                                         className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md hover:bg-emerald-200 font-medium transition-colors"
                                                                     >
-                                                                        Terminar edicion
+                                                                        Finalizar edición
                                                                     </button>
                                                                 </div>
                                                                 <div className="bg-white border border-gray-300 rounded overflow-hidden">
@@ -954,7 +958,7 @@ export default function NewRequestPage() {
                                                                 className="soft-button-ghost mt-1 w-full text-sm flex items-center justify-center gap-2"
                                                             >
                                                                 <span>Editar</span>
-                                                                {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar texto de la plantilla"}
+                                                                {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar plantilla"}
                                                             </button>
                                                         )}
                                                     </div>
@@ -968,10 +972,10 @@ export default function NewRequestPage() {
                         {/* Plantillas Secundarias */}
                         <div className="pastel-card p-6 space-y-3">
                             <h2 className="font-semibold text-gray-800 text-lg">
-                                Consentimientos Adicionales
+                                Consentimientos adicionales
                             </h2>
                             <p className="text-sm text-gray-500 mb-2">
-                                Puedes anadir otros consentimientos de cualquier servicio
+                                Añada otros consentimientos si procede.
                             </p>
                             <div className="space-y-2">
                                 {templates
@@ -1002,13 +1006,13 @@ export default function NewRequestPage() {
                                                             Profesional asignado
                                                         </label>
                                                         <p className="text-xs text-gray-500 mb-2">
-                                                            Si eliges un profesional, esta solicitud pendiente solo le aparecera a esa persona. Si no eliges ninguno, se asignara por especialidad.
+                                                            Asigne un profesional concreto o deje que se derive por especialidad.
                                                         </p>
                                                         <input
                                                             type="text"
                                                             value={professionalSearchMap[t.id] || ''}
                                                             onChange={e => setProfessionalSearchMap(prev => ({ ...prev, [t.id]: e.target.value }))}
-                                                            placeholder="Buscar profesional activo por nombre, usuario o especialidad"
+                                                            placeholder="Buscar por nombre, usuario o especialidad"
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                         />
                                                         <select
@@ -1019,7 +1023,7 @@ export default function NewRequestPage() {
                                                             }))}
                                                             className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                         >
-                                                            <option value="">Sin asignacion especifica (usar especialidad)</option>
+                                                            <option value="">Sin asignación específica</option>
                                                             {getFilteredProfessionals(t.id).map(professional => (
                                                                 <option key={professional.id} value={professional.id}>
                                                                     {professional.fullName}
@@ -1031,11 +1035,11 @@ export default function NewRequestPage() {
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones (anadidas al final del PDF)</label>
+                                                        <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones para el PDF</label>
                                                         <textarea
                                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                             rows={2}
-                                                            placeholder="Escribe aqui observaciones o detalles adicionales..."
+                                                            placeholder="Añada observaciones si es necesario."
                                                             value={observationsMap[t.id] || ''}
                                                             onChange={e => setObservationsMap(prev => ({ ...prev, [t.id]: e.target.value }))}
                                                         />
@@ -1045,14 +1049,14 @@ export default function NewRequestPage() {
                                                             <div className="template-editor-shell border border-emerald-200 rounded-2xl p-3 mt-2 shadow-sm">
                                                                 <div className="flex justify-between items-center mb-2">
                                                                     <label className="block text-sm font-semibold text-gray-800">
-                                                                        Editando plantilla...
+                                                                        Editando plantilla
                                                                     </label>
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => setEditingTemplateId(null)}
                                                                         className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md hover:bg-emerald-200 font-medium transition-colors"
                                                                     >
-                                                                        Terminar edicion
+                                                                        Finalizar edición
                                                                     </button>
                                                                 </div>
                                                                 <div className="bg-white border border-gray-300 rounded overflow-hidden">
@@ -1074,7 +1078,7 @@ export default function NewRequestPage() {
                                                                 className="soft-button-ghost mt-1 w-full text-sm flex items-center justify-center gap-2"
                                                             >
                                                                 <span>Editar</span>
-                                                                {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar texto de la plantilla"}
+                                                                {customTemplateMap[t.id] ? "Editar plantilla modificada" : "Personalizar plantilla"}
                                                             </button>
                                                         )}
                                                     </div>
@@ -1109,7 +1113,7 @@ export default function NewRequestPage() {
                                     <div>
                                         <p className="font-medium text-sm">Firma remota</p>
                                         <p className="text-xs text-gray-500">
-                                            El paciente firma desde su dispositivo
+                                            Enlace para firma fuera del centro
                                         </p>
                                     </div>
                                 </label>
@@ -1130,7 +1134,7 @@ export default function NewRequestPage() {
                                     <div>
                                         <p className="font-medium text-sm">Firma presencial</p>
                                         <p className="text-xs text-gray-500">
-                                            El paciente firma en el centro
+                                            Firma en el centro
                                         </p>
                                     </div>
                                 </label>
@@ -1140,7 +1144,7 @@ export default function NewRequestPage() {
                                 <div className="space-y-3 pt-2">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Email del paciente *
+                                            Correo electrónico del paciente *
                                         </label>
                                         <input
                                             type="email"
@@ -1153,7 +1157,7 @@ export default function NewRequestPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Telefono (opcional, para SMS)
+                                            Teléfono para SMS (opcional)
                                         </label>
                                         <input
                                             type="tel"
@@ -1174,7 +1178,7 @@ export default function NewRequestPage() {
                                             className="w-4 h-4"
                                         />
                                         <span className="text-sm text-emerald-800">
-                                            Enviar el enlace al paciente ahora por email
+                                            Enviar ahora el enlace al paciente
                                         </span>
                                     </label>
                                 </div>
@@ -1187,7 +1191,7 @@ export default function NewRequestPage() {
                                 onClick={() => startedFromAgenda ? navigate('/dashboard') : setStep('episodes')}
                                 className="soft-button-secondary"
                             >
-                                {startedFromAgenda ? 'Volver al dashboard' : 'Atras'}
+                                {startedFromAgenda ? 'Volver al dashboard' : 'Atrás'}
                             </button>
                             <button
                                 type="submit"

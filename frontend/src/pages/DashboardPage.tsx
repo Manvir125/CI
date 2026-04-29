@@ -123,7 +123,7 @@ export default function DashboardPage() {
                         <p className="app-topbar__eyebrow">CHPC</p>
                         <h1 className="app-topbar__title">CI Digital</h1>
                         <p className="app-topbar__subtitle">
-                            Gestion de consentimientos con una vista clara y tranquila
+                            Gestión de consentimientos informados
                         </p>
                     </div>
                 </div>
@@ -136,7 +136,7 @@ export default function DashboardPage() {
                         onClick={handleLogout}
                         className="soft-button-secondary text-sm"
                     >
-                        Cerrar sesion
+                        Cerrar sesión
                     </button>
                 </div>
             </nav>
@@ -147,12 +147,12 @@ export default function DashboardPage() {
                         <div className="max-w-2xl">
                             <p className="section-kicker">Panel principal</p>
                             <h2 className="text-3xl font-semibold tracking-tight text-slate-800">
-                                Un panel mas limpio para iniciar consentimientos sin friccion
+                                Gestión diaria de consentimientos
                             </h2>
                             <p className="mt-3 text-sm leading-6 text-slate-500">
                                 {isProfessional
-                                    ? 'Selecciona una agenda, revisa las citas del dia y entra al flujo de solicitud desde un entorno visual mas calmado.'
-                                    : 'Accede a las areas clave del sistema desde una interfaz mas ligera y ordenada.'}
+                                    ? 'Seleccione una agenda, revise las citas del día e inicie la solicitud correspondiente.'
+                                    : 'Acceda a las áreas principales del sistema.'}
                             </p>
                         </div>
                         {isProfessional && (
@@ -167,11 +167,11 @@ export default function DashboardPage() {
                     <div className="dashboard-hero__stats">
                         <div className="dashboard-hero__stat">
                             <span className="dashboard-hero__value">{agendas.length}</span>
-                            <span className="dashboard-hero__label">Agendas detectadas</span>
+                            <span className="dashboard-hero__label">Agendas disponibles</span>
                         </div>
                         <div className="dashboard-hero__stat">
                             <span className="dashboard-hero__value">{appointments.length}</span>
-                            <span className="dashboard-hero__label">Citas en la vista</span>
+                            <span className="dashboard-hero__label">Citas cargadas</span>
                         </div>
                         <div className="dashboard-hero__stat">
                             <span className="dashboard-hero__value">{currentSpecialtyLabel || 'Sin dato'}</span>
@@ -189,18 +189,18 @@ export default function DashboardPage() {
                                     {currentSpecialtyLabel || 'Sin especialidad asignada'}
                                 </h3>
                                 <p className="text-sm text-slate-500 mt-1">
-                                    Agendas disponibles para iniciar consentimientos.
+                                    Agendas disponibles para crear solicitudes.
                                 </p>
                             </div>
                             <div className="p-4 space-y-3">
                                 {user?.serviceCode && !user?.dni && (
                                     <div className="surface-note surface-note--warn">
-                                        Tu usuario no tiene DNI configurado y no puede consultar citas en ApiKewan.
+                                        Su usuario no tiene DNI configurado y no puede consultar citas en ApiKewan.
                                     </div>
                                 )}
                                 {!user?.serviceName && user?.dni && (
                                     <div className="surface-note surface-note--info">
-                                        La especialidad se actualizara automaticamente desde ApiKewan al cargar las agendas.
+                                        La especialidad se actualizará automáticamente desde ApiKewan al cargar las agendas.
                                     </div>
                                 )}
                                 {agendaError && (
@@ -214,7 +214,7 @@ export default function DashboardPage() {
                                     </div>
                                 ) : agendas.length === 0 ? (
                                     <div className="text-sm text-gray-400 py-6 text-center">
-                                        No hay agendas disponibles para este profesional hoy.
+                                        No hay agendas disponibles para este profesional.
                                     </div>
                                 ) : (
                                     agendas.map(agenda => {
@@ -260,10 +260,10 @@ export default function DashboardPage() {
                                 <div>
                                     <p className="section-kicker">Citas</p>
                                     <h3 className="text-lg font-semibold text-gray-800 mt-1">
-                                        {selectedAgenda ? selectedAgenda.name : 'Selecciona una agenda'}
+                                        {selectedAgenda ? selectedAgenda.name : 'Seleccione una agenda'}
                                     </h3>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Elige una cita para ir directamente a crear la solicitud de consentimiento.
+                                        Seleccione una cita para crear la solicitud de consentimiento.
                                     </p>
                                 </div>
                                 {selectedAgenda && (
@@ -279,7 +279,7 @@ export default function DashboardPage() {
                             <div className="p-4">
                                 {!selectedAgenda ? (
                                     <div className="text-sm text-gray-400 py-12 text-center">
-                                        Selecciona una agenda para ver sus citas.
+                                        Seleccione una agenda para ver sus citas.
                                     </div>
                                 ) : loadingAppointments ? (
                                     <div className="text-sm text-gray-400 py-12 text-center">
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                         <div className="dashboard-action-card__icon mb-4">Firma</div>
                         <h3 className="font-semibold text-gray-800">Mi firma</h3>
                         <p className="text-gray-500 text-sm mt-1">
-                            Gestionar mi firma para los consentimientos
+                            Configurar la firma profesional.
                         </p>
                     </div>
 
@@ -351,7 +351,7 @@ export default function DashboardPage() {
                         <div className="dashboard-action-card__icon mb-4">Solic</div>
                         <h3 className="font-semibold text-gray-800">Solicitudes</h3>
                         <p className="text-gray-500 text-sm mt-1">
-                            Gestionar consentimientos y envios
+                            Consultar y gestionar solicitudes.
                         </p>
                     </div>
 
@@ -362,7 +362,7 @@ export default function DashboardPage() {
                             <div className="dashboard-action-card__icon mb-4">Temp</div>
                             <h3 className="font-semibold text-gray-800">Plantillas</h3>
                             <p className="text-gray-500 text-sm mt-1">
-                                Gestionar plantillas de consentimiento
+                                Mantener las plantillas disponibles.
                             </p>
                         </div>
                     )}
@@ -374,7 +374,7 @@ export default function DashboardPage() {
                             <div className="dashboard-action-card__icon mb-4">Users</div>
                             <h3 className="font-semibold text-gray-800">Usuarios</h3>
                             <p className="text-gray-500 text-sm mt-1">
-                                Gestionar usuarios y roles
+                                Administrar usuarios y permisos.
                             </p>
                         </div>
                     )}
@@ -386,7 +386,7 @@ export default function DashboardPage() {
                             <div className="dashboard-action-card__icon mb-4">Kiosk</div>
                             <h3 className="font-semibold text-gray-800">Firma presencial</h3>
                             <p className="text-gray-500 text-sm mt-1">
-                                Modo kiosco para firma en el centro
+                                Abrir el modo de firma en el centro.
                             </p>
                         </div>
                     )}
@@ -396,9 +396,9 @@ export default function DashboardPage() {
                             onClick={() => navigate('/audit')}
                             className="dashboard-action-card">
                             <div className="dashboard-action-card__icon mb-4">Audit</div>
-                            <h3 className="font-semibold text-gray-800">Auditoria</h3>
+                            <h3 className="font-semibold text-gray-800">Auditoría</h3>
                             <p className="text-gray-500 text-sm mt-1">
-                                Registro de actividad del sistema
+                                Revisar la actividad del sistema.
                             </p>
                         </div>
                     )}
@@ -410,7 +410,7 @@ export default function DashboardPage() {
                             <div className="dashboard-action-card__icon mb-4">Pend</div>
                             <h3 className="font-semibold text-gray-800">Firmas pendientes</h3>
                             <p className="text-gray-500 text-sm mt-1">
-                                Firmar consentimientos pendientes
+                                Revisar y firmar solicitudes pendientes.
                             </p>
                         </div>
                     )}

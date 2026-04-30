@@ -40,6 +40,7 @@ public class PatientPortalService {
     private final ConsentGroupService consentGroupService;
     private final NotificationService notificationService;
     private final HisPatientRepository hisPatientRepository;
+    private final HisDocumentExportService hisDocumentExportService;
 
     private static final int CODE_LENGTH = 6;
     private static final int CODE_EXPIRY_MIN = 10;
@@ -226,6 +227,7 @@ public class PatientPortalService {
                 sibling.setPdfPath(pdfFilePath);
                 sibling.setPdfHash(hash);
                 sibling.setPdfGeneratedAt(LocalDateTime.now());
+                hisDocumentExportService.exportSignedConsent(sibling, pdfFilePath);
                 requestRepository.save(sibling);
 
                 if (sibling.getPatientEmail() != null && !sibling.getPatientEmail().isBlank()) {
@@ -293,7 +295,7 @@ public class PatientPortalService {
                 request.setPdfPath(pdfFilePath);
                 request.setPdfHash(hash);
                 request.setPdfGeneratedAt(LocalDateTime.now());
-
+                hisDocumentExportService.exportSignedConsent(request, pdfFilePath);
                 if (request.getPatientEmail() != null && !request.getPatientEmail().isBlank()) {
                     notificationService.sendSignedConfirmationEmail(request, pdfFilePath, patientName);
                 }

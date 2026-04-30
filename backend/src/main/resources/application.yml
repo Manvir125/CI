@@ -30,13 +30,6 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
-  ldap:
-    embedded:
-      base-dn: dc=chpc,dc=es
-      ldif: classpath:ldap/users.ldif
-      port: 8389
-      validation:
-        enabled: false
 app:
   base-url: ${APP_BASE_URL:http://localhost:5173}
   token-expiry-hours: ${TOKEN_EXPIRY_HOURS:72}
@@ -45,7 +38,7 @@ app:
   pdf-path: ${PDF_PATH:./pdfs}
   keystore-path: ${KEYSTORE_PATH:certs/chpc-keystore.p12}
   keystore-password: ${KEYSTORE_PASSWORD:chpc2026}
-  keystore-alias: ${KEYSTORE_ALIAS:chpc-sign} 
+  keystore-alias: ${KEYSTORE_ALIAS:chpc-sign}
   mtls-enabled: true
   mtls-port: 8444
   mtls-truststore-path: certs/truststore.p12
@@ -53,7 +46,7 @@ app:
 
 twilio:
   account-sid: ${TWILIO_ACCOUNT_SID:ACb7951f4cada5f3a765c7a5f84b652349}
-  auth-token:  ${TWILIO_AUTH_TOKEN:56c70065f292b0463bdbc54d6eb23822}
+  auth-token: ${TWILIO_AUTH_TOKEN:56c70065f292b0463bdbc54d6eb23822}
   from-number: ${TWILIO_FROM_NUMBER:+15206857458}
 
 server:

@@ -19,13 +19,12 @@ services:
       retries: 5
 
   his-mock:
-    image: wiremock/wiremock:3.3.1
+    build:
+      context: ./his-mock
     container_name: ci_his_mock
     restart: unless-stopped
     ports:
       - "${HIS_MOCK_PORT:-9090}:8080"
-    volumes:
-      - ./his-mock:/home/wiremock
     command: --global-response-templating --verbose
 
   backend:
@@ -90,7 +89,6 @@ services:
       - backend_signatures:/app/data/signatures
       - backend_pdfs:/app/data/pdfs
       - Z:/autoasociar:/app/his-export
-      - ./backend/secrets:/app/secrets:ro
 
   frontend:
     build:

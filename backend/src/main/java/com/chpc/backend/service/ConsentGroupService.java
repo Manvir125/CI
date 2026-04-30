@@ -46,6 +46,7 @@ public class ConsentGroupService {
     private final PdfService pdfService;
     private final SignatureCaptureRepository signatureCaptureRepository;
     private final HisIntegrationService hisIntegrationService;
+    private final HisDocumentExportService hisDocumentExportService;
 
     // ── Crea el grupo con todos sus consentimientos ───────────────────────
     @Transactional
@@ -55,7 +56,8 @@ public class ConsentGroupService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         boolean hasRemoteItems = dto.getItems() != null && dto.getItems().stream()
-                .anyMatch(item -> item == null || item.getChannel() == null || "REMOTE".equalsIgnoreCase(item.getChannel()));
+                .anyMatch(item -> item == null || item.getChannel() == null
+                        || "REMOTE".equalsIgnoreCase(item.getChannel()));
         String normalizedPatientEmail = hasRemoteItems ? normalizePatientEmail(dto.getPatientEmail()) : null;
         String normalizedPatientPhone = normalizeBlank(dto.getPatientPhone());
 
@@ -79,7 +81,8 @@ public class ConsentGroupService {
             String creatorService = creator.getServiceCode();
             ConsentRequest.SignChannel signChannel = ConsentRequest.SignChannel.valueOf(
                     item.getChannel() != null ? item.getChannel() : "REMOTE");
-            String requestPatientEmail = signChannel == ConsentRequest.SignChannel.REMOTE ? normalizedPatientEmail : null;
+            String requestPatientEmail = signChannel == ConsentRequest.SignChannel.REMOTE ? normalizedPatientEmail
+                    : null;
             boolean autoSign = (assignedProfessional != null && assignedProfessional.getId().equals(creator.getId()))
                     || (assignedProfessional == null && creatorService != null
                             && creatorService.equalsIgnoreCase(respService));
@@ -109,17 +112,20 @@ public class ConsentGroupService {
                     .customTemplateHtml(item.getCustomTemplateHtml())
                     .build();
             requestRepository.save(request);
-            
+
             if (autoSign) {
                 if (creator.getSignatureMethod() == User.SignatureMethod.CERTIFICATE) {
                     if (certs == null || certs.length == 0) {
-                        throw new RuntimeException("Debe firmar con su certificado digital para crear este consentimiento");
+                        throw new RuntimeException(
+                                "Debe firmar con su certificado digital para crear este consentimiento");
                     }
                     String dn = certs[0].getSubjectX500Principal().getName();
                     request.setProfessionalCertInfo(dn);
                     requestRepository.save(request);
-                } else if (creator.getSignatureMethod() == User.SignatureMethod.TABLET && creator.getSignatureImagePath() == null) {
-                    throw new RuntimeException("No tienes una firma configurada en tu perfil. Sube una firma de tableta o cambia tu método a Certificado Digital.");
+                } else if (creator.getSignatureMethod() == User.SignatureMethod.TABLET
+                        && creator.getSignatureImagePath() == null) {
+                    throw new RuntimeException(
+                            "No tienes una firma configurada en tu perfil. Sube una firma de tableta o cambia tu método a Certificado Digital.");
                 }
             }
         }
@@ -176,18 +182,20 @@ public class ConsentGroupService {
 
     // ── El médico secundario firma su consentimiento con certificado ────────
     @Transactional
-    public void professionalSignWithCertificate(Long requestId, String signerUsername, java.security.cert.X509Certificate[] certs)
+    public void professionalSignWithCertificate(Long requestId, String signerUsername,
+            java.security.cert.X509Certificate[] certs)
             throws Exception {
-            
+
         if (certs == null || certs.length == 0) {
             throw new RuntimeException("No se proporcionó ningún certificado de cliente");
         }
-        
+
         java.security.cert.X509Certificate cert = certs[0];
         String dn = cert.getSubjectX500Principal().getName();
         log.info("Firma con certificado detectada para {}: DN={}", signerUsername, dn);
-        
-        // Proceder con la firma normal (las validaciones se hacen dentro de doProfessionalSign)
+
+        // Proceder con la firma normal (las validaciones se hacen dentro de
+        // doProfessionalSign)
         doProfessionalSign(requestId, signerUsername, "CERTIFICATE_MTLS: " + dn);
     }
 
@@ -219,7 +227,8 @@ public class ConsentGroupService {
         }
 
         // Validación: si firma sin certificado y su método es TABLET, debe tener firma
-        if (certInfo == null && signer.getSignatureMethod() == User.SignatureMethod.TABLET && signer.getSignatureImagePath() == null) {
+        if (certInfo == null && signer.getSignatureMethod() == User.SignatureMethod.TABLET
+                && signer.getSignatureImagePath() == null) {
             throw new RuntimeException("No tienes una firma configurada en tu perfil. " +
                     "Sube una firma de tableta o cambia tu método a Certificado Digital.");
         }
@@ -232,12 +241,12 @@ public class ConsentGroupService {
         request.setProfessionalSigned(true);
         request.setProfessionalSignedAt(LocalDateTime.now());
         request.setProfessionalSigner(signer);
-        
+
         if (certInfo != null) {
             // Guardar en el campo dedicado que la firma fue con certificado
             request.setProfessionalCertInfo(certInfo);
         }
-        
+
         requestRepository.save(request);
 
         String patientName = hisIntegrationService.findPatientByNhc(request.getNhc())
@@ -248,6 +257,7 @@ public class ConsentGroupService {
         request.setPdfPath(pdfPath);
         request.setPdfHash(hash);
         request.setPdfGeneratedAt(LocalDateTime.now());
+        hisDocumentExportService.exportSignedConsent(request, pdfPath);
         requestRepository.save(request);
 
         updateGroupStatus(request.getGroup());

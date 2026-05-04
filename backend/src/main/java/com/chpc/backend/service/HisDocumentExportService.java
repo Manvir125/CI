@@ -1,6 +1,7 @@
 package com.chpc.backend.service;
 
 import com.chpc.backend.entity.ConsentRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -9,10 +10,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
+import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class HisDocumentExportService {
+
+    private final AuditService auditService;
 
     @Value("${his.document-export.enabled:false}")
     private boolean enabled;
@@ -38,6 +43,9 @@ public class HisDocumentExportService {
             Path source = Path.of(signedPdfPath);
             if (!Files.exists(source)) {
                 log.warn("HIS export: no existe el PDF firmado {} para solicitud {}", signedPdfPath, request.getId());
+                auditService.logWithData("system", "HIS_EXPORT_ERROR", "ConsentRequest",
+                        request.getId(), null, false,
+                        Map.of("reason", "PDF_NOT_FOUND", "path", signedPdfPath));
                 return;
             }
 
@@ -46,8 +54,18 @@ public class HisDocumentExportService {
             Path target = Path.of(exportPath, filename);
             Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
             log.info("HIS export: solicitud {} exportada a {}", request.getId(), target);
+            auditService.logWithData("system", "HIS_EXPORT_SUCCESS", "ConsentRequest",
+                    request.getId(), null, true,
+                    Map.of(
+                            "nhc", String.valueOf(request.getNhc()),
+                            "filename", filename,
+                            "targetPath", target.toString()
+                    ));
         } catch (Exception e) {
             log.error("HIS export: error exportando solicitud {} a {}", request.getId(), exportPath, e);
+            auditService.logWithData("system", "HIS_EXPORT_ERROR", "ConsentRequest",
+                    request.getId(), null, false,
+                    Map.of("error", String.valueOf(e.getMessage()), "targetPath", exportPath));
         }
     }
 

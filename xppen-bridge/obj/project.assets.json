@@ -8,23 +8,23 @@
     "net10.0": []
   },
   "packageFolders": {
-    "C:\\Users\\Manvir\\.nuget\\packages\\": {},
+    "C:\\Users\\13312911m\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Manvir\\Documents\\CI\\xppen-bridge\\xppen-bridge.csproj",
+      "projectUniqueName": "W:\\xppen-bridge\\xppen-bridge.csproj",
       "projectName": "xppen-bridge",
-      "projectPath": "C:\\Users\\Manvir\\Documents\\CI\\xppen-bridge\\xppen-bridge.csproj",
-      "packagesPath": "C:\\Users\\Manvir\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Manvir\\Documents\\CI\\xppen-bridge\\obj\\",
+      "projectPath": "W:\\xppen-bridge\\xppen-bridge.csproj",
+      "packagesPath": "C:\\Users\\13312911m\\.nuget\\packages\\",
+      "outputPath": "W:\\xppen-bridge\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Manvir\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\13312911m\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],

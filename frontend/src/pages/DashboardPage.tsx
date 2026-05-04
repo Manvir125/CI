@@ -45,26 +45,6 @@ export default function DashboardPage() {
             setLoadingAgendas(true);
             setAgendaError('');
             try {
-                const data = await getServiceAgendas(user.serviceCode || 'self');
-                setAgendas(data);
-                setSelectedAgenda(data[0] ?? null);
-
-                const specialtyCode = data[0]?.professional?.specialtyCode;
-                const specialtyName = data[0]?.professional?.specialtyName;
-                if (
-                    (specialtyCode && specialtyCode !== user.serviceCode) ||
-                    (specialtyName && specialtyName !== user.serviceName)
-                ) {
-                    updateSessionUser({
-                        serviceCode: specialtyCode || user.serviceCode,
-                        serviceName: specialtyName || user.serviceName,
-                    });
-                }
-            } catch (error) {
-                setAgendaError(getApiErrorMessage(
-                    error,
-                    'No se han podido cargar las agendas del profesional.'
-                ));
                 setAgendas([]);
                 setSelectedAgenda(null);
             } finally {

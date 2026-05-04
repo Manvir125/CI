@@ -4,6 +4,7 @@ import com.chpc.backend.entity.Role;
 import com.chpc.backend.entity.User;
 import com.chpc.backend.repository.RoleRepository;
 import com.chpc.backend.repository.UserRepository;
+import com.chpc.backend.service.AuditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,11 +31,17 @@ public class LdapAuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
     private static final String REQUIRED_GROUP_DN = "CN=DEP02_1536_ACCESO_CIDIGITAL,OU=Hospital,OU=Usuarios,OU=CAS_PROVINCIAL,DC=chpcs,DC=local";
 
     @Transactional
     public Optional<User> authenticateAndSync(String username, String password) {
+        return authenticateAndSync(username, password, null);
+    }
+
+    @Transactional
+    public Optional<User> authenticateAndSync(String username, String password, String ipAddress) {
         try {
             AndFilter filter = new AndFilter();
             filter.and(new EqualsFilter("objectclass", "person"));
@@ -46,6 +53,7 @@ public class LdapAuthService {
 
             if (!authenticated) {
                 log.warn("=== LDAP: Fallo de autenticación para usuario '{}'", username);
+                auditService.log(username, "LDAP_AUTH_FAILED", ipAddress, false);
                 return Optional.empty();
             }
 
@@ -56,6 +64,8 @@ public class LdapAuthService {
                         Map<String, Object> map = new HashMap<>();
                         map.put("cn", getAttr(attrs, "cn"));
                         map.put("mail", getAttr(attrs, "mail"));
+                        map.put("displayName", getAttr(attrs, "displayName"));
+                        map.put("name", getAttr(attrs, "name"));
 
                         // Debug: log all attribute IDs returned by AD
                         log.debug("=== LDAP: Atributos devueltos para el usuario:");
@@ -86,6 +96,7 @@ public class LdapAuthService {
 
             if (results.isEmpty()) {
                 log.warn("=== AD: Usuario {} autenticado pero no encontrado en búsqueda posterior", username);
+                auditService.log(username, "LDAP_USER_NOT_FOUND", ipAddress, false);
                 return Optional.empty();
             }
 
@@ -101,6 +112,8 @@ public class LdapAuthService {
                 log.warn(
                         "=== LDAP: Usuario '{}' autenticado pero no pertenece al grupo requerido. Grupos del usuario: {}",
                         username, userGroups);
+                auditService.logWithData(username, "LDAP_AUTH_GROUP_DENIED", "User", null, ipAddress, false,
+                        Map.of("groups", userGroups, "requiredGroup", REQUIRED_GROUP_DN));
                 return Optional.empty();
             }
 
@@ -113,12 +126,16 @@ public class LdapAuthService {
             Map<String, String> stringAttrs = new HashMap<>();
             stringAttrs.put("cn", attrs.getOrDefault("cn", "").toString());
             stringAttrs.put("mail", attrs.getOrDefault("mail", "").toString());
+            stringAttrs.put("displayName", attrs.getOrDefault("displayName", "").toString());
+            stringAttrs.put("name", attrs.getOrDefault("name", "").toString());
 
-            User user = syncUser(username, stringAttrs, safeGroups, password);
+            User user = syncUser(username, stringAttrs, safeGroups, password, ipAddress);
             return Optional.of(user);
 
         } catch (Exception e) {
-            log.error("=== AD: Error: {}", e.getMessage());
+            log.error("=== AD: Error inesperado en autenticación LDAP para '{}': {}", username, e.getMessage());
+            auditService.logWithData(username, "LDAP_AUTH_ERROR", "User", null, ipAddress, false,
+                    Map.of("error", String.valueOf(e.getMessage())));
             return Optional.empty();
         }
     }
@@ -140,7 +157,7 @@ public class LdapAuthService {
 
     @Transactional
     protected User syncUser(String username, Map<String, String> attrs,
-            Set<String> groups, String password) {
+            Set<String> groups, String password, String ipAddress) {
 
         Set<Role> roles = groups.stream()
                 .map(groupDn -> {
@@ -163,6 +180,17 @@ public class LdapAuthService {
         String mail = attrs.getOrDefault("mail", username + "@" + ldapDomain);
         String cn = attrs.getOrDefault("cn", username);
         String serviceCode = attrs.getOrDefault("description", "");
+        
+        String displayName = attrs.getOrDefault("displayName", "");
+        String name = attrs.getOrDefault("name", "");
+        
+        String fullNameToUse = displayName;
+        if (fullNameToUse == null || fullNameToUse.trim().isEmpty()) {
+            fullNameToUse = name;
+        }
+        if (fullNameToUse == null || fullNameToUse.trim().isEmpty()) {
+            fullNameToUse = cn;
+        }
 
         return userRepository.findByUsername(username).map(existing -> {
             log.info("=== LDAP: Usuario '{}' ya existe en BD local, se omite sincronización", username);
@@ -170,14 +198,26 @@ public class LdapAuthService {
         }).orElseGet(() -> {
             User newUser = User.builder()
                     .username(username)
-                    .fullName(cn)
+                    .fullName(fullNameToUse)
+                    .dni(username)
                     .email(mail)
                     .passwordHash(passwordEncoder.encode(password))
                     .isActive(true)
                     .roles(roles)
                     .serviceCode(serviceCode)
                     .build();
-            return userRepository.save(newUser);
+            User saved = userRepository.save(newUser);
+            log.info("=== LDAP: Nuevo usuario creado automáticamente desde AD: '{}' (dni={}, fullName='{}')",
+                    username, username, fullNameToUse);
+            auditService.logWithData(username, "LDAP_USER_AUTO_CREATED", "User", saved.getId(), ipAddress, true,
+                    Map.of(
+                            "dni", username,
+                            "fullName", fullNameToUse,
+                            "email", mail,
+                            "roles", roles.stream().map(r -> r.getType().name()).collect(Collectors.toSet()),
+                            "source", "AD"
+                    ));
+            return saved;
         });
     }
 

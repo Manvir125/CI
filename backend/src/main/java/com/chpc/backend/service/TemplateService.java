@@ -72,8 +72,14 @@ public class TemplateService {
                 }
 
                 ConsentTemplate saved = templateRepository.save(template);
-                auditService.log(username, "TEMPLATE_CREATED", "ConsentTemplate",
-                                saved.getId(), ipAddress, true, null);
+                auditService.logWithData(username, "TEMPLATE_CREATED", "ConsentTemplate",
+                                saved.getId(), ipAddress, true,
+                                java.util.Map.of(
+                                                "name", request.getName(),
+                                                "serviceCode", String.valueOf(request.getServiceCode()),
+                                                "procedureCode", String.valueOf(request.getProcedureCode()),
+                                                "fieldsCount", request.getFields() != null ? request.getFields().size() : 0
+                                ));
 
                 return toResponse(saved);
         }
@@ -88,8 +94,9 @@ public class TemplateService {
 
                 String username = SecurityContextHolder.getContext()
                                 .getAuthentication().getName();
-                auditService.log(username, "TEMPLATE_DEACTIVATED", "ConsentTemplate",
-                                id, ipAddress, true, null);
+                auditService.logWithData(username, "TEMPLATE_DEACTIVATED", "ConsentTemplate",
+                                id, ipAddress, true,
+                                java.util.Map.of("name", template.getName()));
         }
 
         // Duplicar plantilla existente
@@ -113,6 +120,9 @@ public class TemplateService {
                                 .build();
 
                 templateRepository.save(copy);
+                auditService.logWithData(username, "TEMPLATE_DUPLICATED", "ConsentTemplate",
+                                copy.getId(), ipAddress, true,
+                                java.util.Map.of("sourceId", id, "sourceName", original.getName()));
                 return toResponse(copy);
         }
 

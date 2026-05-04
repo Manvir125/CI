@@ -130,8 +130,13 @@ public class ConsentGroupService {
             }
         }
 
-        auditService.log(creatorUsername, "GROUP_CREATED", "ConsentGroup",
-                group.getId(), null, true, null);
+        auditService.logWithData(creatorUsername, "GROUP_CREATED", "ConsentGroup",
+                group.getId(), null, true,
+                java.util.Map.of(
+                        "nhc", String.valueOf(dto.getNhc()),
+                        "episodeId", String.valueOf(dto.getEpisodeId()),
+                        "itemsCount", dto.getItems() != null ? dto.getItems().size() : 0
+                ));
 
         return toResponse(group);
     }
@@ -262,8 +267,14 @@ public class ConsentGroupService {
 
         updateGroupStatus(request.getGroup());
 
-        auditService.log(signerUsername, certInfo != null ? "PROFESSIONAL_SIGNED_CERT" : "PROFESSIONAL_SIGNED",
-                "ConsentRequest", requestId, null, true, null);
+        auditService.logWithData(signerUsername,
+                certInfo != null ? "PROFESSIONAL_SIGNED_CERT" : "PROFESSIONAL_SIGNED",
+                "ConsentRequest", requestId, null, true,
+                java.util.Map.of(
+                        "nhc", String.valueOf(request.getNhc()),
+                        "method", certInfo != null ? "CERTIFICATE" : "TABLET",
+                        "pdfHash", String.valueOf(hash)
+                ));
 
         log.info("Consentimiento {} firmado por profesional {} (Método: {})",
                 requestId, signerUsername, certInfo != null ? "CERTIFICADO" : "TABLETA");

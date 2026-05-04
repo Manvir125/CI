@@ -230,6 +230,18 @@ public class PatientPortalService {
                 hisDocumentExportService.exportSignedConsent(sibling, pdfFilePath);
                 requestRepository.save(sibling);
 
+                boolean siblingSignedOk = "SIGNED".equals(req.getConfirmation());
+                auditService.logWithData(
+                        "patient_token:" + rawToken.substring(0, 8),
+                        siblingSignedOk ? "CONSENT_SIGNED" : "CONSENT_REJECTED",
+                        "ConsentRequest", sibling.getId(), ipAddress, true,
+                        java.util.Map.of(
+                                "nhc", String.valueOf(sibling.getNhc()),
+                                "channel", sibling.getChannel().name(),
+                                "groupId", String.valueOf(request.getGroup().getId()),
+                                "reason", req.getRejectionReason() != null ? req.getRejectionReason() : ""
+                        ));
+
                 if (sibling.getPatientEmail() != null && !sibling.getPatientEmail().isBlank()) {
                     notificationService.sendSignedConfirmationEmail(sibling, pdfFilePath, patientName);
                 }
@@ -309,9 +321,14 @@ public class PatientPortalService {
 
             invalidateToken(token);
 
-            auditService.log("patient_token:" + rawToken.substring(0, 8),
+            auditService.logWithData("patient_token:" + rawToken.substring(0, 8),
                     isSigning ? "CONSENT_SIGNED" : "CONSENT_REJECTED",
-                    "ConsentRequest", request.getId(), ipAddress, true, null);
+                    "ConsentRequest", request.getId(), ipAddress, true,
+                    java.util.Map.of(
+                            "nhc", String.valueOf(request.getNhc()),
+                            "channel", request.getChannel().name(),
+                            "reason", req.getRejectionReason() != null ? req.getRejectionReason() : ""
+                    ));
         }
     }
 

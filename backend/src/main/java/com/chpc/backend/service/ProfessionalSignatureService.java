@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Map;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,6 +30,7 @@ public class ProfessionalSignatureService {
 
     private final UserRepository userRepository;
     private final SignatureEventRepository eventRepository;
+    private final AuditService auditService;
 
     @Value("${app.signatures-path:./signatures}")
     private String signaturesPath;
@@ -40,8 +42,11 @@ public class ProfessionalSignatureService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        // Registra si ya había firma previa antes de borrarla
+        boolean isUpdate = user.getSignatureImagePath() != null;
+
         // Elimina la firma anterior si existe
-        if (user.getSignatureImagePath() != null) {
+        if (isUpdate) {
             Files.deleteIfExists(Paths.get(user.getSignatureImagePath()));
             eventRepository.deleteByUserId(user.getId());
         }
@@ -87,6 +92,12 @@ public class ProfessionalSignatureService {
         }
 
         log.info("Firma del profesional {} guardada en {}", username, filepath);
+        auditService.logWithData(username,
+                isUpdate ? "SIGNATURE_UPDATED" : "SIGNATURE_SAVED",
+                "User", user.getId(), null, true,
+                Map.of(
+                        "eventsCount", events != null ? events.size() : 0,
+                        "filepath", filepath));
     }
 
     // Elimina la firma del profesional
@@ -101,6 +112,8 @@ public class ProfessionalSignatureService {
             user.setSignatureImagePath(null);
             user.setSignatureUpdatedAt(null);
             userRepository.save(user);
+            log.info("Firma del profesional {} eliminada", username);
+            auditService.log(username, "SIGNATURE_DELETED", null, true);
         }
     }
 
@@ -121,12 +134,17 @@ public class ProfessionalSignatureService {
     public void updateSignatureMethod(String username, String method) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-                
+
         try {
             User.SignatureMethod signatureMethod = User.SignatureMethod.valueOf(method.toUpperCase());
+            User.SignatureMethod previousMethod = user.getSignatureMethod();
             user.setSignatureMethod(signatureMethod);
             userRepository.save(user);
             log.info("Método de firma de {} actualizado a {}", username, signatureMethod);
+            auditService.logWithData(username, "SIGNATURE_METHOD_UPDATED", "User", user.getId(), null, true,
+                    Map.of(
+                            "previous", previousMethod != null ? previousMethod.name() : "NONE",
+                            "newMethod", signatureMethod.name()));
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Método de firma no válido: " + method);
         }

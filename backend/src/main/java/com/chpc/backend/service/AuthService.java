@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -35,14 +36,16 @@ public class AuthService {
     public LoginResponse login(LoginRequest request, String ipAddress) {
 
         User user = null;
+        String authMethod = "LOCAL";
 
         if (ldapEnabled) {
             try {
                 Optional<User> ldapUser = ldapAuthService.authenticateAndSync(
-                        request.getUsername(), request.getPassword());
+                        request.getUsername(), request.getPassword(), ipAddress);
 
                 if (ldapUser.isPresent()) {
                     user = ldapUser.get();
+                    authMethod = "LDAP";
                 }
             } catch (Exception e) {
                 log.error("=== AUTH: Excepción en LDAP: ", e); // stack trace completo
@@ -68,7 +71,11 @@ public class AuthService {
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
         String token = jwtUtils.generateToken(user.getUsername());
-        auditService.log(user.getUsername(), "USER_LOGIN", ipAddress, true);
+        auditService.logWithData(user.getUsername(), "USER_LOGIN", "User", user.getId(), ipAddress, true,
+                Map.of(
+                        "method", authMethod,
+                        "roles", user.getRoles().stream().map(r -> r.getType().name()).collect(Collectors.toSet())
+                ));
 
         LoginResponse response = new LoginResponse();
         response.setId(user.getId());

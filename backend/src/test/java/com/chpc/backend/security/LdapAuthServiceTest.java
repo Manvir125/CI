@@ -4,6 +4,7 @@ import com.chpc.backend.entity.Role;
 import com.chpc.backend.entity.User;
 import com.chpc.backend.repository.RoleRepository;
 import com.chpc.backend.repository.UserRepository;
+import com.chpc.backend.service.AuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,8 @@ class LdapAuthServiceTest {
     private RoleRepository roleRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private LdapAuthService service;
@@ -112,7 +115,8 @@ class LdapAuthServiceTest {
                 "doctor",
                 Map.of("cn", "Doctor Demo", "mail", "doctor@test.com", "description", "CARD"),
                 Set.of("CUSTOM_GROUP"),
-                "secret");
+                "secret",
+                null);
 
         assertEquals("doctor", user.getUsername());
         assertEquals("CARD", user.getServiceCode());
@@ -135,7 +139,8 @@ class LdapAuthServiceTest {
                 "doctor",
                 Map.of("cn", "Otro Nombre"),
                 Set.of("ADMIN"),
-                "secret");
+                "secret",
+                null);
 
         assertSame(existing, result);
         verify(userRepository, never()).save(any(User.class));

@@ -23,6 +23,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -68,7 +69,7 @@ class AuthServiceTest {
     @Test
     void loginReturnsJwtWhenLdapAuthenticationSucceeds() {
         ReflectionTestUtils.setField(authService, "ldapEnabled", true);
-        when(ldapAuthService.authenticateAndSync("doctor", "secret")).thenReturn(Optional.of(user));
+        when(ldapAuthService.authenticateAndSync("doctor", "secret", "127.0.0.1")).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
         when(jwtUtils.generateToken("doctor")).thenReturn("jwt-token");
 
@@ -78,13 +79,14 @@ class AuthServiceTest {
         assertEquals("doctor", response.getUsername());
         assertTrue(response.getRoles().contains("PROFESSIONAL"));
         verify(authenticationManager, never()).authenticate(any());
-        verify(auditService).log("doctor", "USER_LOGIN", "127.0.0.1", true);
+        verify(auditService).logWithData(eq("doctor"), eq("USER_LOGIN"), eq("User"),
+                eq(1L), eq("127.0.0.1"), eq(true), anyMap());
     }
 
     @Test
     void loginFallsBackToLocalAuthenticationWhenLdapReturnsEmpty() {
         ReflectionTestUtils.setField(authService, "ldapEnabled", true);
-        when(ldapAuthService.authenticateAndSync("doctor", "secret")).thenReturn(Optional.empty());
+        when(ldapAuthService.authenticateAndSync("doctor", "secret", "127.0.0.1")).thenReturn(Optional.empty());
         when(userRepository.findByUsername("doctor")).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
         when(jwtUtils.generateToken("doctor")).thenReturn("jwt-token");
@@ -93,7 +95,8 @@ class AuthServiceTest {
 
         assertEquals(1L, response.getId());
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(auditService).log("doctor", "USER_LOGIN", "127.0.0.1", true);
+        verify(auditService).logWithData(eq("doctor"), eq("USER_LOGIN"), eq("User"),
+                eq(1L), eq("127.0.0.1"), eq(true), anyMap());
     }
 
     @Test

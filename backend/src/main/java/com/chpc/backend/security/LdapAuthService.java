@@ -183,14 +183,14 @@ public class LdapAuthService {
         
         String displayName = attrs.getOrDefault("displayName", "");
         String name = attrs.getOrDefault("name", "");
-        
-        String fullNameToUse = displayName;
-        if (fullNameToUse == null || fullNameToUse.trim().isEmpty()) {
-            fullNameToUse = name;
-        }
-        if (fullNameToUse == null || fullNameToUse.trim().isEmpty()) {
-            fullNameToUse = cn;
-        }
+
+        // Resolver con prioridad: displayName > name > cn
+        // Se captura en variable final para poder usarse en lambdas
+        String resolvedName = (displayName != null && !displayName.trim().isEmpty()) ? displayName
+                : (name != null && !name.trim().isEmpty()) ? name
+                : cn;
+        final String fullNameToUse = (resolvedName != null && !resolvedName.trim().isEmpty()) ? resolvedName : username;
+        final Set<Role> finalRoles = roles;
 
         return userRepository.findByUsername(username).map(existing -> {
             log.info("=== LDAP: Usuario '{}' ya existe en BD local, se omite sincronización", username);
@@ -203,7 +203,7 @@ public class LdapAuthService {
                     .email(mail)
                     .passwordHash(passwordEncoder.encode(password))
                     .isActive(true)
-                    .roles(roles)
+                    .roles(finalRoles)
                     .serviceCode(serviceCode)
                     .build();
             User saved = userRepository.save(newUser);
@@ -214,7 +214,7 @@ public class LdapAuthService {
                             "dni", username,
                             "fullName", fullNameToUse,
                             "email", mail,
-                            "roles", roles.stream().map(r -> r.getType().name()).collect(Collectors.toSet()),
+                            "roles", finalRoles.stream().map(r -> r.getType().name()).collect(Collectors.toSet()),
                             "source", "AD"
                     ));
             return saved;

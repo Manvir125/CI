@@ -54,6 +54,8 @@ class ConsentGroupServiceTest {
     private SignatureCaptureRepository signatureCaptureRepository;
     @Mock
     private HisIntegrationService hisIntegrationService;
+    @Mock
+    private HisDocumentExportService hisDocumentExportService;
 
     @InjectMocks
     private ConsentGroupService service;
@@ -144,7 +146,8 @@ class ConsentGroupServiceTest {
         assertTrue(savedRequest.getProfessionalSigned());
         assertEquals(creator, savedRequest.getProfessionalSigner());
         assertNotNull(savedRequest.getProfessionalSignedAt());
-        verify(auditService).log("doctor", "GROUP_CREATED", "ConsentGroup", 100L, null, true, null);
+        verify(auditService).logWithData(eq("doctor"), eq("GROUP_CREATED"), eq("ConsentGroup"),
+                eq(100L), isNull(), eq(true), anyMap());
     }
 
     @Test
@@ -227,6 +230,8 @@ class ConsentGroupServiceTest {
         assertTrue(request.getProfessionalCertInfo().contains("CERTIFICATE_MTLS"));
         assertEquals("/tmp/consent.pdf", request.getPdfPath());
         assertEquals("hash123", request.getPdfHash());
-        verify(auditService).log("doctor2", "PROFESSIONAL_SIGNED_CERT", "ConsentRequest", 50L, null, true, null);
+        verify(hisDocumentExportService).exportSignedConsent(request, "/tmp/consent.pdf");
+        verify(auditService).logWithData(eq("doctor2"), eq("PROFESSIONAL_SIGNED_CERT"), eq("ConsentRequest"),
+                eq(50L), isNull(), eq(true), anyMap());
     }
 }

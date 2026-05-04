@@ -101,7 +101,8 @@ class TemplateServiceTest {
         TemplateField savedField = saved.getFields().get(0);
         assertEquals("patient_name", savedField.getFieldKey());
         assertFalse(savedField.getRequired());
-        verify(auditService).log("admin", "TEMPLATE_CREATED", "ConsentTemplate", 10L, "127.0.0.1", true, null);
+        verify(auditService).logWithData(eq("admin"), eq("TEMPLATE_CREATED"), eq("ConsentTemplate"),
+                eq(10L), eq("127.0.0.1"), eq(true), anyMap());
     }
 
     @Test

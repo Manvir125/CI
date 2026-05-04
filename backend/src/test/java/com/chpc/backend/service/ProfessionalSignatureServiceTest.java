@@ -33,6 +33,8 @@ class ProfessionalSignatureServiceTest {
     private UserRepository userRepository;
     @Mock
     private SignatureEventRepository eventRepository;
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private ProfessionalSignatureService service;

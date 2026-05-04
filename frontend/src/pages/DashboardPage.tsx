@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getAgendaAppointments, getServiceAgendas, type AgendaAppointmentDto, type AgendaDto } from '../api/his';
+import { getAgendaAppointments, type AgendaAppointmentDto, type AgendaDto } from '../api/his';
 import { getApiErrorMessage } from '../api/client';
 import { getServiceDisplayName } from '../utils/serviceDisplay';
 

@@ -31,11 +31,6 @@
 		<maven.compiler.parameters>true</maven.compiler.parameters>
 	</properties>
 	<dependencies>
-		<dependency>
-		<groupId>com.twilio.sdk</groupId>
-		<artifactId>twilio</artifactId>
-		<version>9.14.0</version>
-	</dependency>
 	<!-- Generación de PDF -->
 	<dependency>
 		<groupId>com.itextpdf</groupId>

@@ -44,10 +44,15 @@ app:
   mtls-truststore-path: certs/truststore.p12
   mtls-truststore-password: changeit
 
-twilio:
-  account-sid: ${TWILIO_ACCOUNT_SID:ACb7951f4cada5f3a765c7a5f84b652349}
-  auth-token: ${TWILIO_AUTH_TOKEN:56c70065f292b0463bdbc54d6eb23822}
-  from-number: ${TWILIO_FROM_NUMBER:+15206857458}
+telefonica-sms:
+  enabled: ${TELEFONICA_SMS_ENABLED:true}
+  base-url: ${TELEFONICA_SMS_BASE_URL:https://194.224.196.28:9508}
+  submit-path: ${TELEFONICA_SMS_SUBMIT_PATH:/restadpt_generico1/smsTextSubmit}
+  username: ${TELEFONICA_SMS_USERNAME:carlosG}
+  password: ${TELEFONICA_SMS_PASSWORD:Temporal_M01}
+  sender: ${TELEFONICA_SMS_SENDER:683781082}
+  timeout-ms: ${TELEFONICA_SMS_TIMEOUT_MS:5000}
+  phone-format: ${TELEFONICA_SMS_PHONE_FORMAT:NATIONAL_ES}
 
 server:
   port: 8080

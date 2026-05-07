@@ -196,6 +196,7 @@ public class HisIntegrationService {
     @Transactional
     public List<AgendaDto> getProfessionalAgendas(String professionalId) {
         if (apiKewanProperties.isEnabled()) {
+            log.info("ApiKewan: obteniendo agendas usando '{}' como DNI de profesional", professionalId);
             return extractDistinctAgendas(fetchApiKewanAppointments(professionalId));
         }
 
@@ -217,6 +218,7 @@ public class HisIntegrationService {
     @Transactional
     public List<AgendaDto> getAgendasByService(String serviceCode) {
         if (apiKewanProperties.isEnabled()) {
+            log.info("ApiKewan: obteniendo agendas del profesional autenticado para servicio '{}'", serviceCode);
             List<AgendaDto> agendas = extractDistinctAgendas(fetchApiKewanAppointments(resolveCurrentProfessionalDni()));
             log.info("ApiKewan: devolviendo {} agenda(s) del profesional autenticado sin filtrar por servicio '{}'", agendas.size(), serviceCode);
             return agendas;
@@ -240,6 +242,7 @@ public class HisIntegrationService {
     @Transactional
     public List<AgendaAppointmentDto> getAgendaAppointments(String agendaId) {
         if (apiKewanProperties.isEnabled()) {
+            log.info("ApiKewan: obteniendo citas de agenda '{}' para el profesional autenticado", agendaId);
             return sortAgendaAppointments(fetchApiKewanAppointments(resolveCurrentProfessionalDni()).stream()
                     .filter(appointment -> agendaId.equalsIgnoreCase(firstNonBlank(
                             appointment.getAgendaId(),
@@ -268,6 +271,7 @@ public class HisIntegrationService {
         }
 
         try {
+            log.info("ApiKewan: consultando citas de hoy para profesional {}", professionalDni);
             ApiKewanProfessionalAppointmentsResponse response = apiKewanClient.getTodayAppointments(professionalDni);
             syncAuthenticatedUserSpecialty(professionalDni, response != null ? response.getProfesional() : null);
             List<AgendaAppointmentDto> appointments = mapApiKewanAppointments(response, professionalDni);

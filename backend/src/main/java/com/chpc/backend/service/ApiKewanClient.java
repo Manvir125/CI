@@ -37,6 +37,8 @@ public class ApiKewanClient {
                     .path("/api/profesionales/" + encodedDni + "/citas/hoy")
                     .toUriString();
 
+            log.info("ApiKewan: preparando GET {} para profesional {}", url, professionalDni);
+
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofMillis(properties.getTimeoutMs()))
                     .sslContext(buildSslContext())

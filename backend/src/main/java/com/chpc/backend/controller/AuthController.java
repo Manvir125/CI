@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,5 +24,11 @@ public class AuthController {
         String ip = httpRequest.getRemoteAddr();
         LoginResponse response = authService.login(request, ip);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LoginResponse> me() {
+        return ResponseEntity.ok(authService.getCurrentUser());
     }
 }

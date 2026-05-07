@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { AuthUser } from '../types';
 
 interface AuthContextType {
@@ -42,23 +42,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [loading, user]);
 
-    const loginUser = (userData: AuthUser) => {
+    const loginUser = useCallback((userData: AuthUser) => {
         setUser(userData);
-    };
+        localStorage.setItem('auth', JSON.stringify(userData));
+    }, []);
 
-    const logoutUser = () => {
+    const logoutUser = useCallback(() => {
         setUser(null);
-    };
+        localStorage.removeItem('auth');
+    }, []);
 
-    const updateSessionUser = (partialUser: Partial<AuthUser>) => {
-        if (!user) return;
-        const updatedUser = { ...user, ...partialUser };
-        setUser(updatedUser);
-    };
+    const updateSessionUser = useCallback((partialUser: Partial<AuthUser>) => {
+        setUser(currentUser => {
+            if (!currentUser) return currentUser;
+            const updatedUser = { ...currentUser, ...partialUser };
+            localStorage.setItem('auth', JSON.stringify(updatedUser));
+            return updatedUser;
+        });
+    }, []);
 
-    const hasRole = (role: string): boolean => {
+    const hasRole = useCallback((role: string): boolean => {
         return user?.roles.includes(role) ?? false;
-    };
+    }, [user?.roles]);
 
     return (
         <AuthContext.Provider value={{

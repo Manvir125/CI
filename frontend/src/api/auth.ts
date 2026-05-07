@@ -11,3 +11,8 @@ export const login = async (
     });
     return response.data;
 };
+
+export const getCurrentUser = async (): Promise<LoginResponse> => {
+    const response = await client.get<LoginResponse>('/api/auth/me');
+    return response.data;
+};

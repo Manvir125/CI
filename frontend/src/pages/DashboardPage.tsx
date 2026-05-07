@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getAgendaAppointments, type AgendaAppointmentDto, type AgendaDto } from '../api/his';
+import { getCurrentUser } from '../api/auth';
+import { getAgendaAppointments, getProfessionalAgendas, type AgendaAppointmentDto, type AgendaDto } from '../api/his';
 import { getApiErrorMessage } from '../api/client';
 import { getServiceDisplayName } from '../utils/serviceDisplay';
 
@@ -41,12 +42,33 @@ export default function DashboardPage() {
             return;
         }
 
+        const professionalDni = user.dni;
+
         const loadAgendas = async () => {
             setLoadingAgendas(true);
             setAgendaError('');
             try {
+                const data = await getProfessionalAgendas(professionalDni);
+                setAgendas(data);
+                setSelectedAgenda(data[0] ?? null);
+
+                const refreshedUser = await getCurrentUser();
+                updateSessionUser({
+                    fullName: refreshedUser.fullName,
+                    email: refreshedUser.email,
+                    dni: refreshedUser.dni,
+                    roles: [...refreshedUser.roles],
+                    serviceCode: refreshedUser.serviceCode,
+                    serviceName: refreshedUser.serviceName,
+                    signatureMethod: refreshedUser.signatureMethod
+                });
+            } catch (error) {
                 setAgendas([]);
                 setSelectedAgenda(null);
+                setAgendaError(getApiErrorMessage(
+                    error,
+                    'No se han podido cargar las agendas del profesional.'
+                ));
             } finally {
                 setLoadingAgendas(false);
             }

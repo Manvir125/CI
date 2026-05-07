@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +78,22 @@ public class AuthService {
                         "roles", user.getRoles().stream().map(r -> r.getType().name()).collect(Collectors.toSet())
                 ));
 
+        return buildLoginResponse(user, token);
+    }
+
+    @Transactional(readOnly = true)
+    public LoginResponse getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication() != null
+                ? SecurityContextHolder.getContext().getAuthentication().getName()
+                : null;
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BadCredentialsException("Usuario autenticado no encontrado"));
+
+        return buildLoginResponse(user, null);
+    }
+
+    private LoginResponse buildLoginResponse(User user, String token) {
         LoginResponse response = new LoginResponse();
         response.setId(user.getId());
         response.setToken(token);

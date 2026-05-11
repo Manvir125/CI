@@ -18,7 +18,7 @@ public class ConsentGroup {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "episode_id", nullable = false)
+    @Column(name = "episode_id")
     private String episodeId;
 
     @Column(nullable = false)

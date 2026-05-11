@@ -2,9 +2,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentUser } from '../api/auth';
-import { getAgendaAppointments, getProfessionalAgendas, type AgendaAppointmentDto, type AgendaDto } from '../api/his';
+import { getAgendaAppointments, getAppointmentsByDate, getProfessionalAgendas, type AgendaAppointmentDto, type AgendaDto } from '../api/his';
 import { getApiErrorMessage } from '../api/client';
 import { getServiceDisplayName } from '../utils/serviceDisplay';
+
+const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 const sortAppointmentsByTime = (items: AgendaAppointmentDto[]) =>
     [...items].sort((left, right) => {
@@ -23,6 +30,31 @@ const sortAppointmentsByTime = (items: AgendaAppointmentDto[]) =>
         return leftKey.localeCompare(rightKey);
     });
 
+const getAppointmentAgendaId = (appointment: AgendaAppointmentDto) =>
+    appointment.agendaId || appointment.agenda?.agendaId || 'SIN_AGENDA';
+
+const buildAgendasFromAppointments = (items: AgendaAppointmentDto[]): AgendaDto[] => {
+    const agendasById = new Map<string, AgendaDto>();
+
+    items.forEach(appointment => {
+        const agendaId = getAppointmentAgendaId(appointment);
+        if (agendasById.has(agendaId)) {
+            return;
+        }
+
+        agendasById.set(agendaId, appointment.agenda ?? {
+            agendaId,
+            name: agendaId === 'SIN_AGENDA' ? 'Sin agenda informada' : agendaId,
+            serviceCode: appointment.professional?.specialtyCode ?? null,
+            serviceName: appointment.professional?.specialtyName ?? null,
+            status: null,
+            professional: appointment.professional ?? null
+        });
+    });
+
+    return Array.from(agendasById.values());
+};
+
 export default function DashboardPage() {
     const { user, logoutUser, hasRole, updateSessionUser } = useAuth();
     const navigate = useNavigate();
@@ -30,12 +62,16 @@ export default function DashboardPage() {
     const [agendas, setAgendas] = useState<AgendaDto[]>([]);
     const [selectedAgenda, setSelectedAgenda] = useState<AgendaDto | null>(null);
     const [appointments, setAppointments] = useState<AgendaAppointmentDto[]>([]);
+    const [dateAppointments, setDateAppointments] = useState<AgendaAppointmentDto[]>([]);
+    const [selectedDate, setSelectedDate] = useState(formatLocalDate(new Date()));
     const [loadingAgendas, setLoadingAgendas] = useState(false);
     const [loadingAppointments, setLoadingAppointments] = useState(false);
     const [agendaError, setAgendaError] = useState('');
 
     const isProfessional = hasRole('PROFESSIONAL');
     const currentSpecialtyLabel = getServiceDisplayName(user?.serviceName, user?.serviceCode);
+    const today = formatLocalDate(new Date());
+    const isTodaySelected = selectedDate === today;
 
     useEffect(() => {
         if (!isProfessional || !user?.dni) {
@@ -46,11 +82,24 @@ export default function DashboardPage() {
 
         const loadAgendas = async () => {
             setLoadingAgendas(true);
+            setLoadingAppointments(!isTodaySelected);
             setAgendaError('');
             try {
-                const data = await getProfessionalAgendas(professionalDni);
-                setAgendas(data);
-                setSelectedAgenda(data[0] ?? null);
+                if (isTodaySelected) {
+                    setDateAppointments([]);
+                    const data = await getProfessionalAgendas(professionalDni);
+                    setAgendas(data);
+                    setSelectedAgenda(data[0] ?? null);
+                } else {
+                    const data = sortAppointmentsByTime(await getAppointmentsByDate(selectedDate));
+                    const dateAgendas = buildAgendasFromAppointments(data);
+                    setDateAppointments(data);
+                    setAgendas(dateAgendas);
+                    setSelectedAgenda(dateAgendas[0] ?? null);
+                    setAppointments(dateAgendas[0]
+                        ? data.filter(appointment => getAppointmentAgendaId(appointment) === dateAgendas[0].agendaId)
+                        : data);
+                }
 
                 const refreshedUser = await getCurrentUser();
                 updateSessionUser({
@@ -65,21 +114,33 @@ export default function DashboardPage() {
             } catch (error) {
                 setAgendas([]);
                 setSelectedAgenda(null);
+                setAppointments([]);
+                setDateAppointments([]);
                 setAgendaError(getApiErrorMessage(
                     error,
-                    'No se han podido cargar las agendas del profesional.'
+                    isTodaySelected
+                        ? 'No se han podido cargar las agendas del profesional.'
+                        : 'No se han podido cargar las citas de la fecha seleccionada.'
                 ));
             } finally {
                 setLoadingAgendas(false);
+                setLoadingAppointments(false);
             }
         };
 
         loadAgendas();
-    }, [isProfessional, updateSessionUser, user?.dni, user?.serviceCode]);
+    }, [isProfessional, isTodaySelected, selectedDate, updateSessionUser, user?.dni, user?.serviceCode]);
 
     useEffect(() => {
         if (!selectedAgenda) {
-            setAppointments([]);
+            setAppointments(isTodaySelected ? [] : dateAppointments);
+            return;
+        }
+
+        if (!isTodaySelected) {
+            setAppointments(dateAppointments.filter(
+                appointment => getAppointmentAgendaId(appointment) === selectedAgenda.agendaId
+            ));
             return;
         }
 
@@ -101,7 +162,7 @@ export default function DashboardPage() {
         };
 
         loadAppointments();
-    }, [selectedAgenda]);
+    }, [dateAppointments, isTodaySelected, selectedAgenda]);
 
     const handleLogout = () => {
         logoutUser();
@@ -158,12 +219,32 @@ export default function DashboardPage() {
                             </p>
                         </div>
                         {isProfessional && (
-                            <button
-                                onClick={() => navigate('/requests')}
-                                className="soft-button-secondary text-sm"
-                            >
-                                Ver todas las solicitudes
-                            </button>
+                            <div className="flex items-end gap-3 flex-wrap">
+                                <label className="text-sm text-slate-600">
+                                    <span className="block text-xs font-medium text-slate-500 mb-1">Fecha de citas</span>
+                                    <input
+                                        type="date"
+                                        value={selectedDate}
+                                        onChange={event => setSelectedDate(event.target.value || today)}
+                                        className="border border-emerald-100 rounded-lg px-3 py-2 bg-white/80 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                </label>
+                                {!isTodaySelected && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedDate(today)}
+                                        className="soft-button-secondary text-sm"
+                                    >
+                                        Volver a hoy
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => navigate('/requests')}
+                                    className="soft-button-secondary text-sm"
+                                >
+                                    Ver todas las solicitudes
+                                </button>
+                            </div>
                         )}
                     </div>
                     <div className="dashboard-hero__stats">
@@ -191,7 +272,9 @@ export default function DashboardPage() {
                                     {currentSpecialtyLabel || 'Sin especialidad asignada'}
                                 </h3>
                                 <p className="text-sm text-slate-500 mt-1">
-                                    Agendas disponibles para crear solicitudes.
+                                    {isTodaySelected
+                                        ? 'Agendas disponibles para crear solicitudes.'
+                                        : `Agendas con citas el ${selectedDate}.`}
                                 </p>
                             </div>
                             <div className="p-4 space-y-3">
@@ -216,7 +299,9 @@ export default function DashboardPage() {
                                     </div>
                                 ) : agendas.length === 0 ? (
                                     <div className="text-sm text-gray-400 py-6 text-center">
-                                        No hay agendas disponibles para este profesional.
+                                        {isTodaySelected
+                                            ? 'No hay agendas disponibles para este profesional.'
+                                            : 'No hay citas para este profesional en la fecha seleccionada.'}
                                     </div>
                                 ) : (
                                     agendas.map(agenda => {
@@ -266,6 +351,7 @@ export default function DashboardPage() {
                                     </h3>
                                     <p className="text-sm text-gray-500 mt-1">
                                         Seleccione una cita para crear la solicitud de consentimiento.
+                                        {!isTodaySelected ? ` Fecha consultada: ${selectedDate}.` : ''}
                                     </p>
                                 </div>
                                 {selectedAgenda && (
@@ -289,13 +375,15 @@ export default function DashboardPage() {
                                     </div>
                                 ) : appointments.length === 0 ? (
                                     <div className="text-sm text-gray-400 py-12 text-center">
-                                        No hay citas para esta agenda hoy.
+                                        {isTodaySelected
+                                            ? 'No hay citas para esta agenda hoy.'
+                                            : 'No hay citas para esta agenda en la fecha seleccionada.'}
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
                                         {appointments.map(appointment => (
                                             <div
-                                                key={appointment.episodeId}
+                                                key={`${appointment.episodeId || appointment.nhc}-${appointment.agendaId}-${appointment.appointmentDate}-${appointment.startTime}`}
                                                 className="rounded-2xl border border-emerald-100/80 bg-white/75 p-4 hover:border-emerald-300 hover:bg-emerald-50/45 transition-colors"
                                             >
                                                 <div className="flex items-start justify-between gap-4 flex-wrap">

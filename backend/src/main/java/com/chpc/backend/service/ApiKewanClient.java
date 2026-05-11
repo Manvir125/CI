@@ -1,7 +1,11 @@
 package com.chpc.backend.service;
 
 import com.chpc.backend.config.ApiKewanProperties;
+import com.chpc.backend.dto.apikewan.ApiKewanAppointmentDto;
+import com.chpc.backend.dto.apikewan.ApiKewanPatientDto;
 import com.chpc.backend.dto.apikewan.ApiKewanProfessionalAppointmentsResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +23,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -69,6 +75,103 @@ public class ApiKewanClient {
                 int appointmentCount = parsed != null && parsed.getCitas() != null ? parsed.getCitas().size() : 0;
                 log.info("ApiKewan: {} cita(s) recibidas para profesional {}", appointmentCount, professionalDni);
                 return parsed;
+            }
+
+            throw new ApiKewanHttpException(response.statusCode(), response.body());
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error en la llamada HTTPS a ApiKewan: " + e.getMessage(), e);
+        }
+    }
+
+    public ApiKewanPatientDto getPatientByNhc(String nhc) {
+        try {
+            String baseUrl = sanitizeBaseUrl(properties.getBaseUrl());
+            String encodedNhc = URLEncoder.encode(nhc, StandardCharsets.UTF_8);
+            String url = UriComponentsBuilder.fromUriString(baseUrl)
+                    .path("/api/pacientes/" + encodedNhc)
+                    .toUriString();
+
+            log.info("ApiKewan: preparando GET {} para paciente {}", url, nhc);
+
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofMillis(properties.getTimeoutMs()))
+                    .sslContext(buildSslContext())
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofMillis(properties.getTimeoutMs()))
+                    .header("Authorization", "Bearer " + jwtService.createToken())
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            log.info("ApiKewan: HTTP {} para paciente {}", response.statusCode(), nhc);
+            log.debug("ApiKewan: cuerpo respuesta paciente {}", abbreviate(response.body()));
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                if (response.body() == null || response.body().isBlank()) {
+                    log.info("ApiKewan: respuesta vacia para paciente {}", nhc);
+                    return null;
+                }
+                return objectMapper.readValue(response.body(), ApiKewanPatientDto.class);
+            }
+
+            throw new ApiKewanHttpException(response.statusCode(), response.body());
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error en la llamada HTTPS a ApiKewan: " + e.getMessage(), e);
+        }
+    }
+
+    public List<ApiKewanAppointmentDto> getAppointmentsByDate(LocalDate date) {
+        try {
+            String baseUrl = sanitizeBaseUrl(properties.getBaseUrl());
+            String url = UriComponentsBuilder.fromUriString(baseUrl)
+                    .path("/api/citas")
+                    .queryParam("fecha", date)
+                    .toUriString();
+
+            log.info("ApiKewan: preparando GET {} para citas por fecha {}", url, date);
+
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofMillis(properties.getTimeoutMs()))
+                    .sslContext(buildSslContext())
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofMillis(properties.getTimeoutMs()))
+                    .header("Authorization", "Bearer " + jwtService.createToken())
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            log.info("ApiKewan: HTTP {} para citas por fecha {}", response.statusCode(), date);
+            log.debug("ApiKewan: cuerpo respuesta citas fecha {}", abbreviate(response.body()));
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                if (response.body() == null || response.body().isBlank()) {
+                    return List.of();
+                }
+
+                JsonNode root = objectMapper.readTree(response.body());
+                JsonNode appointmentsNode = root.isArray() ? root : root.get("citas");
+                if (appointmentsNode == null || appointmentsNode.isNull()) {
+                    return List.of();
+                }
+                return objectMapper.convertValue(appointmentsNode, new TypeReference<List<ApiKewanAppointmentDto>>() {});
             }
 
             throw new ApiKewanHttpException(response.statusCode(), response.body());

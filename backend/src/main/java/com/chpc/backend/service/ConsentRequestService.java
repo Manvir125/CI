@@ -92,7 +92,7 @@ public class ConsentRequestService {
 
                 ConsentRequest request = ConsentRequest.builder()
                                 .nhc(dto.getNhc())
-                                .episodeId(dto.getEpisodeId())
+                                .episodeId(normalizeBlank(dto.getEpisodeId()))
                                 .template(template)
                                 .professional(professional)
                                 .channel(signChannel)

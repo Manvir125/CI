@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import {
-    getPatientByNhc, getPatientByDni,
+    getPatientByNhc,
     getActiveEpisodes, getEpisode, type PatientDto, type EpisodeDto, type AgendaAppointmentDto
 } from '../api/his';
 import { getTemplates } from '../api/templates';
@@ -182,6 +182,30 @@ const buildEpisodeFromAppointment = (appointment: AgendaAppointmentDto): Episode
     diagnoses: []
 });
 
+const buildEpisodeWithoutEpisode = (selectedPatient: PatientDto): EpisodeDto => ({
+    episodeId: '',
+    nhc: selectedPatient.nhc,
+    serviceCode: '',
+    serviceName: '',
+    procedureCode: '',
+    procedureName: 'Solicitud sin episodio',
+    episodeDate: '',
+    admissionDate: '',
+    expectedDischargeDate: null,
+    ward: '',
+    bed: null,
+    attendingPhysician: '',
+    status: '',
+    priority: '',
+    diagnosis: null,
+    icd10Code: null,
+    patient: selectedPatient,
+    professional: null,
+    agenda: null,
+    appointment: null,
+    diagnoses: []
+});
+
 export default function NewRequestPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -197,7 +221,6 @@ export default function NewRequestPage() {
     const [error, setError] = useState('');
 
     // Datos del flujo
-    const [searchType, setSearchType] = useState<'nhc' | 'dni'>('nhc');
     const [searchValue, setSearchValue] = useState('');
     const [patient, setPatient] = useState<PatientDto | null>(null);
     const [episodes, setEpisodes] = useState<EpisodeDto[]>([]);
@@ -292,7 +315,7 @@ export default function NewRequestPage() {
             return userServiceCode || templateServiceIdentifier;
         }
 
-        return templateServiceIdentifier || episodeServiceCode;
+        return templateServiceIdentifier || episodeServiceCode || userServiceCode;
     };
 
     const patientDni = firstNonEmpty(selectedEpisode?.patient?.dni, patient?.dni);
@@ -421,9 +444,7 @@ export default function NewRequestPage() {
         setError('');
         setLoading(true);
         try {
-            const found = searchType === 'nhc'
-                ? await getPatientByNhc(searchValue)
-                : await getPatientByDni(searchValue);
+            const found = await getPatientByNhc(searchValue);
 
             const resolvedPatient = mergePatientData(found, found);
             setPatient(resolvedPatient);
@@ -455,6 +476,24 @@ export default function NewRequestPage() {
             setPatient(prev => mergePatientData(prev, detailedEpisode.patient));
             setPatientEmail(current => current || normalizePatientEmail(detailedEpisode.patient?.email));
             setPatientPhone(current => current || detailedEpisode.patient?.phone || '');
+            resetConfiguration();
+            await loadTemplatesForConfiguration();
+        } catch {
+            setError('Error al cargar las plantillas');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCreateWithoutEpisode = async () => {
+        if (!patient) {
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        try {
+            setSelectedEpisode(buildEpisodeWithoutEpisode(patient));
             resetConfiguration();
             await loadTemplatesForConfiguration();
         } catch {
@@ -498,8 +537,8 @@ export default function NewRequestPage() {
             }
 
             const groupData = {
-                nhc: selectedEpisode!.nhc || patient!.nhc,
-                episodeId: selectedEpisode!.episodeId,
+                nhc: selectedEpisode?.nhc || patient!.nhc,
+                episodeId: selectedEpisode?.episodeId || null,
                 patientEmail: normalizedPatientEmail,
                 patientPhone,
                 patientDni,
@@ -664,41 +703,16 @@ export default function NewRequestPage() {
                             Buscar paciente
                         </h2>
                         <form onSubmit={handleSearch} className="space-y-4">
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setSearchType('nhc')}
-                                    className={`flex-1 py-2 rounded-lg text-sm font-medium border
-                    transition-colors
-                    ${searchType === 'nhc'
-                                            ? 'bg-emerald-700 text-white border-emerald-700'
-                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
-                                >
-                                    Buscar por NHC
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setSearchType('dni')}
-                                    className={`flex-1 py-2 rounded-lg text-sm font-medium border
-                    transition-colors
-                    ${searchType === 'dni'
-                                            ? 'bg-emerald-700 text-white border-emerald-700'
-                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
-                                >
-                                    Buscar por DNI
-                                </button>
-                            </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    {searchType === 'nhc' ? 'Número de historia clínica' : 'DNI del paciente'}
+                                    Número de historia clínica
                                 </label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
                                         value={searchValue}
                                         onChange={e => setSearchValue(e.target.value)}
-                                        placeholder={searchType === 'nhc' ? '10045623' : '12345678A'}
+                                        placeholder="10045623"
                                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2
                                focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                         required
@@ -761,11 +775,29 @@ export default function NewRequestPage() {
                             </h2>
 
                             {episodes.length === 0 ? (
-                                <p className="text-gray-400 text-center py-8">
-                                    No hay episodios activos para este paciente.
-                                </p>
+                                <div className="text-center py-8 space-y-4">
+                                    <p className="text-gray-400">
+                                        No hay episodios activos para este paciente.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={handleCreateWithoutEpisode}
+                                        disabled={loading}
+                                        className="soft-button disabled:opacity-50"
+                                    >
+                                        Crear solicitud sin episodio
+                                    </button>
+                                </div>
                             ) : (
                                 <div className="space-y-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleCreateWithoutEpisode}
+                                        disabled={loading}
+                                        className="soft-button-secondary w-full"
+                                    >
+                                        Crear solicitud sin episodio
+                                    </button>
                                     {episodes.map(ep => (
                                         <div
                                             key={ep.episodeId}
@@ -837,10 +869,18 @@ export default function NewRequestPage() {
                                     <p className="text-gray-500">Procedimiento</p>
                                     <p className="font-medium">{selectedEpisode.procedureName || 'No informado'}</p>
                                 </div>
-                                <div>
-                                    <p className="text-gray-500">Servicio</p>
-                                    <p className="font-medium">{selectedEpisodeServiceLabel || 'No informado'}</p>
-                                </div>
+                                {selectedEpisode.episodeId && (
+                                    <div>
+                                        <p className="text-gray-500">Episodio</p>
+                                        <p className="font-medium">{selectedEpisode.episodeId}</p>
+                                    </div>
+                                )}
+                                {(selectedEpisodeServiceLabel || selectedEpisode.episodeId) && (
+                                    <div>
+                                        <p className="text-gray-500">Servicio</p>
+                                        <p className="font-medium">{selectedEpisodeServiceLabel || 'No informado'}</p>
+                                    </div>
+                                )}
                                 {(selectedEpisode.attendingPhysician || selectedEpisode.professional?.fullName) && (
                                     <div>
                                         <p className="text-gray-500">Profesional</p>

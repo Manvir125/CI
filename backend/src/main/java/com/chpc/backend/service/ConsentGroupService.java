@@ -60,9 +60,10 @@ public class ConsentGroupService {
                         || "REMOTE".equalsIgnoreCase(item.getChannel()));
         String normalizedPatientEmail = hasRemoteItems ? normalizePatientEmail(dto.getPatientEmail()) : null;
         String normalizedPatientPhone = normalizeBlank(dto.getPatientPhone());
+        String normalizedEpisodeId = normalizeBlank(dto.getEpisodeId());
 
         ConsentGroup group = ConsentGroup.builder()
-                .episodeId(dto.getEpisodeId())
+                .episodeId(normalizedEpisodeId)
                 .nhc(dto.getNhc())
                 .createdBy(creator)
                 .patientEmail(normalizedPatientEmail)
@@ -92,7 +93,7 @@ public class ConsentGroupService {
 
             ConsentRequest request = ConsentRequest.builder()
                     .nhc(dto.getNhc())
-                    .episodeId(dto.getEpisodeId())
+                    .episodeId(normalizedEpisodeId)
                     .template(template)
                     .professional(creator)
                     .channel(signChannel)

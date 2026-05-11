@@ -4,7 +4,7 @@ import type { PatientDto } from './his';
 export interface ConsentRequestResponse {
     id: number;
     nhc: string;
-    episodeId: string;
+    episodeId?: string | null;
     templateName: string;
     templateId: number;
     professionalName: string;
@@ -29,7 +29,7 @@ export interface ConsentRequestResponse {
 
 export interface ConsentRequestDto {
     nhc: string;
-    episodeId: string;
+    episodeId?: string | null;
     templateId: number;
     channel: string;
     patientEmail: string;
@@ -107,7 +107,7 @@ export const getKioskToken = async (id: number): Promise<string> => {
 
 export interface ConsentGroupDto {
     nhc: string;
-    episodeId: string;
+    episodeId?: string | null;
     patientEmail: string;
     patientPhone: string;
     patientDni?: string;

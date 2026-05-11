@@ -10,7 +10,6 @@ public class ConsentGroupDto {
     @NotBlank
     private String nhc;
 
-    @NotBlank
     private String episodeId;
 
     private String patientEmail;

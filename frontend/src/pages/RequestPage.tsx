@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
-import { useAuth } from '../context/AuthContext';
 import {
     getMyRequests, cancelRequest,
     type ConsentRequestResponse, sendRequest, downloadPdf
@@ -19,8 +18,7 @@ const STATUSES = [
 
 export default function RequestsPage() {
     const navigate = useNavigate();
-    const { hasRole } = useAuth();
-    const newRequestTarget = hasRole('PROFESSIONAL') ? '/dashboard' : '/requests/new';
+    const newRequestTarget = '/requests/new';
 
     const [requests, setRequests] = useState<ConsentRequestResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -100,7 +98,7 @@ export default function RequestsPage() {
                     onClick={() => navigate(newRequestTarget)}
                     className="soft-button text-sm"
                 >
-                    {hasRole('PROFESSIONAL') ? 'Ir a agendas' : '+ Nueva solicitud'}
+                    + Nueva solicitud
                 </button>
             </nav>
 
@@ -150,7 +148,7 @@ export default function RequestsPage() {
                             onClick={() => navigate(newRequestTarget)}
                             className="soft-button"
                         >
-                            {hasRole('PROFESSIONAL') ? 'Ir a agendas' : 'Crear primera solicitud'}
+                            Crear primera solicitud
                         </button>
                     </div>
                 ) : (

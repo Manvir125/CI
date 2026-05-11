@@ -20,7 +20,7 @@ public class ConsentRequest {
     @Column(nullable = false)
     private String nhc;
 
-    @Column(name = "episode_id", nullable = false)
+    @Column(name = "episode_id")
     private String episodeId;
 
     @ManyToOne(fetch = FetchType.LAZY)

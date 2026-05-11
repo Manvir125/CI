@@ -67,7 +67,7 @@ apikewan:
   issuer: ${APIKEWAN_ISSUER:serverjavacidigital}
   kid: ${APIKEWAN_KID:HoalAdios123.}
   audience: ${APIKEWAN_AUDIENCE:api-hospital}
-  scope: ${APIKEWAN_SCOPE:citas.read}
+  scope: ${APIKEWAN_SCOPE:citas.read pacientes.read citas.fecha.read}
   private-key: ${APIKEWAN_PRIVATE_KEY:}
   private-key-path: ${APIKEWAN_PRIVATE_KEY_PATH:secrets/apikewan-private-key.pem}
   timeout-ms: ${APIKEWAN_TIMEOUT_MS:5000}

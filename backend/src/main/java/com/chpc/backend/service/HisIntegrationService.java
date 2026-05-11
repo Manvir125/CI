@@ -72,6 +72,25 @@ public class HisIntegrationService {
 
     @Transactional
     public Optional<PatientDto> findPatientByNhc(String nhc) {
+        if (apiKewanProperties.isEnabled()) {
+            try {
+                log.info("ApiKewan: buscando paciente NHC {}", nhc);
+                PatientDto patient = mapApiKewanPatient(apiKewanClient.getPatientByNhc(nhc));
+                syncPatientSnapshot(patient);
+                return Optional.ofNullable(patient);
+            } catch (ApiKewanHttpException e) {
+                if (e.getStatusCode() == 404) {
+                    log.info("ApiKewan: paciente NHC {} no encontrado (HTTP 404)", nhc);
+                    return Optional.empty();
+                }
+                log.error("ApiKewan: HTTP {} buscando paciente NHC {}: {}", e.getStatusCode(), nhc, e.getResponseBody());
+                throw new RuntimeException("Error comunicando con ApiKewan: " + e.getMessage());
+            } catch (Exception e) {
+                log.error("ApiKewan: Error buscando paciente NHC {}: {}", nhc, e.getMessage());
+                throw new RuntimeException("Error comunicando con ApiKewan: " + e.getMessage());
+            }
+        }
+
         try {
             String url = hisBaseUrl + "/his/api/patients/nhc/" + nhc;
             log.debug("HIS: Buscando paciente NHC {} en {}", nhc, url);
@@ -265,6 +284,35 @@ public class HisIntegrationService {
         }
     }
 
+    @Transactional
+    public List<AgendaAppointmentDto> getAppointmentsByDate(LocalDate date) {
+        if (apiKewanProperties.isEnabled()) {
+            String professionalDni = resolveCurrentProfessionalDni();
+            try {
+                log.info("ApiKewan: obteniendo citas de fecha {} para profesional autenticado {}", date, professionalDni);
+                List<AgendaAppointmentDto> appointments = mapApiKewanAppointments(
+                        apiKewanClient.getAppointmentsByDate(date).stream()
+                                .filter(raw -> belongsToProfessional(raw, professionalDni))
+                                .toList(),
+                        professionalDni);
+                appointments.forEach(this::syncAgendaAppointmentSnapshot);
+                return sortAgendaAppointments(appointments);
+            } catch (ApiKewanHttpException e) {
+                if (e.getStatusCode() == 404) {
+                    log.info("ApiKewan: sin citas para la fecha {} (HTTP 404)", date);
+                    return List.of();
+                }
+                log.error("ApiKewan: HTTP {} obteniendo citas de fecha {}: {}", e.getStatusCode(), date, e.getResponseBody());
+                throw new RuntimeException("Error comunicando con ApiKewan: " + e.getMessage());
+            } catch (Exception e) {
+                log.error("ApiKewan: Error obteniendo citas de fecha {}: {}", date, e.getMessage());
+                throw new RuntimeException("Error comunicando con ApiKewan: " + e.getMessage());
+            }
+        }
+
+        throw new RuntimeException("La consulta de citas por fecha solo esta disponible con ApiKewan habilitado");
+    }
+
     private List<AgendaAppointmentDto> fetchApiKewanAppointments(String professionalDni) {
         if (isBlank(professionalDni)) {
             throw new IllegalStateException("El profesional no tiene DNI configurado para consultar citas en ApiKewan");
@@ -301,8 +349,20 @@ public class HisIntegrationService {
                 response != null ? response.getProfesional() : null,
                 professionalDni);
 
+        return mapApiKewanAppointments(rawAppointments, professional);
+    }
+
+    private List<AgendaAppointmentDto> mapApiKewanAppointments(List<ApiKewanAppointmentDto> rawAppointments, String professionalDni) {
+        return mapApiKewanAppointments(rawAppointments, mapApiKewanProfessional(null, professionalDni));
+    }
+
+    private List<AgendaAppointmentDto> mapApiKewanAppointments(List<ApiKewanAppointmentDto> rawAppointments, ProfessionalDto professional) {
+        List<ApiKewanAppointmentDto> safeRawAppointments = rawAppointments != null
+                ? rawAppointments
+                : List.of();
+
         List<AgendaAppointmentDto> appointments = new ArrayList<>();
-        for (ApiKewanAppointmentDto raw : rawAppointments) {
+        for (ApiKewanAppointmentDto raw : safeRawAppointments) {
             AgendaAppointmentDto appointment = new AgendaAppointmentDto();
             appointment.setEpisodeId(raw.getEpisodeId());
             appointment.setNhc(firstNonBlank(raw.getNhc(), raw.getPatient() != null ? raw.getPatient().getNhc() : null));
@@ -320,6 +380,14 @@ public class HisIntegrationService {
         }
 
         return appointments;
+    }
+
+    private boolean belongsToProfessional(ApiKewanAppointmentDto raw, String professionalDni) {
+        if (raw == null || isBlank(professionalDni)) {
+            return false;
+        }
+        String rawProfessionalId = firstNonBlank(raw.getProfessionalId());
+        return !isBlank(rawProfessionalId) && rawProfessionalId.equalsIgnoreCase(professionalDni);
     }
 
     private ProfessionalDto mapApiKewanProfessional(ApiKewanProfessionalDto raw, String professionalDni) {

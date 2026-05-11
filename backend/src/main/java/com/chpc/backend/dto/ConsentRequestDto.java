@@ -10,7 +10,6 @@ public class ConsentRequestDto {
     @NotBlank
     private String nhc;
 
-    @NotBlank
     private String episodeId;
 
     @NotNull

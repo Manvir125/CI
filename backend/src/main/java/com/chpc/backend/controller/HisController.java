@@ -7,9 +7,11 @@ import com.chpc.backend.dto.PatientDto;
 import com.chpc.backend.service.HisIntegrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -79,5 +81,12 @@ public class HisController {
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
     public ResponseEntity<List<AgendaAppointmentDto>> getAgendaAppointments(@PathVariable String agendaId) {
         return ResponseEntity.ok(hisService.getAgendaAppointments(agendaId));
+    }
+
+    @GetMapping("/appointments")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<List<AgendaAppointmentDto>> getAppointmentsByDate(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(hisService.getAppointmentsByDate(date));
     }
 }

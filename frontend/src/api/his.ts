@@ -125,3 +125,8 @@ export const getAgendaAppointments = async (agendaId: string): Promise<AgendaApp
     const { data } = await client.get(`/api/his/agendas/${agendaId}/appointments`);
     return data;
 };
+
+export const getAppointmentsByDate = async (date: string): Promise<AgendaAppointmentDto[]> => {
+    const { data } = await client.get(`/api/his/appointments?date=${encodeURIComponent(date)}`);
+    return data;
+};

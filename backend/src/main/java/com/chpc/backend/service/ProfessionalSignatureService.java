@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.UUID;
 import java.util.List;
@@ -78,6 +79,7 @@ public class ProfessionalSignatureService {
                         return SignatureEvent.builder()
                                 .user(user)
                                 .sequenceOrder(i)
+                                .eventTimestamp(resolveEventTimestamp(dto.getTimestamp(), i))
                                 .x(dto.getX())
                                 .y(dto.getY())
                                 .pressure(dto.getPressure())
@@ -98,6 +100,23 @@ public class ProfessionalSignatureService {
                 Map.of(
                         "eventsCount", events != null ? events.size() : 0,
                         "filepath", filepath));
+    }
+
+    private OffsetDateTime resolveEventTimestamp(String timestamp, int sequenceOrder) {
+        OffsetDateTime parsed = parseEventTimestamp(timestamp);
+        return parsed != null ? parsed : OffsetDateTime.now(java.time.ZoneOffset.UTC).plusNanos(sequenceOrder * 1_000_000L);
+    }
+
+    private OffsetDateTime parseEventTimestamp(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(timestamp);
+        } catch (Exception e) {
+            log.warn("Timestamp de evento de firma invalido: {}", timestamp);
+            return null;
+        }
     }
 
     // Elimina la firma del profesional

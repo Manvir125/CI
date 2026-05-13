@@ -10,6 +10,7 @@ export interface XPPenDevice {
 }
 
 export interface PenEvent {
+    timestamp: string;
     x: number;
     y: number;
     pressure: number;
@@ -22,6 +23,7 @@ export interface PenEvent {
 interface WsMessage {
     type: string;
     status?: string;
+    timestamp?: string;
     x?: number;
     y?: number;
     pressure?: number;
@@ -91,6 +93,7 @@ export function useXPPenTablet({
                         });
                     } else if (msg.type === 'pen') {
                         onPenEventRef.current?.({
+                            timestamp: msg.timestamp ?? new Date().toISOString(),
                             x: msg.x!,
                             y: msg.y!,
                             pressure: msg.pressure!,

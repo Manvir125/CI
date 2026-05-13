@@ -103,10 +103,11 @@ public class ConsentRequestController {
 
         try {
             byte[] pdfBytes = pdfService.readPdf(request.getPdfPath());
+            String filename = pdfService.buildDownloadFilename(request);
             return ResponseEntity.ok()
                     .header("Content-Type", "application/pdf")
                     .header("Content-Disposition",
-                            "attachment; filename=\"consentimiento_" + id + ".pdf\"")
+                            "attachment; filename=\"" + filename + "\"")
                     .body(pdfBytes);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

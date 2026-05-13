@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Globalization;
 
 namespace XPPenBridge;
 
@@ -128,6 +129,7 @@ class Program
         var msg = new
         {
             type = "pen",
+            timestamp = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture),
             x = pkt.x,
             y = pkt.y,
             pressure = pkt.pressure,

@@ -2,6 +2,7 @@ package com.chpc.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "signature_events")
@@ -26,6 +27,9 @@ public class SignatureEvent {
 
     @Column(name = "sequence_order", nullable = false)
     private Integer sequenceOrder;
+
+    @Column(name = "event_timestamp")
+    private OffsetDateTime eventTimestamp;
 
     @Column(nullable = false)
     private Double x;

@@ -1,5 +1,8 @@
 package com.chpc.backend.service;
 
+import com.chpc.backend.dto.PenEventDto;
+import com.chpc.backend.dto.SignatureSubmitRequest;
+import com.chpc.backend.entity.ConsentGroup;
 import com.chpc.backend.entity.ConsentRequest;
 import com.chpc.backend.entity.ConsentTemplate;
 import com.chpc.backend.entity.SignToken;
@@ -18,8 +21,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -55,15 +62,23 @@ class PatientPortalServiceTest {
     private NotificationService notificationService;
     @Mock
     private HisPatientRepository hisPatientRepository;
+    @Mock
+    private HisDocumentExportService hisDocumentExportService;
 
     @InjectMocks
     private PatientPortalService service;
+
+    @TempDir
+    Path tempDir;
 
     private ConsentRequest request;
     private SignToken token;
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(service, "signaturesPath", tempDir.toString());
+        ReflectionTestUtils.setField(service, "pdfPath", tempDir.toString());
+
         request = ConsentRequest.builder()
                 .id(10L)
                 .nhc("NHC-1")
@@ -180,5 +195,49 @@ class PatientPortalServiceTest {
         assertFalse(verificationCode.getIsValid());
         assertFalse(token.getIsValid());
         verify(tokenRepository).save(token);
+    }
+
+    @Test
+    void submitSignatureForGroupedRequestsPersistsPenEventsForEachCapture() throws Exception {
+        ConsentGroup group = ConsentGroup.builder().id(44L).build();
+        request.setGroup(group);
+        request.setChannel(ConsentRequest.SignChannel.ONSITE);
+
+        ConsentRequest sibling = ConsentRequest.builder()
+                .id(11L)
+                .nhc("NHC-1")
+                .group(group)
+                .channel(ConsentRequest.SignChannel.ONSITE)
+                .template(request.getTemplate())
+                .professional(request.getProfessional())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        SignatureSubmitRequest submitRequest = new SignatureSubmitRequest();
+        submitRequest.setSignatureImageBase64("data:image/png;base64," + java.util.Base64.getEncoder().encodeToString("png".getBytes()));
+        submitRequest.setReadCheckConfirmed(true);
+        submitRequest.setConfirmation("SIGNED");
+
+        PenEventDto event = new PenEventDto();
+        event.setX(12.0);
+        event.setY(18.0);
+        event.setPressure(0.7);
+        event.setStatus("Down");
+        event.setMaxX(100.0);
+        event.setMaxY(80.0);
+        event.setMaxPressure(1.0);
+        submitRequest.setEvents(List.of(event));
+
+        when(tokenRepository.findByTokenHashAndIsValidTrue("raw-token")).thenReturn(Optional.of(token));
+        when(requestRepository.findByGroupIdOrderById(group.getId())).thenReturn(List.of(request, sibling));
+        when(signatureRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(pdfService.generateSignedPdf(any(), any(), anyString())).thenReturn("/tmp/consent.pdf");
+        when(pdfService.calculateHash("/tmp/consent.pdf")).thenReturn("hash");
+
+        service.submitSignature("raw-token", submitRequest, "127.0.0.1", "JUnit");
+
+        verify(eventRepository, times(2)).saveAll(any());
+        verify(consentGroupService).updateGroupStatus(group);
     }
 }

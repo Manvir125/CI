@@ -59,6 +59,10 @@ jwt:
 his:
   base-url: ${HIS_BASE_URL:http://localhost:9090}
   timeout-ms: 5000
+  document-export:
+    enabled: ${HIS_DOCUMENT_EXPORT_ENABLED:true}
+    path: ${HIS_DOCUMENT_EXPORT_PATH:Z:/autoasociar}
+    document-type-code: ${HIS_DOCUMENT_TYPE_CODE:001}
 
 apikewan:
   enabled: ${APIKEWAN_ENABLED:true}

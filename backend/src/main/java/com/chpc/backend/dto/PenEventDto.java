@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class PenEventDto {
+    private String timestamp;
     private Double x;
     private Double y;
     private Double pressure;

@@ -84,7 +84,8 @@ public class ConsentGroupService {
                     item.getChannel() != null ? item.getChannel() : "REMOTE");
             String requestPatientEmail = signChannel == ConsentRequest.SignChannel.REMOTE ? normalizedPatientEmail
                     : null;
-            boolean autoSign = (assignedProfessional != null && assignedProfessional.getId().equals(creator.getId()))
+            boolean autoSign = Boolean.TRUE.equals(item.getAutoSign())
+                    || (assignedProfessional != null && assignedProfessional.getId().equals(creator.getId()))
                     || (assignedProfessional == null && creatorService != null
                             && creatorService.equalsIgnoreCase(respService));
 

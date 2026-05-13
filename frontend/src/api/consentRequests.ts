@@ -93,7 +93,10 @@ export const downloadPdf = async (id: number): Promise<void> => {
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `consentimiento_${id}.pdf`);
+    const contentDisposition = response.headers['content-disposition'] as string | undefined;
+    const filenameMatch = contentDisposition?.match(/filename="([^"]+)"/i);
+    const filename = filenameMatch?.[1] || `consentimiento_${id}.pdf`;
+    link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
     link.remove();

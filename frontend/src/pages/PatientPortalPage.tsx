@@ -5,6 +5,7 @@ import {
     loadConsent, verifyCode, sendCode, resendCode,
     submitSignature, type PortalConsentDto
 } from '../api/portal';
+import type { PenEvent } from '../hooks/useXPPenTablet';
 
 type Step = 'loading' | 'verify' | 'read' | 'sign' | 'confirmed' | 'rejected' | 'error';
 
@@ -28,6 +29,7 @@ export default function PatientPortalPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sigPadRef = useRef<SignaturePad | null>(null);
     const [isSigned, setIsSigned] = useState(false);
+    const [penEvents, setPenEvents] = useState<PenEvent[]>([]);
 
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
@@ -59,7 +61,8 @@ export default function PatientPortalPage() {
 
     useEffect(() => {
         if (step === 'sign' && canvasRef.current) {
-            sigPadRef.current = new SignaturePad(canvasRef.current, {
+            const canvas = canvasRef.current;
+            sigPadRef.current = new SignaturePad(canvas, {
                 backgroundColor: 'rgb(255,255,255)',
                 penColor: 'rgb(0,0,0)',
                 minWidth: 1,
@@ -69,6 +72,53 @@ export default function PatientPortalPage() {
             sigPadRef.current.addEventListener('endStroke', () => {
                 setIsSigned(!sigPadRef.current?.isEmpty());
             });
+
+            const buildPenEvent = (
+                event: PointerEvent,
+                status: PenEvent['status']
+            ): PenEvent => {
+                const rect = canvas.getBoundingClientRect();
+                const relativeX = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
+                const relativeY = Math.max(0, Math.min(event.clientY - rect.top, rect.height));
+                return {
+                    timestamp: new Date().toISOString(),
+                    x: relativeX,
+                    y: relativeY,
+                    pressure: event.pressure > 0 ? event.pressure : (status === 'Up' || status === 'Leave' ? 0 : 0.5),
+                    status,
+                    maxX: rect.width || canvas.offsetWidth || 1,
+                    maxY: rect.height || canvas.offsetHeight || 1,
+                    maxPressure: 1
+                };
+            };
+
+            const handlePointerDown = (event: PointerEvent) => {
+                setPenEvents(prev => [...prev, buildPenEvent(event, 'Down')]);
+            };
+            const handlePointerMove = (event: PointerEvent) => {
+                if ((event.buttons & 1) !== 1) {
+                    return;
+                }
+                setPenEvents(prev => [...prev, buildPenEvent(event, 'Move')]);
+            };
+            const handlePointerUp = (event: PointerEvent) => {
+                setPenEvents(prev => [...prev, buildPenEvent(event, 'Up')]);
+            };
+            const handlePointerLeave = (event: PointerEvent) => {
+                setPenEvents(prev => [...prev, buildPenEvent(event, 'Leave')]);
+            };
+
+            canvas.addEventListener('pointerdown', handlePointerDown);
+            canvas.addEventListener('pointermove', handlePointerMove);
+            canvas.addEventListener('pointerup', handlePointerUp);
+            canvas.addEventListener('pointerleave', handlePointerLeave);
+
+            return () => {
+                canvas.removeEventListener('pointerdown', handlePointerDown);
+                canvas.removeEventListener('pointermove', handlePointerMove);
+                canvas.removeEventListener('pointerup', handlePointerUp);
+                canvas.removeEventListener('pointerleave', handlePointerLeave);
+            };
         }
     }, [step]);
 
@@ -91,6 +141,7 @@ export default function PatientPortalPage() {
         canvas.getContext('2d')?.scale(ratio, ratio);
         sigPadRef.current.clear();
         setIsSigned(false);
+        setPenEvents([]);
     };
 
     const handleContentScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -141,7 +192,7 @@ export default function PatientPortalPage() {
         try {
             const imageBase64 = sigPadRef.current.toDataURL('image/png');
             const confirmation = isRejecting ? 'REJECTED' : 'SIGNED';
-            await submitSignature(token!, imageBase64, readConfirmed, confirmation, isRejecting ? rejectReason : undefined);
+            await submitSignature(token!, imageBase64, readConfirmed, confirmation, isRejecting ? rejectReason : undefined, penEvents);
 
             if (isRejecting) {
                 setStep('rejected');
@@ -461,6 +512,7 @@ export default function PatientPortalPage() {
                                     onClick={() => {
                                         sigPadRef.current?.clear();
                                         setIsSigned(false);
+                                        setPenEvents([]);
                                     }}
                                     className="soft-subtle-button"
                                 >

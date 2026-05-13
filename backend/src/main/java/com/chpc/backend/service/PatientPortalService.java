@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.List;
@@ -218,6 +219,7 @@ public class PatientPortalService {
                         .rejectionReason(req.getRejectionReason())
                         .build();
                 signatureRepository.save(siblingCapture);
+                saveSignatureEvents(siblingCapture, req.getEvents());
                 sibling.setStatus("SIGNED".equals(req.getConfirmation()) ? "SIGNED" : "REJECTED");
                 requestRepository.save(sibling);
                 String patientName = resolvePatientName(sibling.getNhc());
@@ -269,26 +271,7 @@ public class PatientPortalService {
                     .rejectionReason(req.getRejectionReason())
                     .build();
             signatureRepository.save(capture);
-
-            if (req.getEvents() != null && !req.getEvents().isEmpty()) {
-                List<SignatureEvent> signatureEvents = IntStream.range(0, req.getEvents().size())
-                        .mapToObj(i -> {
-                            PenEventDto dto = req.getEvents().get(i);
-                            return SignatureEvent.builder()
-                                    .signatureCapture(capture)
-                                    .sequenceOrder(i)
-                                    .x(dto.getX())
-                                    .y(dto.getY())
-                                    .pressure(dto.getPressure())
-                                    .status(dto.getStatus())
-                                    .maxX(dto.getMaxX())
-                                    .maxY(dto.getMaxY())
-                                    .maxPressure(dto.getMaxPressure())
-                                    .build();
-                        })
-                        .toList();
-                eventRepository.saveAll(signatureEvents);
-            }
+            saveSignatureEvents(capture, req.getEvents());
 
             try {
                 log.info("=== PDF: Iniciando generacion para solicitud {}", request.getId());
@@ -341,6 +324,48 @@ public class PatientPortalService {
             throw new RuntimeException("El enlace ha expirado");
         }
         return token;
+    }
+
+    private void saveSignatureEvents(SignatureCapture capture, List<PenEventDto> events) {
+        if (events == null || events.isEmpty()) {
+            return;
+        }
+
+        List<SignatureEvent> signatureEvents = IntStream.range(0, events.size())
+                .mapToObj(i -> {
+                    PenEventDto dto = events.get(i);
+                    return SignatureEvent.builder()
+                            .signatureCapture(capture)
+                            .sequenceOrder(i)
+                            .eventTimestamp(resolveEventTimestamp(dto.getTimestamp(), i))
+                            .x(dto.getX())
+                            .y(dto.getY())
+                            .pressure(dto.getPressure())
+                            .status(dto.getStatus())
+                            .maxX(dto.getMaxX())
+                            .maxY(dto.getMaxY())
+                            .maxPressure(dto.getMaxPressure())
+                            .build();
+                })
+                .toList();
+        eventRepository.saveAll(signatureEvents);
+    }
+
+    private OffsetDateTime resolveEventTimestamp(String timestamp, int sequenceOrder) {
+        OffsetDateTime parsed = parseEventTimestamp(timestamp);
+        return parsed != null ? parsed : pdfService.defaultEventTimestamp(sequenceOrder);
+    }
+
+    private OffsetDateTime parseEventTimestamp(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(timestamp);
+        } catch (Exception e) {
+            log.warn("Timestamp de evento de firma invalido: {}", timestamp);
+            return null;
+        }
     }
 
     private String resolvePatientName(String nhc) {

@@ -1,8 +1,10 @@
 package com.chpc.backend.service;
 
 import com.chpc.backend.entity.ConsentRequest;
-import com.chpc.backend.entity.User;
 import com.chpc.backend.entity.SignatureCapture;
+import com.chpc.backend.entity.SignatureEvent;
+import com.chpc.backend.entity.User;
+import com.chpc.backend.repository.SignatureEventRepository;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
@@ -21,9 +23,16 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.io.*;
 import java.nio.file.*;
 import java.security.MessageDigest;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -33,6 +42,7 @@ public class PdfService {
         private final TemplateEngineService templateEngineService;
         private final CertificateService certificateService;
         private final ProfessionalSignatureService professionalSignatureService;
+        private final SignatureEventRepository signatureEventRepository;
 
         @Value("${app.pdf-path:./pdfs}")
         private String pdfPath;
@@ -46,8 +56,7 @@ public class PdfService {
                         SignatureCapture capture, String patientName) throws Exception {
 
                 Files.createDirectories(Paths.get(pdfPath));
-                String filename = "consent_" + request.getId() + "_"
-                                + System.currentTimeMillis() + ".pdf";
+                String filename = buildPdfFilename(request, System.currentTimeMillis(), false);
                 String filepath = pdfPath + File.separator + filename;
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -83,9 +92,14 @@ public class PdfService {
                 return Files.readAllBytes(Paths.get(filepath));
         }
 
+        public String buildDownloadFilename(ConsentRequest request) {
+                return buildPdfFilename(request, request.getId() != null ? request.getId() : System.currentTimeMillis(), true);
+        }
+
         // ── Helpers privados ─────────────────────────────────────────────────
 
         private String buildHtml(ConsentRequest request, SignatureCapture capture, String patientName) {
+                List<SignatureEvent> signatureEvents = loadCaptureEvents(capture);
 
                 String signatureImgTag = "";
                 if (capture.getSignatureImagePath() != null) {
@@ -167,6 +181,8 @@ public class PdfService {
                         extraContent.append("</ul></div>");
                 }
 
+                String signatureEvidenceSection = buildSignatureEvidenceSection(signatureEvents);
+
                 return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><style>"
                                 + "body { font-family: Arial, sans-serif; margin: 40px; color: #222; }"
                                 + ".header { border-bottom: 2px solid #1e3a5f; padding-bottom: 16px;"
@@ -222,7 +238,9 @@ public class PdfService {
                                 + signatureImgTag
                                 + "<p style='font-size:11px; color:#666; margin-top:8px;'>"
                                 + "Firmado digitalmente el " + signedAt + " desde IP " + ip
-                                + "</p></div>"
+                                + "</p>"
+                                + signatureEvidenceSection
+                                + "</div>"
                                 + "<div class='signature-section'>"
                                 + "<h3>Firma del profesional sanitario</h3>"
                                 + professionalSignatureTag
@@ -239,6 +257,123 @@ public class PdfService {
                                 + "</p></div>"
 
                                 + "</body></html>";
+        }
+
+        private List<SignatureEvent> loadCaptureEvents(SignatureCapture capture) {
+                if (capture.getId() == null) {
+                        return List.of();
+                }
+                return signatureEventRepository.findBySignatureCaptureIdOrderBySequenceOrderAsc(capture.getId());
+        }
+
+        private String buildSignatureEvidenceSection(List<SignatureEvent> signatureEvents) {
+                if (signatureEvents.isEmpty()) {
+                        return "";
+                }
+
+                long strokeCount = signatureEvents.stream()
+                                .filter(event -> "Down".equalsIgnoreCase(event.getStatus()))
+                                .count();
+                double minPressure = signatureEvents.stream()
+                                .map(SignatureEvent::getPressure)
+                                .filter(Objects::nonNull)
+                                .min(Double::compareTo)
+                                .orElse(0d);
+                double maxPressure = signatureEvents.stream()
+                                .map(SignatureEvent::getPressure)
+                                .filter(Objects::nonNull)
+                                .max(Double::compareTo)
+                                .orElse(0d);
+                double avgPressure = signatureEvents.stream()
+                                .map(SignatureEvent::getPressure)
+                                .filter(Objects::nonNull)
+                                .mapToDouble(Double::doubleValue)
+                                .average()
+                                .orElse(0d);
+                SignatureEvent firstEvent = signatureEvents.get(0);
+                String statuses = signatureEvents.stream()
+                                .map(SignatureEvent::getStatus)
+                                .filter(status -> status != null && !status.isBlank())
+                                .distinct()
+                                .collect(Collectors.joining(", "));
+                String eventsHash = computeEventsHash(signatureEvents);
+                String timingSummary = buildTimingSummary(signatureEvents);
+
+                return "<div style='margin-top:16px; padding:12px; background-color:#f7fafc; border:1px solid #dbe4ee; border-radius:4px;'>"
+                                + "<strong style='color:#1e3a5f;'>Evidencia biometrica del trazo</strong>"
+                                + "<table style='width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;'>"
+                                + "<tr><td style='padding:3px 0; font-weight:bold; width:190px;'>Eventos registrados:</td><td>"
+                                + signatureEvents.size() + "</td></tr>"
+                                + "<tr><td style='padding:3px 0; font-weight:bold;'>Trazos iniciados:</td><td>"
+                                + strokeCount + "</td></tr>"
+                                + "<tr><td style='padding:3px 0; font-weight:bold;'>Estados observados:</td><td>"
+                                + safeText(statuses) + "</td></tr>"
+                                + "<tr><td style='padding:3px 0; font-weight:bold;'>Presion min/media/max:</td><td>"
+                                + formatDecimal(minPressure) + " / " + formatDecimal(avgPressure) + " / " + formatDecimal(maxPressure) + "</td></tr>"
+                                + "<tr><td style='padding:3px 0; font-weight:bold;'>Resolucion de captura:</td><td>"
+                                + formatDecimal(firstEvent.getMaxX()) + " x " + formatDecimal(firstEvent.getMaxY())
+                                + " · presion max " + formatDecimal(firstEvent.getMaxPressure()) + "</td></tr>"
+                                + "<tr><td style='padding:3px 0; font-weight:bold;'>Tiempo de captura:</td><td>"
+                                + timingSummary + "</td></tr>"
+                                + "<tr><td style='padding:3px 0; font-weight:bold;'>Hash SHA-256 eventos:</td><td style='font-family:monospace; font-size:11px;'>"
+                                + eventsHash + "</td></tr>"
+                                + "</table>"
+                                + "<p style='font-size:11px; color:#666; margin-top:8px;'>"
+                                + "Resumen calculado a partir de los puntos capturados y conservados en el sistema para esta firma presencial."
+                                + "</p></div>";
+        }
+
+        private String computeEventsHash(List<SignatureEvent> signatureEvents) {
+                try {
+                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                        String serialized = signatureEvents.stream()
+                                        .map(event -> String.join("|",
+                                                        String.valueOf(event.getSequenceOrder()),
+                                                        String.valueOf(event.getEventTimestamp()),
+                                                        String.valueOf(event.getX()),
+                                                        String.valueOf(event.getY()),
+                                                        String.valueOf(event.getPressure()),
+                                                        String.valueOf(event.getStatus()),
+                                                        String.valueOf(event.getMaxX()),
+                                                        String.valueOf(event.getMaxY()),
+                                                        String.valueOf(event.getMaxPressure())))
+                                        .collect(Collectors.joining("\n"));
+                        return HexFormat.of().formatHex(digest.digest(serialized.getBytes()));
+                } catch (Exception e) {
+                        log.warn("No se pudo calcular el hash de eventos de firma: {}", e.getMessage());
+                        return "No disponible";
+                }
+        }
+
+        private String buildTimingSummary(List<SignatureEvent> signatureEvents) {
+                List<SignatureEvent> timedEvents = signatureEvents.stream()
+                                .filter(event -> event.getEventTimestamp() != null)
+                                .toList();
+                if (timedEvents.isEmpty()) {
+                        return "No disponible";
+                }
+
+                if (timedEvents.size() == 1) {
+                        var only = timedEvents.get(0).getEventTimestamp();
+                        return only.format(FMT) + " (1 evento)";
+                }
+
+                var start = timedEvents.get(0).getEventTimestamp();
+                var end = timedEvents.get(timedEvents.size() - 1).getEventTimestamp();
+                var duration = Duration.between(start, end);
+                if (duration.isNegative()) {
+                        return "No disponible";
+                }
+
+                return start.format(FMT) + " -> " + end.format(FMT)
+                                + " (" + duration.toMillis() + " ms)";
+        }
+
+        private String formatDecimal(Double value) {
+                if (value == null) {
+                        return "0";
+                }
+                return String.format(Locale.US, "%.2f", value);
         }
 
         private String safeText(String value) {
@@ -287,6 +422,9 @@ public class PdfService {
                 info.setSubject("Consentimiento Informado #" + request.getId());
                 info.setKeywords("consentimiento, CHPC, " + request.getNhc());
 
+                info.setTitle(buildPdfTitle(request));
+                info.setSubject("Consentimiento Informado #" + request.getId() + " · NHC " + safeText(request.getNhc()));
+                info.setKeywords("consentimiento, CHPC, " + safeText(request.getNhc()) + ", " + safeText(request.getEpisodeId()));
                 pdf.close();
                 return baos.toByteArray();
         }
@@ -332,5 +470,36 @@ public class PdfService {
 
                 log.info("PDF firmado digitalmente: {}", signedPath);
                 return signedPath;
+        }
+
+        private String buildPdfFilename(ConsentRequest request, long timestamp, boolean signed) {
+                String nhc = sanitizeSegment(request.getNhc());
+                String episodeId = sanitizeSegment(request.getEpisodeId());
+                String templateName = sanitizeSegment(request.getTemplate() != null ? request.getTemplate().getName() : null);
+                String suffix = signed ? "_signed" : "";
+                return String.format("consent_%s_ep_%s_%s_req_%d_%d%s.pdf",
+                                nhc,
+                                episodeId,
+                                templateName,
+                                request.getId(),
+                                timestamp,
+                                suffix);
+        }
+
+        private String buildPdfTitle(ConsentRequest request) {
+                return "Consentimiento Informado - NHC " + safeText(request.getNhc())
+                                + " - Episodio " + safeText(request.getEpisodeId())
+                                + " - " + (request.getTemplate() != null ? request.getTemplate().getName() : "Documento");
+        }
+
+        public OffsetDateTime defaultEventTimestamp(int sequenceOrder) {
+                return OffsetDateTime.now(ZoneOffset.UTC).plusNanos(sequenceOrder * 1_000_000L);
+        }
+
+        private String sanitizeSegment(String value) {
+                String raw = value == null || value.isBlank() ? "sinDato" : value.trim();
+                return raw.replaceAll("[^A-Za-z0-9_-]+", "_")
+                                .replaceAll("_+", "_")
+                                .replaceAll("^_+|_+$", "");
         }
 }

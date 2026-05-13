@@ -181,7 +181,9 @@ public class PdfService {
                         extraContent.append("</ul></div>");
                 }
 
-                String signatureEvidenceSection = buildSignatureEvidenceSection(signatureEvents);
+                String signatureEvidenceSection = request.getChannel() == ConsentRequest.SignChannel.ONSITE
+                                ? buildSignatureEvidenceSection(signatureEvents)
+                                : "";
 
                 return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><style>"
                                 + "body { font-family: Arial, sans-serif; margin: 40px; color: #222; }"
@@ -473,12 +475,12 @@ public class PdfService {
         }
 
         private String buildPdfFilename(ConsentRequest request, long timestamp, boolean signed) {
-                String nhc = sanitizeSegment(request.getNhc());
+                String primaryIdentifier = sanitizeSegment(firstNonBlank(request.getEpisodeId(), request.getNhc()));
                 String episodeId = sanitizeSegment(request.getEpisodeId());
                 String templateName = sanitizeSegment(request.getTemplate() != null ? request.getTemplate().getName() : null);
                 String suffix = signed ? "_signed" : "";
                 return String.format("consent_%s_ep_%s_%s_req_%d_%d%s.pdf",
-                                nhc,
+                                primaryIdentifier,
                                 episodeId,
                                 templateName,
                                 request.getId(),
@@ -501,5 +503,14 @@ public class PdfService {
                 return raw.replaceAll("[^A-Za-z0-9_-]+", "_")
                                 .replaceAll("_+", "_")
                                 .replaceAll("^_+|_+$", "");
+        }
+
+        private String firstNonBlank(String... values) {
+                for (String value : values) {
+                        if (value != null && !value.isBlank()) {
+                                return value.trim();
+                        }
+                }
+                return "sinDato";
         }
 }

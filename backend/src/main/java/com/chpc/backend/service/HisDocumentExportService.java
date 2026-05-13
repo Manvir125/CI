@@ -70,13 +70,12 @@ public class HisDocumentExportService {
     }
 
     private String buildFilename(ConsentRequest request) {
-        String nhc = sanitizeSegment(request.getNhc());
-        String episodeId = sanitizeSegment(request.getEpisodeId());
+        String primaryIdentifier = sanitizeSegment(firstNonBlank(request.getEpisodeId(), request.getNhc()));
         String documentName = sanitizeSegment(firstNonBlank(
                 request.getTemplate() != null ? request.getTemplate().getName() : null,
                 "consentimientoInformado"));
 
-        return nhc + "_" + episodeId + "_" + documentTypeCode + "_" + documentName + "_req_" + request.getId() + ".pdf";
+        return primaryIdentifier + "_" + documentTypeCode + "_" + documentName + "_req_" + request.getId() + ".pdf";
     }
 
     private String sanitizeSegment(String value) {

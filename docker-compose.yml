@@ -60,7 +60,7 @@ services:
       APIKEWAN_ISSUER: ${APIKEWAN_ISSUER:-serverjavacidigital}
       APIKEWAN_KID: ${APIKEWAN_KID:-HoalAdios123.}
       APIKEWAN_AUDIENCE: ${APIKEWAN_AUDIENCE:-api-hospital}
-      APIKEWAN_SCOPE: ${APIKEWAN_SCOPE:-citas.read}
+      APIKEWAN_SCOPE: ${APIKEWAN_SCOPE:-citas.read pacientes.read citas.fecha.read}
       APIKEWAN_PRIVATE_KEY: ${APIKEWAN_PRIVATE_KEY:-}
       APIKEWAN_PRIVATE_KEY_PATH: ${APIKEWAN_PRIVATE_KEY_PATH:-/app/secrets/apikewan-private-key.pem}
       APIKEWAN_TRUSTSTORE_PATH: ${APIKEWAN_TRUSTSTORE_PATH:-certs/truststore.p12}

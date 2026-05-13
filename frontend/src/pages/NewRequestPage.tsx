@@ -4,7 +4,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import {
     getPatientByNhc,
-    getActiveEpisodes, getEpisode, type PatientDto, type EpisodeDto, type AgendaAppointmentDto
+    getEpisode, type PatientDto, type EpisodeDto, type AgendaAppointmentDto
 } from '../api/his';
 import { getTemplates } from '../api/templates';
 import { sendRequest, createGroup } from '../api/consentRequests';
@@ -223,7 +223,6 @@ export default function NewRequestPage() {
     // Datos del flujo
     const [searchValue, setSearchValue] = useState('');
     const [patient, setPatient] = useState<PatientDto | null>(null);
-    const [episodes, setEpisodes] = useState<EpisodeDto[]>([]);
     const [selectedEpisode, setSelectedEpisode] = useState<EpisodeDto | null>(null);
     const [templates, setTemplates] = useState<Template[]>([]);
     const [mainTemplateId, setMainTemplateId] = useState<number | null>(null);
@@ -450,10 +449,9 @@ export default function NewRequestPage() {
             setPatient(resolvedPatient);
             setPatientEmail(normalizePatientEmail(resolvedPatient?.email));
             setPatientPhone(resolvedPatient?.phone ?? '');
-
-            const eps = await getActiveEpisodes(found.nhc);
-            setEpisodes(eps.map(ep => normalizeEpisode(ep, resolvedPatient)));
-            setStep('episodes');
+            setSelectedEpisode(buildEpisodeWithoutEpisode(resolvedPatient!));
+            resetConfiguration();
+            await loadTemplatesForConfiguration();
 
         } catch (err: any) {
             if (err?.response?.status === 404) {
@@ -461,43 +459,6 @@ export default function NewRequestPage() {
             } else {
                 setError('Error al conectar con el HIS. Intentalo de nuevo.');
             }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Paso 2: Seleccionar episodio
-    const handleSelectEpisode = async (episode: EpisodeDto) => {
-        setLoading(true);
-        setError('');
-        try {
-            const detailedEpisode = normalizeEpisode(await getEpisode(episode.episodeId), patient);
-            setSelectedEpisode(detailedEpisode);
-            setPatient(prev => mergePatientData(prev, detailedEpisode.patient));
-            setPatientEmail(current => current || normalizePatientEmail(detailedEpisode.patient?.email));
-            setPatientPhone(current => current || detailedEpisode.patient?.phone || '');
-            resetConfiguration();
-            await loadTemplatesForConfiguration();
-        } catch {
-            setError('Error al cargar las plantillas');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCreateWithoutEpisode = async () => {
-        if (!patient) {
-            return;
-        }
-
-        setLoading(true);
-        setError('');
-        try {
-            setSelectedEpisode(buildEpisodeWithoutEpisode(patient));
-            resetConfiguration();
-            await loadTemplatesForConfiguration();
-        } catch {
-            setError('Error al cargar las plantillas');
         } finally {
             setLoading(false);
         }
@@ -511,7 +472,7 @@ export default function NewRequestPage() {
         );
     };
 
-    // Paso 3: Crear y enviar solicitud
+    // Paso 2: Crear y enviar solicitud
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!mainTemplateId) {
@@ -646,7 +607,7 @@ export default function NewRequestPage() {
                                 Prepare el consentimiento del paciente
                             </h2>
                             <p className="mt-3 text-sm leading-6 text-slate-500">
-                                Busque al paciente, seleccione el episodio y configure la firma.
+                                Busque al paciente y configure la plantilla de consentimiento.
                             </p>
                         </div>
                     </div>
@@ -656,8 +617,8 @@ export default function NewRequestPage() {
                             <span className="request-hero__label">Paciente seleccionado</span>
                         </div>
                         <div className="request-hero__stat">
-                            <span className="request-hero__value">{episodes.length}</span>
-                            <span className="request-hero__label">Episodios cargados</span>
+                            <span className="request-hero__value">{selectedEpisode?.appointment ? '1' : '0'}</span>
+                            <span className="request-hero__label">Citas vinculadas</span>
                         </div>
                         <div className="request-hero__stat">
                             <span className="request-hero__value">{templates.length}</span>
@@ -668,10 +629,11 @@ export default function NewRequestPage() {
 
                 {/* Indicador de pasos */}
                 <div className="step-strip">
-                    {(['search', 'episodes', 'configure'] as Step[]).map((s, i) => {
+                    {(['search', 'configure'] as Step[]).map((s, i) => {
                         const labels = ['Buscar paciente', 'Seleccionar episodio', 'Configurar envío'];
+                        void labels;
                         const isActive = step === s;
-                        const isCompleted = ['search', 'episodes', 'configure']
+                        const isCompleted = ['search', 'configure']
                             .indexOf(step) > i;
                         return (
                             <div key={s} className="flex items-center">
@@ -679,9 +641,9 @@ export default function NewRequestPage() {
                                     isCompleted ? 'step-pill--done' :
                                         ''}`}>
                                     <span>{i + 1}</span>
-                                    <span className="hidden sm:block">{labels[i]}</span>
+                                    <span className="hidden sm:block">{['Buscar paciente', 'Configurar envio'][i]}</span>
                                 </div>
-                                {i < 2 && (
+                                {i < 1 && (
                                     <div className="step-link mx-2" />
                                 )}
                             </div>
@@ -730,110 +692,7 @@ export default function NewRequestPage() {
                     </div>
                 )}
 
-                {/* PASO 2: Episodios */}
-                {step === 'episodes' && patient && (
-                    <div className="space-y-4">
-
-                        {/* Ficha del paciente */}
-                        <div className="pastel-card p-5 border-l-4 border-emerald-300">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className="font-bold text-gray-800 text-lg">
-                                        {patient.fullName || `${patient.firstName} ${patient.lastName}`.trim()}
-                                    </h3>
-                                    <div className="flex gap-4 text-sm text-gray-500 mt-1">
-                                        <span>NHC: <strong>{patient.nhc}</strong></span>
-                                        {patient.sip && <span>SIP: <strong>{patient.sip}</strong></span>}
-                                        <span>DNI: <strong>{patient.dni}</strong></span>
-                                        <span>Nacimiento: <strong>{patient.birthDate}</strong></span>
-                                    </div>
-                                    {patient.allergies?.length > 0 && (
-                                        <div className="mt-2 flex gap-1">
-                                            {patient.allergies.map(a => (
-                                                <span key={a}
-                                                    className="bg-red-100 text-red-700 text-xs px-2 py-0.5
-                                     rounded-full">
-                                                    Alerta: {a}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => { setStep('search'); setPatient(null); }}
-                                    className="text-gray-400 hover:text-emerald-700 text-sm"
-                                >
-                                    Cambiar
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Episodios activos */}
-                        <div className="pastel-card p-6">
-                            <h2 className="font-semibold text-gray-800 text-lg mb-4">
-                                Episodios activos ({episodes.length})
-                            </h2>
-
-                            {episodes.length === 0 ? (
-                                <div className="text-center py-8 space-y-4">
-                                    <p className="text-gray-400">
-                                        No hay episodios activos para este paciente.
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={handleCreateWithoutEpisode}
-                                        disabled={loading}
-                                        className="soft-button disabled:opacity-50"
-                                    >
-                                        Crear solicitud sin episodio
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <button
-                                        type="button"
-                                        onClick={handleCreateWithoutEpisode}
-                                        disabled={loading}
-                                        className="soft-button-secondary w-full"
-                                    >
-                                        Crear solicitud sin episodio
-                                    </button>
-                                    {episodes.map(ep => (
-                                        <div
-                                            key={ep.episodeId}
-                                            onClick={() => handleSelectEpisode(ep)}
-                                            className="border border-emerald-100/80 bg-white/70 rounded-2xl p-4 cursor-pointer
-                                 hover:border-emerald-300 hover:bg-emerald-50/55 transition-all"
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-medium text-gray-800">
-                                                        {ep.procedureName || 'Procedimiento no informado'}
-                                                    </p>
-                                                    <div className="flex gap-3 text-sm text-gray-500 mt-1">
-                                                        <span>Servicio: {ep.serviceName}</span>
-                                                        <span>Fecha: {ep.episodeDate}</span>
-                                                        {ep.ward && <span>Sala: {ep.ward}</span>}
-                                                        {ep.bed && <span>Cama: {ep.bed}</span>}
-                                                    </div>
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        ID: {ep.episodeId} · {ep.attendingPhysician}
-                                                    </p>
-                                                </div>
-                                                <span className="bg-emerald-100 text-emerald-700 text-xs
-                                         px-2 py-1 rounded-full">
-                                                    {ep.priority}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* PASO 3: Configurar envío */}
+                {/* PASO 2: Configurar envío */}
                 {step === 'configure' && patient && selectedEpisode && (
                     <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -900,17 +759,6 @@ export default function NewRequestPage() {
                                         <p className="text-gray-500">Cita</p>
                                         <p className="font-medium">
                                             {selectedEpisode.appointment.appointmentDate} · {selectedEpisode.appointment.startTime} - {selectedEpisode.appointment.endTime}
-                                        </p>
-                                    </div>
-                                )}
-                                {selectedEpisode.diagnoses && selectedEpisode.diagnoses.length > 0 && (
-                                    <div className="col-span-2">
-                                        <p className="text-gray-500">Diagnosticos HIS</p>
-                                        <p className="font-medium">
-                                            {selectedEpisode.diagnoses
-                                                .map(diagnosis => diagnosis.diagnosisName)
-                                                .filter(Boolean)
-                                                .join(' · ')}
                                         </p>
                                     </div>
                                 )}
@@ -1228,7 +1076,7 @@ export default function NewRequestPage() {
                         <div className="flex gap-3 justify-end">
                             <button
                                 type="button"
-                                onClick={() => startedFromAgenda ? navigate('/dashboard') : setStep('episodes')}
+                                onClick={() => startedFromAgenda ? navigate('/dashboard') : setStep('search')}
                                 className="soft-button-secondary"
                             >
                                 {startedFromAgenda ? 'Volver al dashboard' : 'Atrás'}

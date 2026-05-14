@@ -91,6 +91,14 @@ public class ConsentRequestController {
         return ResponseEntity.ok(requestService.searchKioskRequests(sip, dni));
     }
 
+    @PostMapping("/{id}/send-unsigned-template-sms")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<ConsentRequestResponse> sendUnsignedTemplateSms(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(requestService.sendUnsignedTemplateSms(id, httpRequest.getRemoteAddr()));
+    }
+
     @GetMapping("/{id}/pdf")
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE','SUPERVISOR')")
     public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {
@@ -122,13 +130,6 @@ public class ConsentRequestController {
             HttpServletRequest httpRequest) {
 
         ConsentRequest request = requestService.getKioskRequestForCurrentProfessional(id);
-
-        tokenRepository.findAll().stream()
-                .filter(t -> t.getConsentRequest().getId().equals(id) && t.getIsValid())
-                .forEach(t -> {
-                    t.setIsValid(false);
-                    tokenRepository.save(t);
-                });
 
         byte[] tokenBytes = new byte[32];
         new java.security.SecureRandom().nextBytes(tokenBytes);

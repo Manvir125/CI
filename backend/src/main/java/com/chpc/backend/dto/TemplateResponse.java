@@ -14,6 +14,8 @@ public class TemplateResponse {
     private String contentHtml;
     private Integer version;
     private Boolean isActive;
+    private Boolean favoriteForCurrentUser;
+    private Boolean sameServiceForCurrentUser;
     private String createdByName;
     private LocalDateTime createdAt;
     private List<FieldResponse> fields;

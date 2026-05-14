@@ -471,12 +471,12 @@ export default function DashboardPage() {
 
                     {(hasRole('ADMIN') || hasRole('PROFESSIONAL') || hasRole('ADMINISTRATIVE')) && (
                         <div
-                            onClick={() => window.open('/kiosk', '_blank')}
+                            onClick={() => navigate('/requests/new')}
                             className="dashboard-action-card">
                             <div className="dashboard-action-card__icon mb-4">Kiosk</div>
                             <h3 className="font-semibold text-gray-800">Firma presencial</h3>
                             <p className="text-gray-500 text-sm mt-1">
-                                Abrir el modo de firma en el centro.
+                                Crear una solicitud y abrir la firma en el centro.
                             </p>
                         </div>
                     )}

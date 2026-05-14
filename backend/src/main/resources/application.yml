@@ -32,6 +32,7 @@ spring:
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:5173}
+  public-api-base-url: ${APP_PUBLIC_API_BASE_URL:https://radio-nutty-humid.ngrok-free.dev}
   token-expiry-hours: ${TOKEN_EXPIRY_HOURS:72}
   mail-from: no-reply@hospitalprovincial.es
   signatures-path: ${SIGNATURES_PATH:./signatures}

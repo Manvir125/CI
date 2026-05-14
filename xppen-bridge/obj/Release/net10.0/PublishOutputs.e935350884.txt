@@ -1,0 +1,6 @@
+W:\xppen-bridge\publish\xppen-bridge.exe
+W:\xppen-bridge\publish\libSign.dll
+W:\xppen-bridge\publish\xppen-bridge.dll
+W:\xppen-bridge\publish\xppen-bridge.deps.json
+W:\xppen-bridge\publish\xppen-bridge.runtimeconfig.json
+W:\xppen-bridge\publish\xppen-bridge.pdb

@@ -81,6 +81,27 @@ public class PdfService {
                 return signedPath;
         }
 
+        public byte[] generateUnsignedPdfBytes(ConsentRequest request, String patientName) throws Exception {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                HtmlConverter.convertToPdf(buildUnsignedHtml(request, patientName), baos);
+                return baos.toByteArray();
+        }
+
+        public String saveUnsignedPdfPreview(ConsentRequest request, String patientName, String token) throws Exception {
+                Files.createDirectories(Paths.get(pdfPath, "unsigned-previews"));
+                String filename = token + ".pdf";
+                String filepath = Paths.get(pdfPath, "unsigned-previews", filename).toString();
+                Files.write(Paths.get(filepath), generateUnsignedPdfBytes(request, patientName));
+                return filepath;
+        }
+
+        public byte[] readUnsignedPdfPreview(String token) throws Exception {
+                if (token == null || !token.matches("[A-Za-z0-9_-]{32,128}")) {
+                        throw new IllegalArgumentException("Token de PDF no valido");
+                }
+                return Files.readAllBytes(Paths.get(pdfPath, "unsigned-previews", token + ".pdf"));
+        }
+
         public String calculateHash(String filepath) throws Exception {
                 byte[] fileBytes = Files.readAllBytes(Paths.get(filepath));
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -97,6 +118,50 @@ public class PdfService {
         }
 
         // ── Helpers privados ─────────────────────────────────────────────────
+
+        private String buildUnsignedHtml(ConsentRequest request, String patientName) {
+                String createdAt = request.getCreatedAt().format(FMT);
+                String observations = request.getObservations() != null && !request.getObservations().isBlank()
+                                ? "<div style='margin-top:20px; padding:10px; background-color:#f9f9f9; border-left:3px solid #1e3a5f;'>"
+                                                + "<strong>Observaciones:</strong><br/>"
+                                                + request.getObservations().replace("\n", "<br/>")
+                                                + "</div>"
+                                : "";
+
+                return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><style>"
+                                + "body { font-family: Arial, sans-serif; margin: 40px; color: #222; }"
+                                + ".header { border-bottom: 2px solid #1e3a5f; padding-bottom: 16px; margin-bottom: 24px; }"
+                                + ".header h1 { color: #1e3a5f; font-size: 18px; margin: 0; }"
+                                + ".header p { color: #666; font-size: 12px; margin: 4px 0 0; }"
+                                + ".meta { background: #f5f5f5; padding: 12px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; }"
+                                + ".meta table { width: 100%; border-collapse: collapse; }"
+                                + ".meta td { padding: 4px 8px; }"
+                                + ".meta td:first-child { font-weight: bold; width: 180px; }"
+                                + ".content { font-size: 13px; line-height: 1.6; }"
+                                + ".unsigned { margin-top: 30px; padding: 12px; border: 1px dashed #999; color: #666; font-size: 12px; }"
+                                + "</style></head><body>"
+                                + "<div class='header'>"
+                                + "<h1>Consorci Hospitalari Provincial de Castell&oacute;</h1>"
+                                + "<p>Plantilla de Consentimiento Informado Digital sin firmar</p>"
+                                + "</div>"
+                                + "<div class='meta'><table>"
+                                + "<tr><td>Procedimiento:</td><td>" + request.getTemplate().getName() + "</td></tr>"
+                                + "<tr><td>Servicio:</td><td>" + safeText(request.getTemplate().getServiceCode()) + "</td></tr>"
+                                + "<tr><td>Profesional:</td><td>" + request.getProfessional().getFullName() + "</td></tr>"
+                                + "<tr><td>Paciente:</td><td>" + safeText(patientName) + "</td></tr>"
+                                + "<tr><td>NHC Paciente:</td><td>" + safeText(request.getNhc()) + "</td></tr>"
+                                + "<tr><td>SIP Paciente:</td><td>" + safeText(request.getPatientSip()) + "</td></tr>"
+                                + "<tr><td>DNI Paciente:</td><td>" + safeText(request.getPatientDni()) + "</td></tr>"
+                                + "<tr><td>Episodio:</td><td>" + safeText(request.getEpisodeId()) + "</td></tr>"
+                                + "<tr><td>Fecha solicitud:</td><td>" + createdAt + "</td></tr>"
+                                + "</table></div>"
+                                + "<div class='content'>"
+                                + templateEngineService.renderHtml(request, patientName)
+                                + "</div>"
+                                + observations
+                                + "<div class='unsigned'>Documento informativo sin firma del paciente.</div>"
+                                + "</body></html>";
+        }
 
         private String buildHtml(ConsentRequest request, SignatureCapture capture, String patientName) {
                 List<SignatureEvent> signatureEvents = loadCaptureEvents(capture);
@@ -126,7 +191,12 @@ public class PdfService {
                                         request.getId(), signer.getUsername(), signer.getId(),
                                         signer.getSignatureMethod());
 
-                        if (signer.getSignatureMethod() == User.SignatureMethod.CERTIFICATE) {
+                        byte[] profSigBytes = professionalSignatureService.readSignatureBytes(signer);
+                        if (profSigBytes != null) {
+                                String profB64 = Base64.getEncoder().encodeToString(profSigBytes);
+                                professionalSignatureTag = "<img src='data:image/png;base64," + profB64
+                                                + "' style='max-width:250px; border:1px solid #ccc;'/>";
+                        } else if (signer.getSignatureMethod() == User.SignatureMethod.CERTIFICATE) {
                             String certDetails = request.getProfessionalCertInfo() != null 
                                     ? request.getProfessionalCertInfo() 
                                     : signer.getFullName();
@@ -137,14 +207,7 @@ public class PdfService {
                                     + "<span style='font-size:11px; color:#777; margin-top:5px; display:inline-block;'>El certificado de cliente valida la identidad y fue verificado durante el establecimiento de la conexión segura.</span>"
                                     + "</div>";
                         } else {
-                            byte[] profSigBytes = professionalSignatureService.readSignatureBytes(signer);
-                            if (profSigBytes != null) {
-                                    String profB64 = Base64.getEncoder().encodeToString(profSigBytes);
-                                    professionalSignatureTag = "<img src='data:image/png;base64," + profB64
-                                                    + "' style='max-width:250px; border:1px solid #ccc;'/>";
-                            } else {
-                                    log.warn("PDF: Signature bytes are NULL for signer {}", signer.getUsername());
-                            }
+                                log.warn("PDF: Signature bytes are NULL for signer {}", signer.getUsername());
                         }
                 }
 

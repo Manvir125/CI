@@ -1,6 +1,7 @@
 package com.chpc.backend.service;
 
 import java.security.SecureRandom;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
@@ -63,11 +64,15 @@ public class ConsentRequestService {
         private final UserRepository userRepository;
         private final AuditService auditService;
         private final NotificationService notificationService;
+        private final SmsService smsService;
         private final HisIntegrationService hisService;
         private final HisPatientRepository hisPatientRepository;
 
         @Value("${app.token-expiry-hours:72}")
         private int tokenExpiryHours;
+
+        @Value("${app.public-api-base-url:http://localhost:8080}")
+        private String publicApiBaseUrl;
 
         // Crea una nueva solicitud de consentimiento
         @Transactional
@@ -164,6 +169,62 @@ public class ConsentRequestService {
                                 requestId, ipAddress, true, null);
 
                 return toResponse(request);
+        }
+
+        @Transactional
+        public ConsentRequestResponse sendUnsignedTemplateSms(Long requestId, String ipAddress) {
+                ConsentRequest request = getKioskRequestForCurrentProfessional(requestId);
+
+                if (request.getChannel() != ConsentRequest.SignChannel.ONSITE) {
+                        throw new RuntimeException("Solo se puede enviar SMS de plantilla en solicitudes presenciales");
+                }
+
+                if (!"PENDING".equals(request.getStatus()) && !"SENT".equals(request.getStatus())) {
+                        throw new RuntimeException("Solo se puede enviar SMS en solicitudes pendientes");
+                }
+
+                if (request.getPatientPhone() == null || request.getPatientPhone().isBlank()) {
+                        throw new RuntimeException("La solicitud no tiene telefono de paciente");
+                }
+
+                SignToken token = generateToken(request, ipAddress);
+                String templateUrl = buildPublicUnsignedPdfUrl(token.getTokenHash());
+                String smsBody = "CHPC - Adjuntamos el PDF de la plantilla de consentimiento informado sin firmar.";
+
+                boolean sent = smsService.sendMediaSms(request.getPatientPhone(), smsBody, templateUrl);
+                if (!sent) {
+                        throw new RuntimeException("No se pudo enviar el SMS/MMS con la plantilla");
+                }
+
+                String username = SecurityContextHolder.getContext()
+                                .getAuthentication().getName();
+                auditService.logWithData(username, "UNSIGNED_TEMPLATE_SMS_SENT", "ConsentRequest",
+                                requestId, ipAddress, true,
+                                java.util.Map.of("phone", request.getPatientPhone()));
+
+                return toResponse(request);
+        }
+
+        private String buildPublicUnsignedPdfUrl(String tokenHash) {
+                String baseUrl = normalizeBlank(publicApiBaseUrl);
+                if (baseUrl == null) {
+                        throw new RuntimeException("APP_PUBLIC_API_BASE_URL no esta configurado");
+                }
+
+                URI uri = URI.create(baseUrl);
+                String host = uri.getHost();
+                if (host == null
+                                || "localhost".equalsIgnoreCase(host)
+                                || "127.0.0.1".equals(host)
+                                || host.startsWith("10.")
+                                || host.startsWith("192.168.")
+                                || host.matches("^172\\.(1[6-9]|2\\d|3[0-1])\\..*")) {
+                        throw new RuntimeException(
+                                        "APP_PUBLIC_API_BASE_URL debe ser una URL publica accesible por Twilio para adjuntar el PDF por MMS");
+                }
+
+                return baseUrl.replaceAll("/+$", "")
+                                + "/api/patient/sign/" + tokenHash + "/unsigned-pdf.pdf";
         }
 
         // Cancela una solicitud

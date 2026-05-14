@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import SignaturePad from 'signature_pad';
-import { getKioskToken, type ConsentRequestResponse } from '../api/consentRequests';
+import { downloadPdf, getKioskToken, type ConsentRequestResponse } from '../api/consentRequests';
 import { loadConsent, submitSignature, type PortalConsentDto } from '../api/portal';
 import type { PatientDto } from '../api/his';
 import { useXPPenTablet, type PenEvent } from '../hooks/useXPPenTablet';
@@ -219,6 +219,17 @@ export default function KioskSignPage() {
         }
     };
 
+    const handleFinishSigned = async () => {
+        if (!requestId) return;
+        setError('');
+        try {
+            await downloadPdf(Number(requestId));
+            navigate('/dashboard');
+        } catch {
+            setError('La firma se ha registrado, pero no se ha podido descargar el PDF.');
+        }
+    };
+
     if (step === 'loading') {
         return (
             <div className="page-loading">
@@ -238,7 +249,7 @@ export default function KioskSignPage() {
                     <h1 className="text-2xl font-semibold text-[var(--text-main)]">No se pudo abrir el consentimiento</h1>
                     <p className="mt-3 text-sm text-[var(--text-soft)]">{error}</p>
                     <button
-                        onClick={() => navigate('/kiosk')}
+                        onClick={() => navigate('/dashboard')}
                         className="soft-button mt-6 w-full"
                     >
                         Volver al inicio
@@ -259,8 +270,13 @@ export default function KioskSignPage() {
                         <p><strong>Procedimiento:</strong> {resolvedProcedureName}</p>
                         <p><strong>Profesional:</strong> {resolvedProfessionalName}</p>
                     </div>
+                    {error && (
+                        <div className="surface-note surface-note--danger mt-5 text-center">
+                            {error}
+                        </div>
+                    )}
                     <button
-                        onClick={() => navigate('/kiosk')}
+                        onClick={handleFinishSigned}
                         className="soft-button mt-6 w-full"
                     >
                         Finalizar
@@ -278,7 +294,7 @@ export default function KioskSignPage() {
                     <h1 className="text-2xl font-semibold text-[var(--text-main)]">Consentimiento rechazado</h1>
                     <p className="mt-3 text-sm text-[var(--text-soft)]">El rechazo ha sido registrado. El equipo medico ha sido notificado.</p>
                     <button
-                        onClick={() => navigate('/kiosk')}
+                        onClick={() => navigate('/dashboard')}
                         className="soft-button mt-6 w-full"
                     >
                         Finalizar
@@ -302,7 +318,7 @@ export default function KioskSignPage() {
                 <div className="app-topbar__actions">
                     <span className="app-pill">{resolvedPatientName}</span>
                     <button
-                        onClick={() => navigate('/kiosk')}
+                        onClick={() => navigate('/dashboard')}
                         className="soft-button-secondary"
                     >
                         Cancelar

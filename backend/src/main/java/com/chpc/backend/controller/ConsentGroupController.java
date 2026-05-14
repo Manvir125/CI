@@ -35,6 +35,15 @@ public class ConsentGroupController {
     }
 
     // Solicitudes pendientes de firma para el servicio del médico autenticado
+    @PostMapping("/unsigned-template-sms-preview")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<Map<String, String>> sendUnsignedTemplateSmsPreview(
+            @Valid @RequestBody ConsentGroupDto dto,
+            Authentication auth) {
+        groupService.sendUnsignedTemplatePreviewSms(dto, auth.getName());
+        return ResponseEntity.ok(Map.of("message", "Plantilla enviada por SMS"));
+    }
+
     @GetMapping("/pending-my-signature")
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL')")
     public ResponseEntity<?> getPendingForMe(

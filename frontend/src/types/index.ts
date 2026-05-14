@@ -46,6 +46,8 @@ export interface Template {
     contentHtml: string;
     version: number;
     isActive: boolean;
+    favoriteForCurrentUser?: boolean;
+    sameServiceForCurrentUser?: boolean;
     createdByName: string;
     createdAt: string;
     fields: TemplateField[];

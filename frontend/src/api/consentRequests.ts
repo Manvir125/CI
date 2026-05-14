@@ -63,6 +63,13 @@ export const sendRequest = async (
     return data;
 };
 
+export const sendUnsignedTemplateSms = async (
+    id: number
+): Promise<ConsentRequestResponse> => {
+    const { data } = await client.post(`/api/consent-requests/${id}/send-unsigned-template-sms`);
+    return data;
+};
+
 export const cancelRequest = async (
     id: number,
     reason: string
@@ -127,6 +134,16 @@ export interface ConsentGroupDto {
     }[];
 }
 
+export interface ConsentGroupResponse {
+    id: number;
+    episodeId?: string | null;
+    nhc: string;
+    status: string;
+    patientEmail: string;
+    createdAt: string;
+    requests: ConsentRequestResponse[];
+}
+
 export interface KioskPatientSearchResponse {
     patient: PatientDto | null;
     requests: ConsentRequestResponse[];
@@ -135,7 +152,7 @@ export interface KioskPatientSearchResponse {
 export const createGroup = async (
     dto: ConsentGroupDto,
     useMtls: boolean = false
-): Promise<any> => {
+): Promise<ConsentGroupResponse> => {
     if (useMtls) {
         const mtlsUrl = `https://${window.location.hostname}:8444`;
         
@@ -168,6 +185,12 @@ export const createGroup = async (
 
     const { data } = await client.post('/api/consent-groups', dto);
     return data;
+};
+
+export const sendUnsignedTemplateSmsPreview = async (
+    dto: ConsentGroupDto
+): Promise<void> => {
+    await client.post('/api/consent-groups/unsigned-template-sms-preview', dto);
 };
 
 export const getPendingMySignature = async (): Promise<ConsentRequestResponse[]> => {

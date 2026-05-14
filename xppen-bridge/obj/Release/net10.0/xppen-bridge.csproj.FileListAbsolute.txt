@@ -1,0 +1,16 @@
+W:\xppen-bridge\bin\Release\net10.0\libSign.dll
+W:\xppen-bridge\bin\Release\net10.0\xppen-bridge.exe
+W:\xppen-bridge\bin\Release\net10.0\xppen-bridge.deps.json
+W:\xppen-bridge\bin\Release\net10.0\xppen-bridge.runtimeconfig.json
+W:\xppen-bridge\bin\Release\net10.0\xppen-bridge.dll
+W:\xppen-bridge\bin\Release\net10.0\xppen-bridge.pdb
+W:\xppen-bridge\obj\Release\net10.0\xppen-bridge.GeneratedMSBuildEditorConfig.editorconfig
+W:\xppen-bridge\obj\Release\net10.0\xppen-bridge.AssemblyInfoInputs.cache
+W:\xppen-bridge\obj\Release\net10.0\xppen-bridge.AssemblyInfo.cs
+W:\xppen-bridge\obj\Release\net10.0\xppen-bridge.csproj.CoreCompileInputs.cache
+W:\xppen-bridge\obj\Release\net10.0\xppen-bridge.sourcelink.json
+W:\xppen-bridge\obj\Release\net10.0\xppen-bridge.dll
+W:\xppen-bridge\obj\Release\net10.0\refint\xppen-bridge.dll
+W:\xppen-bridge\obj\Release\net10.0\xppen-bridge.pdb
+W:\xppen-bridge\obj\Release\net10.0\xppen-bridge.genruntimeconfig.cache
+W:\xppen-bridge\obj\Release\net10.0\ref\xppen-bridge.dll

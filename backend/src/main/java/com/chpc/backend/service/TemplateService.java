@@ -22,13 +22,21 @@ public class TemplateService {
 
         private final ConsentTemplateRepository templateRepository;
         private final UserRepository userRepository;
+        private final UserFavoriteTemplateRepository favoriteTemplateRepository;
         private final AuditService auditService;
 
         // Obtener todas las plantillas activas
         @Transactional(readOnly = true)
         public List<TemplateResponse> getActiveTemplates() {
+                User currentUser = getCurrentUserOrNull();
+                Long favoriteTemplateId = currentUser == null ? null
+                                : favoriteTemplateRepository.findByUserId(currentUser.getId())
+                                                .map(favorite -> favorite.getTemplate().getId())
+                                                .orElse(null);
                 return templateRepository.findByIsActiveTrue()
-                                .stream().map(this::toResponse).collect(Collectors.toList());
+                                .stream()
+                                .map(template -> toResponse(template, currentUser, favoriteTemplateId))
+                                .collect(Collectors.toList());
         }
 
         // Obtener una plantilla por ID
@@ -37,6 +45,48 @@ public class TemplateService {
                 ConsentTemplate t = templateRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Plantilla no encontrada: " + id));
                 return toResponse(t);
+        }
+
+        @Transactional
+        public TemplateResponse setFavorite(Long templateId, String ipAddress) {
+                User user = getCurrentUser();
+                ConsentTemplate template = templateRepository.findById(templateId)
+                                .orElseThrow(() -> new RuntimeException("Plantilla no encontrada: " + templateId));
+
+                if (!Boolean.TRUE.equals(template.getIsActive())) {
+                        throw new RuntimeException("No se puede marcar como favorita una plantilla desactivada");
+                }
+
+                if (!sameService(template, user)) {
+                        throw new RuntimeException("Solo puedes marcar como favorita una plantilla de tu mismo servicio");
+                }
+
+                UserFavoriteTemplate favorite = favoriteTemplateRepository.findByUserId(user.getId())
+                                .orElseGet(() -> UserFavoriteTemplate.builder().user(user).build());
+                favorite.setTemplate(template);
+                favoriteTemplateRepository.save(favorite);
+
+                auditService.logWithData(user.getUsername(), "TEMPLATE_FAVORITE_SET", "ConsentTemplate",
+                                templateId, ipAddress, true,
+                                java.util.Map.of(
+                                                "templateName", template.getName(),
+                                                "serviceCode", String.valueOf(template.getServiceCode())
+                                ));
+
+                return toResponse(template, user, template.getId());
+        }
+
+        @Transactional
+        public void clearFavorite(Long templateId, String ipAddress) {
+                User user = getCurrentUser();
+                favoriteTemplateRepository.findByUserId(user.getId())
+                                .filter(favorite -> favorite.getTemplate().getId().equals(templateId))
+                                .ifPresent(favorite -> {
+                                        favoriteTemplateRepository.delete(favorite);
+                                        auditService.logWithData(user.getUsername(), "TEMPLATE_FAVORITE_CLEARED",
+                                                        "ConsentTemplate", templateId, ipAddress, true,
+                                                        java.util.Map.of("templateId", String.valueOf(templateId)));
+                                });
         }
 
         // Crear nueva plantilla
@@ -225,6 +275,15 @@ public class TemplateService {
 
         // Convierte entidad → DTO de respuesta
         private TemplateResponse toResponse(ConsentTemplate t) {
+                User currentUser = getCurrentUserOrNull();
+                Long favoriteTemplateId = currentUser == null ? null
+                                : favoriteTemplateRepository.findByUserId(currentUser.getId())
+                                                .map(favorite -> favorite.getTemplate().getId())
+                                                .orElse(null);
+                return toResponse(t, currentUser, favoriteTemplateId);
+        }
+
+        private TemplateResponse toResponse(ConsentTemplate t, User currentUser, Long favoriteTemplateId) {
                 List<TemplateResponse.FieldResponse> fields = t.getFields() == null ? List.of()
                                 : t.getFields().stream().map(f -> TemplateResponse.FieldResponse.builder()
                                                 .id(f.getId())
@@ -243,9 +302,42 @@ public class TemplateService {
                                 .contentHtml(t.getContentHtml())
                                 .version(t.getVersion())
                                 .isActive(t.getIsActive())
+                                .favoriteForCurrentUser(favoriteTemplateId != null && favoriteTemplateId.equals(t.getId()))
+                                .sameServiceForCurrentUser(currentUser != null && sameService(t, currentUser))
                                 .createdByName(t.getCreatedBy() != null ? t.getCreatedBy().getFullName() : null)
                                 .createdAt(t.getCreatedAt())
                                 .fields(fields)
                                 .build();
+        }
+
+        private User getCurrentUser() {
+                String username = SecurityContextHolder.getContext().getAuthentication().getName();
+                return userRepository.findByUsername(username).orElseThrow();
+        }
+
+        private User getCurrentUserOrNull() {
+                try {
+                        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                                return null;
+                        }
+                        return getCurrentUser();
+                } catch (Exception e) {
+                        return null;
+                }
+        }
+
+        private boolean sameService(ConsentTemplate template, User user) {
+                String templateService = normalize(template.getServiceCode());
+                if (templateService == null) {
+                        return false;
+                }
+
+                String userServiceCode = normalize(user.getServiceCode());
+                String userServiceName = normalize(user.getServiceName());
+                return templateService.equals(userServiceCode) || templateService.equals(userServiceName);
+        }
+
+        private String normalize(String value) {
+                return value == null || value.isBlank() ? null : value.trim().toLowerCase();
         }
 }

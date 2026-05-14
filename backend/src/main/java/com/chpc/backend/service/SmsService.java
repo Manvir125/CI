@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.util.List;
+
 @Slf4j
 @Service
 public class SmsService {
@@ -54,6 +57,30 @@ public class SmsService {
 
         } catch (Exception e) {
             log.error("Error enviando SMS a {}: {}", toPhone, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean sendMediaSms(String toPhone, String body, String mediaUrl) {
+        if (!enabled) {
+            log.error("No se puede enviar MMS: Twilio no esta configurado correctamente");
+            return false;
+        }
+
+        try {
+            String normalizedPhone = normalizePhone(toPhone);
+
+            Message message = Message.creator(
+                    new PhoneNumber(normalizedPhone),
+                    new PhoneNumber(fromNumber),
+                    body)
+                    .setMediaUrl(List.of(URI.create(mediaUrl)))
+                    .create();
+
+            log.info("MMS enviado a {} - SID: {}", normalizedPhone, message.getSid());
+            return true;
+        } catch (Exception e) {
+            log.error("Error enviando MMS a {}: {}", toPhone, e.getMessage());
             return false;
         }
     }

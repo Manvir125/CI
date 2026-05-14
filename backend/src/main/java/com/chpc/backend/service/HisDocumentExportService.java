@@ -1,6 +1,7 @@
 package com.chpc.backend.service;
 
 import com.chpc.backend.entity.ConsentRequest;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,14 @@ public class HisDocumentExportService {
 
     @Value("${his.document-export.document-type-code:001}")
     private String documentTypeCode;
+
+    @PostConstruct
+    void logConfiguration() {
+        log.info("HIS document export {}. Ruta: {}. Tipo documento: {}",
+                enabled ? "habilitado" : "deshabilitado",
+                exportPath == null || exportPath.isBlank() ? "(sin configurar)" : exportPath,
+                documentTypeCode);
+    }
 
     public void exportSignedConsent(ConsentRequest request, String signedPdfPath) {
         if (!enabled) {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-    getTemplates, deactivateTemplate, duplicateTemplate
+    getTemplates, deactivateTemplate, duplicateTemplate, setFavoriteTemplate, clearFavoriteTemplate
 } from '../api/templates';
 import type { Template } from '../types';
 
@@ -46,6 +46,24 @@ export default function TemplatesPage() {
             setTemplates([...templates, copy]);
         } catch {
             setError('Error al duplicar la plantilla');
+        }
+    };
+
+    const handleToggleFavorite = async (template: Template) => {
+        try {
+            if (template.favoriteForCurrentUser) {
+                await clearFavoriteTemplate(template.id);
+                setTemplates(prev => prev.map(t => ({ ...t, favoriteForCurrentUser: false })));
+                return;
+            }
+
+            await setFavoriteTemplate(template.id);
+            setTemplates(prev => prev.map(t => ({
+                ...t,
+                favoriteForCurrentUser: t.id === template.id
+            })));
+        } catch (err: any) {
+            setError(err?.response?.data?.message || 'Error al actualizar la plantilla favorita');
         }
     };
 
@@ -142,8 +160,17 @@ export default function TemplatesPage() {
                                     </div>
 
                                     {/* Acciones */}
-                                    {canManage && (
-                                        <div className="flex gap-2 ml-4">
+                                    <div className="flex gap-2 ml-4">
+                                        {template.sameServiceForCurrentUser && (
+                                            <button
+                                                onClick={() => handleToggleFavorite(template)}
+                                                className={`soft-subtle-button text-sm ${template.favoriteForCurrentUser ? 'border-amber-200 bg-amber-50 text-amber-700' : ''}`}
+                                            >
+                                                {template.favoriteForCurrentUser ? 'Favorita' : 'Marcar favorita'}
+                                            </button>
+                                        )}
+                                        {canManage && (
+                                            <>
                                             <button
                                                 onClick={() => navigate(`/templates/${template.id}/edit`)}
                                                 className="soft-subtle-button text-sm"
@@ -163,8 +190,9 @@ export default function TemplatesPage() {
                                             >
                                                 Desactivar
                                             </button>
-                                        </div>
-                                    )}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}

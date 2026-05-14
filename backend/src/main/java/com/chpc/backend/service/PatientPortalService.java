@@ -99,6 +99,17 @@ public class PatientPortalService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public byte[] generateUnsignedPdf(String rawToken) throws Exception {
+        SignToken token = findValidToken(rawToken);
+        ConsentRequest request = token.getConsentRequest();
+        return pdfService.generateUnsignedPdfBytes(request, resolvePatientName(request.getNhc()));
+    }
+
+    public byte[] readUnsignedPdfPreview(String token) throws Exception {
+        return pdfService.readUnsignedPdfPreview(token);
+    }
+
     @Transactional
     public void sendVerificationCode(ConsentRequest request, String ipAddress) {
 

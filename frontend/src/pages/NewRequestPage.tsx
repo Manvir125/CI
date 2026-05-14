@@ -7,7 +7,7 @@ import {
     getEpisode, type PatientDto, type EpisodeDto, type AgendaAppointmentDto
 } from '../api/his';
 import { getTemplates } from '../api/templates';
-import { sendRequest, createGroup } from '../api/consentRequests';
+import { sendRequest, createGroup, sendUnsignedTemplateSmsPreview } from '../api/consentRequests';
 import { getSignatureStatus } from '../api/professionalSignature';
 import { getActiveProfessionals, type UserResponse } from '../api/user';
 import type { Template } from '../types';
@@ -233,10 +233,10 @@ export default function NewRequestPage() {
     const [assignedProfessionalMap, setAssignedProfessionalMap] = useState<Record<number, number | null>>({});
     const [professionalSearchMap, setProfessionalSearchMap] = useState<Record<number, string>>({});
     const [activeProfessionals, setActiveProfessionals] = useState<UserResponse[]>([]);
-    const [channel, setChannel] = useState<'REMOTE' | 'ONSITE'>('REMOTE');
+    const [channel, setChannel] = useState<'REMOTE' | 'ONSITE'>('ONSITE');
     const [patientEmail, setPatientEmail] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
-    const [sendNow, setSendNow] = useState(true);
+    const [sendNow, setSendNow] = useState(false);
     const [hasSignature, setHasSignature] = useState(false);
     const currentUserServiceLabel = getServiceDisplayName(user?.serviceName, user?.serviceCode);
     const selectedEpisodeServiceLabel = getServiceDisplayName(
@@ -351,6 +351,19 @@ export default function NewRequestPage() {
             setSendNow(false);
         }
     }, [channel]);
+
+    useEffect(() => {
+        if (step !== 'configure' || mainTemplateId || templates.length === 0) {
+            return;
+        }
+
+        const favoriteTemplate = templates.find(template =>
+            template.favoriteForCurrentUser && templateMatchesPrimaryFilter(template)
+        );
+        if (favoriteTemplate) {
+            setMainTemplateId(favoriteTemplate.id);
+        }
+    }, [step, mainTemplateId, templates, episodeServiceCode, episodeServiceName, userServiceCode, userServiceName]);
 
     useEffect(() => {
         if (!preselectedEpisodeId) {
@@ -518,6 +531,12 @@ export default function NewRequestPage() {
                 })
             };
 
+            if (channel === 'ONSITE' && !patientPhone.trim()) {
+                setError('Introduzca un telefono del paciente para enviar la plantilla sin firmar por SMS.');
+                setLoading(false);
+                return;
+            }
+
             // La plantilla principal se firma siempre por el profesional que crea la solicitud.
             const willAutoSign = allSelectedIds.some(id => {
                 if (id === mainTemplateId) {
@@ -538,14 +557,37 @@ export default function NewRequestPage() {
                 return matchesCurrentUserService(respService);
             });
 
-            if (willAutoSign && user?.signatureMethod !== 'CERTIFICATE' && !hasSignature) {
-                setError('No tienes una firma predeterminada configurada para auto-firmar. Ve a tu perfil para configurar una firma con tableta.');
+            if (!hasSignature) {
+                setError('No tienes una firma guardada configurada. La plantilla principal se firma siempre con la firma guardada del profesional creador.');
                 setLoading(false);
                 return;
             }
 
-            // Si auto-firma y su metodo es certificado, obligamos al request mTLS
-            const useMtls = willAutoSign && user?.signatureMethod === 'CERTIFICATE';
+            // Si auto-firma consentimientos secundarios con certificado, obligamos al request mTLS.
+            const hasSecondaryCertificateAutoSign = user?.signatureMethod === 'CERTIFICATE'
+                && allSelectedIds.some(id => {
+                    if (id === mainTemplateId) {
+                        return false;
+                    }
+
+                    const assignedProfessionalId = assignedProfessionalMap[id];
+                    if (assignedProfessionalId) {
+                        const assignedProfessional = activeProfessionals.find(
+                            professional => professional.id === assignedProfessionalId
+                        );
+                        return user?.id === assignedProfessionalId ||
+                            (!!assignedProfessional && assignedProfessional.username === user?.username);
+                    }
+
+                    const t = templates.find(temp => temp.id === id);
+                    const respService = resolveResponsibleService(t);
+                    return matchesCurrentUserService(respService);
+                });
+            const useMtls = willAutoSign && hasSecondaryCertificateAutoSign;
+
+            if (channel === 'ONSITE') {
+                await sendUnsignedTemplateSmsPreview(groupData);
+            }
 
             const createdGroup = await createGroup(groupData, useMtls);
 
@@ -553,6 +595,24 @@ export default function NewRequestPage() {
                 // Se envia el primer consentimiento del grupo para que el acceso al portal
                 // muestre todos los consentimientos vinculados.
                 await sendRequest(createdGroup.requests[0].id);
+            }
+
+            if (channel === 'ONSITE') {
+                const mainRequest = createdGroup.requests?.find(request => request.templateId === mainTemplateId)
+                    ?? createdGroup.requests?.[0];
+
+                if (!mainRequest) {
+                    setError('La solicitud se ha creado, pero no se ha podido abrir la firma presencial.');
+                    return;
+                }
+
+                navigate(`/kiosk/${mainRequest.id}`, {
+                    state: {
+                        patient,
+                        request: mainRequest
+                    }
+                });
+                return;
             }
 
             navigate('/requests');
@@ -1069,6 +1129,28 @@ export default function NewRequestPage() {
                                             Enviar ahora el enlace al paciente
                                         </span>
                                     </label>
+                                </div>
+                            )}
+
+                            {channel === 'ONSITE' && (
+                                <div className="space-y-3 pt-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Telefono del paciente para SMS *
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={patientPhone}
+                                            onChange={e => setPatientPhone(e.target.value)}
+                                            className="w-full border border-gray-300 rounded-lg px-3 py-2
+                                 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            placeholder="666123456"
+                                            required={channel === 'ONSITE'}
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            Se enviara la plantilla en PDF sin firmar antes de crear la solicitud.
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>

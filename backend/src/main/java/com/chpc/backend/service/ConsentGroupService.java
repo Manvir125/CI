@@ -7,8 +7,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.net.URI;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,9 +48,13 @@ public class ConsentGroupService {
     private final UserRepository userRepository;
     private final AuditService auditService;
     private final PdfService pdfService;
+    private final SmsService smsService;
     private final SignatureCaptureRepository signatureCaptureRepository;
     private final HisIntegrationService hisIntegrationService;
     private final HisDocumentExportService hisDocumentExportService;
+
+    @Value("${app.public-api-base-url:http://localhost:8080}")
+    private String publicApiBaseUrl;
 
     // ── Crea el grupo con todos sus consentimientos ───────────────────────
     @Transactional
@@ -116,7 +124,12 @@ public class ConsentGroupService {
             requestRepository.save(request);
 
             if (autoSign) {
-                if (creator.getSignatureMethod() == User.SignatureMethod.CERTIFICATE) {
+                if (Boolean.TRUE.equals(item.getAutoSign())) {
+                    if (creator.getSignatureImagePath() == null) {
+                        throw new RuntimeException(
+                                "No tienes una firma guardada en tu perfil. La plantilla principal se firma siempre con la firma guardada del profesional creador.");
+                    }
+                } else if (creator.getSignatureMethod() == User.SignatureMethod.CERTIFICATE) {
                     if (certs == null || certs.length == 0) {
                         throw new RuntimeException(
                                 "Debe firmar con su certificado digital para crear este consentimiento");
@@ -141,6 +154,99 @@ public class ConsentGroupService {
                 ));
 
         return toResponse(group);
+    }
+
+    public void sendUnsignedTemplatePreviewSms(ConsentGroupDto dto, String creatorUsername) {
+        String phone = normalizeBlank(dto.getPatientPhone());
+        if (phone == null) {
+            throw new RuntimeException("El telefono del paciente es obligatorio para enviar la plantilla por SMS");
+        }
+
+        ConsentGroupDto.GroupItemDto mainItem = dto.getItems() == null ? null : dto.getItems().stream()
+                .filter(item -> item != null && Boolean.TRUE.equals(item.getAutoSign()))
+                .findFirst()
+                .orElseGet(() -> dto.getItems().isEmpty() ? null : dto.getItems().get(0));
+
+        if (mainItem == null) {
+            throw new RuntimeException("Debes seleccionar un consentimiento principal");
+        }
+
+        ConsentRequest.SignChannel signChannel = ConsentRequest.SignChannel.valueOf(
+                mainItem.getChannel() != null ? mainItem.getChannel() : "REMOTE");
+        if (signChannel != ConsentRequest.SignChannel.ONSITE) {
+            return;
+        }
+
+        User creator = userRepository.findByUsername(creatorUsername)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        ConsentTemplate template = templateRepository.findById(mainItem.getTemplateId())
+                .orElseThrow(() -> new RuntimeException("Plantilla no encontrada: " + mainItem.getTemplateId()));
+
+        ConsentRequest previewRequest = ConsentRequest.builder()
+                .nhc(dto.getNhc())
+                .episodeId(normalizeBlank(dto.getEpisodeId()))
+                .template(template)
+                .professional(creator)
+                .channel(signChannel)
+                .status("PENDING")
+                .patientPhone(phone)
+                .patientDni(normalizeBlank(dto.getPatientDni()))
+                .patientSip(normalizeBlank(dto.getPatientSip()))
+                .responsibleService(mainItem.getResponsibleService())
+                .observations(mainItem.getObservations())
+                .dynamicFields(mainItem.getDynamicFields())
+                .customTemplateHtml(mainItem.getCustomTemplateHtml())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        try {
+            String patientName = hisIntegrationService.findPatientByNhc(dto.getNhc())
+                    .map(p -> p.getFirstName() + " " + p.getLastName())
+                    .orElse("Paciente");
+            String token = generatePreviewToken();
+            pdfService.saveUnsignedPdfPreview(previewRequest, patientName, token);
+            String mediaUrl = buildPublicUnsignedPreviewUrl(token);
+            boolean sent = smsService.sendMediaSms(
+                    phone,
+                    "CHPC - Adjuntamos el PDF de la plantilla de consentimiento informado sin firmar.",
+                    mediaUrl);
+            if (!sent) {
+                throw new RuntimeException("No se pudo enviar el SMS/MMS con la plantilla");
+            }
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo preparar el PDF de la plantilla para SMS", e);
+        }
+    }
+
+    private String generatePreviewToken() {
+        byte[] tokenBytes = new byte[32];
+        new SecureRandom().nextBytes(tokenBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+    }
+
+    private String buildPublicUnsignedPreviewUrl(String token) {
+        String baseUrl = normalizeBlank(publicApiBaseUrl);
+        if (baseUrl == null) {
+            throw new RuntimeException("APP_PUBLIC_API_BASE_URL no esta configurado");
+        }
+
+        URI uri = URI.create(baseUrl);
+        String host = uri.getHost();
+        if (host == null
+                || "localhost".equalsIgnoreCase(host)
+                || "127.0.0.1".equals(host)
+                || host.startsWith("10.")
+                || host.startsWith("192.168.")
+                || host.matches("^172\\.(1[6-9]|2\\d|3[0-1])\\..*")) {
+            throw new RuntimeException(
+                    "APP_PUBLIC_API_BASE_URL debe ser una URL publica accesible por Twilio para adjuntar el PDF por MMS");
+        }
+
+        return baseUrl.replaceAll("/+$", "")
+                + "/api/patient/sign/unsigned-previews/" + token + ".pdf";
     }
 
     private String normalizeBlank(String value) {

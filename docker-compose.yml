@@ -50,6 +50,7 @@ services:
       HIS_DOCUMENT_EXPORT_PATH: ${HIS_DOCUMENT_EXPORT_PATH:-/app/his-export}
       HIS_DOCUMENT_TYPE_CODE: ${HIS_DOCUMENT_TYPE_CODE:-001}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:5173}
+      APP_PUBLIC_API_BASE_URL: ${APP_PUBLIC_API_BASE_URL:-http://localhost:8080}
       SIGNATURES_PATH: /app/data/signatures
       PDF_PATH: /app/data/pdfs
       JWT_SECRET: ${JWT_SECRET:-cambia_esto_por_un_secreto_seguro_de_al_menos_32_caracteres}

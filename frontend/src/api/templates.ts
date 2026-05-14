@@ -27,6 +27,15 @@ export const duplicateTemplate = async (id: number): Promise<Template> => {
     return response.data;
 };
 
+export const setFavoriteTemplate = async (id: number): Promise<Template> => {
+    const response = await client.post<Template>(`/api/templates/${id}/favorite`);
+    return response.data;
+};
+
+export const clearFavoriteTemplate = async (id: number): Promise<void> => {
+    await client.delete(`/api/templates/${id}/favorite`);
+};
+
 export const updateTemplate = async (
     id: number,
     data: TemplateRequest

@@ -31,6 +31,23 @@ public class TemplateController {
         return ResponseEntity.ok(templateService.getById(id));
     }
 
+    @PostMapping("/{id}/favorite")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<TemplateResponse> setFavorite(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(templateService.setFavorite(id, httpRequest.getRemoteAddr()));
+    }
+
+    @DeleteMapping("/{id}/favorite")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFESSIONAL','ADMINISTRATIVE')")
+    public ResponseEntity<Void> clearFavorite(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        templateService.clearFavorite(id, httpRequest.getRemoteAddr());
+        return ResponseEntity.noContent().build();
+    }
+
     // Solo ADMIN y ADMINISTRATIVE pueden crear plantillas
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATIVE')")

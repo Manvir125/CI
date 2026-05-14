@@ -4,6 +4,8 @@ import com.chpc.backend.dto.*;
 import com.chpc.backend.service.PatientPortalService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +32,34 @@ public class PatientPortalController {
     }
 
     // Envía el código SMS — llamada explícita separada
+    @GetMapping({"/{token}/unsigned-pdf", "/{token}/unsigned-pdf.pdf"})
+    public ResponseEntity<byte[]> downloadUnsignedPdf(@PathVariable String token) {
+        try {
+            byte[] pdf = portalService.generateUnsignedPdf(token);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"plantilla_consentimiento_sin_firmar.pdf\"")
+                    .body(pdf);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/unsigned-previews/{token}.pdf")
+    public ResponseEntity<byte[]> downloadUnsignedPreviewPdf(@PathVariable String token) {
+        try {
+            byte[] pdf = portalService.readUnsignedPdfPreview(token);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"plantilla_consentimiento_sin_firmar.pdf\"")
+                    .body(pdf);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PostMapping("/{token}/send-code")
     public ResponseEntity<Map<String, String>> sendCode(
             @PathVariable String token,

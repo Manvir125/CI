@@ -445,14 +445,16 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    {(hasRole('ADMIN') || hasRole('ADMINISTRATIVE') || hasRole('SUPERVISOR')) && (
+                    {(hasRole('ADMIN') || hasRole('ADMINISTRATIVE') || hasRole('SUPERVISOR') || hasRole('PROFESSIONAL')) && (
                         <div
                             onClick={() => navigate('/templates')}
                             className="dashboard-action-card">
                             <div className="dashboard-action-card__icon mb-4">Temp</div>
                             <h3 className="font-semibold text-gray-800">Plantillas</h3>
                             <p className="text-gray-500 text-sm mt-1">
-                                Mantener las plantillas disponibles.
+                                {hasRole('PROFESSIONAL') && !hasRole('ADMIN') && !hasRole('ADMINISTRATIVE')
+                                    ? 'Elegir la plantilla favorita de tu servicio.'
+                                    : 'Mantener las plantillas disponibles.'}
                             </p>
                         </div>
                     )}

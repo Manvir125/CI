@@ -303,6 +303,15 @@ export default function NewRequestPage() {
         return true;
     };
 
+    const sortFavoriteFirst = (items: Template[]) =>
+        [...items].sort((left, right) => {
+            if (left.favoriteForCurrentUser === right.favoriteForCurrentUser) {
+                return 0;
+            }
+
+            return left.favoriteForCurrentUser ? -1 : 1;
+        });
+
     const resolveResponsibleService = (template?: Template | null) => {
         const templateServiceIdentifier = firstNonEmpty(template?.serviceCode);
 
@@ -838,8 +847,7 @@ export default function NewRequestPage() {
                                 )}
                             </p>
                             <div className="space-y-2">
-                                {templates
-                                    .filter(templateMatchesPrimaryFilter)
+                                {sortFavoriteFirst(templates.filter(templateMatchesPrimaryFilter))
                                     .map(t => (
                                         <div key={t.id} className={`border rounded-lg overflow-hidden transition-all ${mainTemplateId === t.id ? 'border-emerald-500' : 'border-gray-200'}`}>
                                             <label
@@ -926,8 +934,7 @@ export default function NewRequestPage() {
                                 Añada otros consentimientos si procede.
                             </p>
                             <div className="space-y-2">
-                                {templates
-                                    .filter(t => t.id !== mainTemplateId)
+                                {sortFavoriteFirst(templates.filter(t => t.id !== mainTemplateId))
                                     .map(t => (
                                         <div key={t.id} className={`border rounded-lg overflow-hidden transition-all ${secondaryTemplateIds.includes(t.id) ? 'border-emerald-500' : 'border-gray-200'}`}>
                                             <label

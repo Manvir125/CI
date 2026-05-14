@@ -33,8 +33,13 @@ public class TemplateService {
                                 : favoriteTemplateRepository.findByUserId(currentUser.getId())
                                                 .map(favorite -> favorite.getTemplate().getId())
                                                 .orElse(null);
+                boolean shouldLimitToUserService = currentUser != null
+                                && hasRole(currentUser, Role.RoleType.PROFESSIONAL)
+                                && !hasRole(currentUser, Role.RoleType.ADMIN)
+                                && !hasRole(currentUser, Role.RoleType.ADMINISTRATIVE);
                 return templateRepository.findByIsActiveTrue()
                                 .stream()
+                                .filter(template -> !shouldLimitToUserService || sameService(template, currentUser))
                                 .map(template -> toResponse(template, currentUser, favoriteTemplateId))
                                 .collect(Collectors.toList());
         }
@@ -335,6 +340,11 @@ public class TemplateService {
                 String userServiceCode = normalize(user.getServiceCode());
                 String userServiceName = normalize(user.getServiceName());
                 return templateService.equals(userServiceCode) || templateService.equals(userServiceName);
+        }
+
+        private boolean hasRole(User user, Role.RoleType roleType) {
+                return user.getRoles() != null && user.getRoles().stream()
+                                .anyMatch(role -> role.getType() == roleType);
         }
 
         private String normalize(String value) {

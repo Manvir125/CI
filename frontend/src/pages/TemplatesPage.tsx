@@ -14,6 +14,7 @@ export default function TemplatesPage() {
     const { hasRole } = useAuth();
     const navigate = useNavigate();
     const canManage = hasRole('ADMIN') || hasRole('ADMINISTRATIVE');
+    const isProfessionalOnly = hasRole('PROFESSIONAL') && !canManage;
 
     useEffect(() => {
         loadTemplates();
@@ -102,9 +103,15 @@ export default function TemplatesPage() {
                 <section className="page-hero-lite">
                     <div>
                         <p className="section-kicker">Biblioteca</p>
-                        <h2 className="page-hero-lite__title">Plantillas listas para reutilizar y versionar</h2>
+                        <h2 className="page-hero-lite__title">
+                            {canManage
+                                ? 'Plantillas listas para reutilizar y versionar'
+                                : 'Plantillas de tu servicio'}
+                        </h2>
                         <p className="page-hero-lite__text">
-                            Mantén el catálogo ordenado, duplica contenido y evoluciona versiones con una presentación más clara.
+                            {canManage
+                                ? 'Mantén el catálogo ordenado, duplica contenido y evoluciona versiones con una presentación más clara.'
+                                : 'Consulta las plantillas disponibles para tu servicio y elige la favorita que se preseleccionara en nuevas solicitudes.'}
                         </p>
                     </div>
                 </section>
@@ -117,7 +124,11 @@ export default function TemplatesPage() {
 
                 {templates.length === 0 ? (
                     <div className="soft-empty">
-                        <p className="text-gray-400 text-lg">No hay plantillas activas</p>
+                        <p className="text-gray-400 text-lg">
+                            {isProfessionalOnly
+                                ? 'No hay plantillas activas para tu servicio'
+                                : 'No hay plantillas activas'}
+                        </p>
                         {canManage && (
                             <button
                                 onClick={() => navigate('/templates/new')}
@@ -161,7 +172,7 @@ export default function TemplatesPage() {
 
                                     {/* Acciones */}
                                     <div className="flex gap-2 ml-4">
-                                        {template.sameServiceForCurrentUser && (
+                                        {(template.sameServiceForCurrentUser || isProfessionalOnly) && (
                                             <button
                                                 onClick={() => handleToggleFavorite(template)}
                                                 className={`soft-subtle-button text-sm ${template.favoriteForCurrentUser ? 'border-amber-200 bg-amber-50 text-amber-700' : ''}`}

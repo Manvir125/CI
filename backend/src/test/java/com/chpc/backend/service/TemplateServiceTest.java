@@ -4,9 +4,11 @@ import com.chpc.backend.dto.TemplateRequest;
 import com.chpc.backend.dto.TemplateResponse;
 import com.chpc.backend.dto.TemplateUpdateRequest;
 import com.chpc.backend.entity.ConsentTemplate;
+import com.chpc.backend.entity.Role;
 import com.chpc.backend.entity.TemplateField;
 import com.chpc.backend.entity.User;
 import com.chpc.backend.repository.ConsentTemplateRepository;
+import com.chpc.backend.repository.UserFavoriteTemplateRepository;
 import com.chpc.backend.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +37,8 @@ class TemplateServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private UserFavoriteTemplateRepository favoriteTemplateRepository;
+    @Mock
     private AuditService auditService;
 
     @InjectMocks
@@ -53,6 +57,7 @@ class TemplateServiceTest {
                 .fullName("Admin Demo")
                 .email("admin@test.com")
                 .passwordHash("hash")
+                .roles(java.util.Set.of(Role.builder().type(Role.RoleType.ADMIN).build()))
                 .build();
     }
 
@@ -103,6 +108,76 @@ class TemplateServiceTest {
         assertFalse(savedField.getRequired());
         verify(auditService).logWithData(eq("admin"), eq("TEMPLATE_CREATED"), eq("ConsentTemplate"),
                 eq(10L), eq("127.0.0.1"), eq(true), anyMap());
+    }
+
+    @Test
+    void getActiveTemplatesLimitsProfessionalToOwnService() {
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("doctor", null));
+        User doctor = User.builder()
+                .id(2L)
+                .username("doctor")
+                .fullName("Doctor Demo")
+                .email("doctor@test.com")
+                .passwordHash("hash")
+                .serviceCode("CARD")
+                .roles(java.util.Set.of(Role.builder().type(Role.RoleType.PROFESSIONAL).build()))
+                .build();
+        ConsentTemplate ownService = ConsentTemplate.builder()
+                .id(10L)
+                .name("Cardio")
+                .serviceCode("CARD")
+                .isActive(true)
+                .build();
+        ConsentTemplate otherService = ConsentTemplate.builder()
+                .id(11L)
+                .name("Trauma")
+                .serviceCode("TRAU")
+                .isActive(true)
+                .build();
+
+        when(userRepository.findByUsername("doctor")).thenReturn(Optional.of(doctor));
+        when(templateRepository.findByIsActiveTrue()).thenReturn(List.of(ownService, otherService));
+
+        List<TemplateResponse> response = service.getActiveTemplates();
+
+        assertEquals(1, response.size());
+        assertEquals("Cardio", response.get(0).getName());
+        assertTrue(response.get(0).getSameServiceForCurrentUser());
+    }
+
+    @Test
+    void getActiveTemplatesReturnsAllForAdministrative() {
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("adminuser", null));
+        User administrative = User.builder()
+                .id(3L)
+                .username("adminuser")
+                .fullName("Administ Demo")
+                .email("administ@test.com")
+                .passwordHash("hash")
+                .serviceCode("CARD")
+                .roles(java.util.Set.of(Role.builder().type(Role.RoleType.ADMINISTRATIVE).build()))
+                .build();
+        ConsentTemplate ownService = ConsentTemplate.builder()
+                .id(10L)
+                .name("Cardio")
+                .serviceCode("CARD")
+                .isActive(true)
+                .build();
+        ConsentTemplate otherService = ConsentTemplate.builder()
+                .id(11L)
+                .name("Trauma")
+                .serviceCode("TRAU")
+                .isActive(true)
+                .build();
+
+        when(userRepository.findByUsername("adminuser")).thenReturn(Optional.of(administrative));
+        when(templateRepository.findByIsActiveTrue()).thenReturn(List.of(ownService, otherService));
+
+        List<TemplateResponse> response = service.getActiveTemplates();
+
+        assertEquals(2, response.size());
     }
 
     @Test
